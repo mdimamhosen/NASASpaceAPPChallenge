@@ -1,0 +1,10 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type":"Feature","properties":{"id":"jezero-crater","name":"Jezero crater","category":"geology","summary":"Ancient impact basin selected for Perseverance exploration; its geological setting preserves a record of past surface environments.","sourceUrl":"https://science.nasa.gov/mission/mars-2020-perseverance/","mission":"Mars 2020"},"geometry":{"type":"Point","coordinates":[77.45,18.44]}},
+    {"type":"Feature","properties":{"id":"western-delta-context","name":"Western delta context","category":"geology","summary":"The western margin of Jezero is a key setting for investigating sedimentary deposits and the crater's ancient aqueous history. Approximate map annotation.","sourceUrl":"https://science.nasa.gov/mission/mars-2020-perseverance/","mission":"Mars 2020"},"geometry":{"type":"Point","coordinates":[77.36,18.43]}},
+    {"type":"Feature","properties":{"id":"crater-floor-context","name":"Crater floor context","category":"geology","summary":"Crater-floor units provide geological context for the basin. This point is an approximate map annotation, not a verified rover stop.","sourceUrl":"https://science.nasa.gov/mission/mars-2020-perseverance/","mission":"Mars 2020"},"geometry":{"type":"Point","coordinates":[77.52,18.37]}},
+    {"type":"Feature","properties":{"id":"rim-context","name":"Jezero rim context","category":"geology","summary":"The crater rim frames the basin and its geological relationships. Approximate map annotation for regional orientation.","sourceUrl":"https://trek.nasa.gov/mars/","mission":"Mars Trek"},"geometry":{"type":"Point","coordinates":[77.66,18.51]}},
+    {"type":"Feature","properties":{"id":"perseverance-mission","name":"Perseverance mission site","category":"mission","summary":"Perseverance explores Jezero Crater to study ancient environments and collect samples for possible future return. The marker indicates the broad mission region only.","sourceUrl":"https://science.nasa.gov/mission/mars-2020-perseverance/","mission":"Mars 2020"},"geometry":{"type":"Point","coordinates":[77.42,18.46]}}
+  ]
+}

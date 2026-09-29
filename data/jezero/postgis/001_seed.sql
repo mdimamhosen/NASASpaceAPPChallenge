@@ -1,0 +1,10 @@
+CREATE EXTENSION IF NOT EXISTS postgis;
+CREATE TABLE IF NOT EXISTS jezero_hazards (id text PRIMARY KEY, name text NOT NULL, severity text NOT NULL, geom geometry(Polygon, 0) NOT NULL);
+CREATE TABLE IF NOT EXISTS jezero_pois (id text PRIMARY KEY, name text NOT NULL, geom geometry(Point, 0) NOT NULL);
+INSERT INTO jezero_hazards VALUES ('watch-zone-west', 'Western terrain watch zone', 'moderate', ST_SetSRID(ST_GeomFromGeoJSON('{"type": "Polygon", "coordinates": [[[77.32, 18.4], [77.35, 18.4], [77.35, 18.44], [77.32, 18.44], [77.32, 18.4]]]}'), 0)) ON CONFLICT (id) DO UPDATE SET geom=EXCLUDED.geom, severity=EXCLUDED.severity;
+INSERT INTO jezero_hazards VALUES ('watch-zone-south', 'Southern terrain watch zone', 'high', ST_SetSRID(ST_GeomFromGeoJSON('{"type": "Polygon", "coordinates": [[[77.48, 18.32], [77.52, 18.32], [77.52, 18.35], [77.48, 18.35], [77.48, 18.32]]]}'), 0)) ON CONFLICT (id) DO UPDATE SET geom=EXCLUDED.geom, severity=EXCLUDED.severity;
+INSERT INTO jezero_pois VALUES ('jezero-crater', 'Jezero crater', ST_SetSRID(ST_GeomFromGeoJSON('{"type": "Point", "coordinates": [77.45, 18.44]}'), 0)) ON CONFLICT (id) DO UPDATE SET geom=EXCLUDED.geom;
+INSERT INTO jezero_pois VALUES ('western-delta-context', 'Western delta context', ST_SetSRID(ST_GeomFromGeoJSON('{"type": "Point", "coordinates": [77.36, 18.43]}'), 0)) ON CONFLICT (id) DO UPDATE SET geom=EXCLUDED.geom;
+INSERT INTO jezero_pois VALUES ('crater-floor-context', 'Crater floor context', ST_SetSRID(ST_GeomFromGeoJSON('{"type": "Point", "coordinates": [77.52, 18.37]}'), 0)) ON CONFLICT (id) DO UPDATE SET geom=EXCLUDED.geom;
+INSERT INTO jezero_pois VALUES ('rim-context', 'Jezero rim context', ST_SetSRID(ST_GeomFromGeoJSON('{"type": "Point", "coordinates": [77.66, 18.51]}'), 0)) ON CONFLICT (id) DO UPDATE SET geom=EXCLUDED.geom;
+INSERT INTO jezero_pois VALUES ('perseverance-mission', 'Perseverance mission site', ST_SetSRID(ST_GeomFromGeoJSON('{"type": "Point", "coordinates": [77.42, 18.46]}'), 0)) ON CONFLICT (id) DO UPDATE SET geom=EXCLUDED.geom;

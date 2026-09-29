@@ -1,0 +1,7 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type":"Feature","properties":{"id":"watch-zone-west","name":"Western terrain watch zone","severity":"moderate","note":"Illustrative only; not derived from a validated slope model."},"geometry":{"type":"Polygon","coordinates":[[[77.32,18.40],[77.35,18.40],[77.35,18.44],[77.32,18.44],[77.32,18.40]]]}},
+    {"type":"Feature","properties":{"id":"watch-zone-south","name":"Southern terrain watch zone","severity":"high","note":"Illustrative only; not derived from a validated slope model."},"geometry":{"type":"Polygon","coordinates":[[[77.48,18.32],[77.52,18.32],[77.52,18.35],[77.48,18.35],[77.48,18.32]]]}}
+  ]
+}

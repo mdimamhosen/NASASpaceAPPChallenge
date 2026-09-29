@@ -1,0 +1,47 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["pnpm", "--filter", "@mars-explorer/api", "dev"]
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      PORT: 4000
+      DATA_DIR: /workspace/data
+      DATABASE_URL: postgresql://mars:mars@postgres:5432/mars_explorer
+      CORS_ORIGINS: ${WEB_ORIGIN:-http://localhost:${WEB_PORT:-3000}}
+    ports:
+      - "${API_PORT:-4000}:4000"
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["pnpm", "--filter", "@mars-explorer/web", "dev", "--hostname", "0.0.0.0"]
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:${API_PORT:-4000}
+      NEXT_PUBLIC_GOOGLE_MAP_API_KEY: ${NEXT_PUBLIC_GOOGLE_MAP_API_KEY:-}
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      - api
+
+  postgres:
+    image: postgis/postgis:16-3.5-alpine
+    platform: linux/amd64
+    profiles: ["database"]
+    environment:
+      POSTGRES_USER: mars
+      POSTGRES_PASSWORD: mars
+      POSTGRES_DB: mars_explorer
+    ports:
+      - "5432:5432"
+    volumes:
+      - mars-postgres:/var/lib/postgresql/data
+
+volumes:
+  mars-postgres:

@@ -1,0 +1,7 @@
+[
+  { "id": "imagery", "name": "Color shaded relief", "description": "Use global MGS MOLA color shading for broad surface and topographic context; image colors are not route elevation samples.", "source": "https://trek.nasa.gov/tiles/apidoc/trekAPI.html?body=mars", "trekLayerId": "Mars_MGS_MOLA_ClrShade_merge_global_463m", "enabledByDefault": true },
+  { "id": "viking", "name": "Viking color mosaic", "description": "Compare Jezero with a historic global color mosaic from the Viking orbiter era.", "source": "https://trek.nasa.gov/tiles/apidoc/trekAPI.html?body=mars", "trekLayerId": "Mars_Viking_MDIM21_ClrMosaic_global_232m", "enabledByDefault": false },
+  { "id": "hazards", "name": "Terrain watch zones", "description": "Illustrative zones make route tradeoffs visible; they are not validated terrain hazards.", "source": "https://trek.nasa.gov/tiles/apidoc/trekAPI.html?body=mars", "enabledByDefault": false },
+  { "id": "pois", "name": "Science points", "description": "Approximate mission and geology annotations help connect a traverse with published science context.", "source": "https://science.nasa.gov/mission/mars-2020-perseverance/", "enabledByDefault": true },
+  { "id": "hirise", "name": "Orbital footprints", "description": "Compare regional terrain and geology with NASA/USGS HiRISE context; these schematic areas are not precision image boundaries.", "source": "https://ode.rsl.wustl.edu/mars/", "enabledByDefault": false }
+]
