@@ -3,13 +3,14 @@ import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
 import type { EarthEventSummary } from '@/lib/earth-types';
 import { hasGoogleMapsKey, loadGoogleMaps } from '@/lib/load-google-maps';
+import { eonetColor } from '@/lib/eonet-colors';
 
 const EarthMiniMap = dynamic(() => import('./landing/EarthMiniMap'), {
   ssr: false,
   loading: () => <div className="earth-mini-map earth-mini-map-loading">LOADING EARTH MAP…</div>,
 });
 
-export default function EonetEarthMap({ events }: { events: EarthEventSummary[] }) {
+export default function EonetEarthMap({ events, onSelect }: { events: EarthEventSummary[]; onSelect?: (id: string) => void }) {
   const node = useRef<HTMLDivElement>(null);
   const [engine, setEngine] = useState<'idle' | 'google' | 'leaflet'>('idle');
   const [status, setStatus] = useState(hasGoogleMapsKey ? 'Loading Google Maps…' : 'Using OpenStreetMap fallback. Add NEXT_PUBLIC_GOOGLE_MAP_API_KEY for Google Earth tiles.');
@@ -45,18 +46,15 @@ export default function EonetEarthMap({ events }: { events: EarthEventSummary[] 
               map,
               position: { lat: event.lat!, lng: event.lon! },
               title: `EARTH / EONET — ${event.title}`,
+              icon: { path: maps.SymbolPath.CIRCLE, scale: 7, fillColor: eonetColor(event.categoryId), fillOpacity: 1, strokeColor: '#111', strokeWeight: 1 },
             });
-            const content = document.createElement('div');
-            content.style.color = '#111';
-            content.textContent = `EARTH / EONET — ${event.title}`;
-            const info = new maps.InfoWindow({ content });
-            marker.addListener('click', () => info.open({ map, anchor: marker }));
+            marker.addListener('click', () => onSelect?.(event.id));
             markers.push(marker);
           });
 
         authTimer = window.setTimeout(() => {
           if (!active || !node.current) return;
-          if (node.current.querySelector('.gm-err-container, .gm-style > div[style*="color"]')) {
+          if (node.current.querySelector('.gm-err-container')) {
             setEngine('leaflet');
             setStatus('Google Maps unavailable for this key — showing OpenStreetMap fallback.');
           }
@@ -76,14 +74,14 @@ export default function EonetEarthMap({ events }: { events: EarthEventSummary[] 
       if (authTimer !== undefined) window.clearTimeout(authTimer);
       markers.forEach((marker) => marker.setMap(null));
     };
-  }, [events]);
+  }, [events, onSelect]);
 
   return (
     <div className="earth-map-frame">
       {engine !== 'leaflet' && <div ref={node} className="earth-google-map" role="img" aria-label="Google Maps Earth map of NASA EONET events" />}
       {engine === 'leaflet' && (
         <div className="earth-leaflet-fallback">
-          <EarthMiniMap events={events} />
+          <EarthMiniMap events={events} onSelect={onSelect} />
           <span className="earth-map-fallback-label">EARTH / OPENSTREETMAP FALLBACK · EONET POINTS</span>
         </div>
       )}

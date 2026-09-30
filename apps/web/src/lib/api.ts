@@ -1,5 +1,5 @@
 import type { AssistantResponse, LayerId, MapLayer, MissionBriefing, POI, RegionData, RouteAnalysis, RouteWaypoint } from '@mars-explorer/shared';
-import type { EarthEventSummary } from './earth-types';
+import type { EarthEventSummary, EarthEventDetail } from './earth-types';
 
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
@@ -21,8 +21,11 @@ export const getLayers = () => request<MapLayer[]>('/layers');
 export const analyzeRoute = (waypoints: RouteWaypoint[]) => request<RouteAnalysis>('/routes/analyze', { waypoints });
 export const askAssistant = (question: string, waypoints: RouteWaypoint[], useCloudModels = false, compareModels = false) => request<AssistantResponse>('/assistant/ask', { question, waypoints, useCloudModels, compareModels });
 export const createBriefing = (waypoints: RouteWaypoint[]) => request<MissionBriefing>('/briefings', { waypoints });
-export const getEarthEventSummaries = (limit = 12) =>
-  request<EarthEventSummary[]>(`/eonet/events-summary?limit=${limit}&status=open`);
+export const getEarthEventSummaries = (limit = 12, status: 'open' | 'closed' | 'all' = 'open') =>
+  request<EarthEventSummary[]>(`/eonet/events-summary?limit=${limit}&status=${status}`);
+export const getEarthEvent = (id: string) => request<EarthEventDetail>(`/eonet/events/${encodeURIComponent(id)}`);
+export const getEonetCategories = () => request<{ categories: Array<{ id: string; title: string }> }>('/eonet/categories');
+export const getEonetGeoJson = (limit = 60, status: 'open' | 'closed' | 'all' = 'open') => request<{ type: 'FeatureCollection'; features: Array<{ properties?: { id?: string } }> }>(`/eonet/events/geojson?limit=${limit}&status=${status}`);
 
 export const layerIds: LayerId[] = ['imagery', 'viking', 'hazards', 'pois', 'hirise'];
 export type { POI, RouteWaypoint, EarthEventSummary };

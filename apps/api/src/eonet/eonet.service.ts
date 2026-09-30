@@ -1,16 +1,22 @@
-import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { AppConfig } from '../config/configuration';
 import type { EonetQueryDto } from './dto/eonet-query.dto';
+import { EonetDurableStore } from './eonet-durable.store';
 import type { EarthEventSummary, EonetEvent, EonetEventsResponse } from './eonet.types';
 
-type CacheEntry = { expires: number; body: unknown };
+type MemoryEntry = { expires: number; body: unknown; durableKey: string };
 
 @Injectable()
-export class EonetService {
-  private readonly cache = new Map<string, CacheEntry>();
+export class EonetService implements OnModuleInit {
+  private readonly log = new Logger(EonetService.name);
+  private readonly cache = new Map<string, MemoryEntry>();
+  private warming?: Promise<void>;
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    private readonly durable: EonetDurableStore,
+  ) {}
 
   private eonet(): AppConfig['eonet'] {
     return this.config.get<AppConfig['eonet']>('eonet')!;
@@ -18,6 +24,27 @@ export class EonetService {
 
   private retries(): number {
     return this.config.get<number>('httpRetryCount') ?? 2;
+  }
+
+  async onModuleInit() {
+    this.warming = this.warmFullCatalog().catch((error) => {
+      this.log.warn(`EONET warm failed (will retry on request): ${String(error)}`);
+    });
+  }
+
+  /** Prefetch full open catalog so mobile / flaky networks can serve last-good immediately. */
+  private async warmFullCatalog() {
+    const jobs = [
+      this.getEvents({ status: 'open', limit: '500', days: '30' }),
+      this.getEventsGeoJson({ status: 'open', limit: '500', days: '30' }),
+      this.getCategories(),
+      this.getSources(),
+      this.getLayers(),
+      this.getMagnitudes(),
+    ];
+    const results = await Promise.allSettled(jobs);
+    const ok = results.filter((r) => r.status === 'fulfilled').length;
+    this.log.log(`EONET warm complete: ${ok}/${results.length} snapshots ready`);
   }
 
   async getEvents(query: EonetQueryDto = {}): Promise<unknown> {
@@ -58,13 +85,15 @@ export class EonetService {
 
   /** Compact EARTH-labeled summaries for landing UI and agent tool. */
   async listEarthEventSummaries(query: EonetQueryDto = {}): Promise<EarthEventSummary[]> {
+    if (this.warming) await this.warming.catch(() => undefined);
     const payload = (await this.getEvents(this.withDefaults(query))) as EonetEventsResponse;
     const events = payload.events ?? [];
     return events.map((event) => this.toSummary(event));
   }
 
   private toSummary(event: EonetEvent): EarthEventSummary {
-    const geom = event.geometry?.[0];
+    const geometries = event.geometry ?? [];
+    const geom = [...geometries].reverse().find((item) => item.type === 'Point') ?? geometries.at(-1);
     let lat: number | undefined;
     let lon: number | undefined;
     if (geom?.type === 'Point' && Array.isArray(geom.coordinates)) {
@@ -75,11 +104,18 @@ export class EonetService {
       id: event.id,
       title: event.title,
       category: event.categories?.[0]?.title ?? 'Unknown',
+      categoryId: String(event.categories?.[0]?.id ?? 'unknown'),
       date: geom?.date,
+      firstDate: geometries[0]?.date,
+      lastDate: geometries.at(-1)?.date,
       lat: Number.isFinite(lat) ? lat : undefined,
       lon: Number.isFinite(lon) ? lon : undefined,
-      sources: (event.sources ?? []).map((source) => ({ id: source.id, url: source.url })),
+      geometryCount: geometries.length,
+      magnitudeValue: geom?.magnitudeValue ?? event.magnitudeValue ?? undefined,
+      magnitudeUnit: geom?.magnitudeUnit ?? event.magnitudeUnit ?? undefined,
+      sources: (event.sources ?? []).map((source) => ({ id: source.id, url: source.url, title: source.title })),
       closed: Boolean(event.closed),
+      closedAt: event.closed ?? undefined,
       label: 'EARTH',
       provider: 'EONET',
     };
@@ -104,11 +140,17 @@ export class EonetService {
     return url.toString();
   }
 
+  private durableKey(url: string): string {
+    return createSafeKey(url);
+  }
+
   private async fetchJson(path: string, query: EonetQueryDto = {}): Promise<unknown> {
     const url = this.buildUrl(path, query);
+    const durableKey = this.durableKey(url);
     const cached = this.cache.get(url);
     const now = Date.now();
     if (cached && cached.expires > now) return cached.body;
+
     for (const [key, entry] of this.cache) {
       if (entry.expires <= now) this.cache.delete(key);
     }
@@ -118,18 +160,58 @@ export class EonetService {
     let lastError: unknown;
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
-        const response = await fetch(url, { signal: AbortSignal.timeout(timeoutMs), headers: { accept: 'application/json' } });
+        const response = await fetch(url, {
+          signal: AbortSignal.timeout(timeoutMs),
+          headers: { accept: 'application/json' },
+        });
         if (!response.ok) throw new Error(`EONET HTTP ${response.status}`);
         const body = await response.json();
-        this.cache.set(url, { expires: now + this.eonet().cacheTtlSec * 1000, body });
+        const persisted = await this.durable.write(durableKey, body, url);
+        this.cache.set(url, {
+          expires: now + this.eonet().cacheTtlSec * 1000,
+          body: persisted.body,
+          durableKey,
+        });
         while (this.cache.size > 250) this.cache.delete(this.cache.keys().next().value!);
-        return body;
+        return persisted.body;
       } catch (error) {
         lastError = error;
       }
     }
+
+    const memoryStale = this.cache.get(url)?.body;
+    if (memoryStale !== undefined) {
+      this.log.warn(`EONET upstream failed; serving in-memory last-good for ${path}`);
+      return memoryStale;
+    }
+
+    const disk = await this.durable.read(durableKey);
+    if (disk) {
+      this.cache.set(url, {
+        expires: now + this.eonet().cacheTtlSec * 1000,
+        body: disk.body,
+        durableKey,
+      });
+      this.log.warn(`EONET upstream failed; serving durable snapshot from ${disk.fetchedAt} for ${path}`);
+      return disk.body;
+    }
+
     throw new ServiceUnavailableException({
-      error: { code: 'EONET_UPSTREAM', message: `EONET request failed after retries: ${String(lastError)}` },
+      error: {
+        code: 'EONET_UPSTREAM',
+        message: `EONET request failed after retries and no durable cache: ${String(lastError)}`,
+      },
     });
+  }
+}
+
+function createSafeKey(url: string): string {
+  try {
+    const parsed = new URL(url);
+    return `${parsed.pathname.replace(/\//g, '_')}_${[...parsed.searchParams.entries()]
+      .map(([k, v]) => `${k}-${v}`)
+      .join('_') || 'default'}`;
+  } catch {
+    return url.slice(0, 120);
   }
 }

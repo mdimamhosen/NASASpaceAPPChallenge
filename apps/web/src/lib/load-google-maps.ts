@@ -35,7 +35,7 @@ export function loadGoogleMaps(): Promise<typeof google.maps> {
 
     const script = document.createElement('script');
     script.dataset.marsGoogleMaps = 'true';
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&v=weekly&callback=__marsExplorerMapsReady`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&v=weekly&loading=async&callback=__marsExplorerMapsReady`;
     script.async = true;
     script.defer = true;
     script.onerror = () => fail('Google Maps script failed to load. Check network and API key.');

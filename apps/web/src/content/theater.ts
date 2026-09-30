@@ -20,7 +20,7 @@ const s = (id: string, kicker: string, title: string, lead: string, points: stri
 
 export const dossiers: Record<string, Dossier> = {
   survival: {
-    eyebrow: 'THE CHALLENGE / MARS SURFACE', title: 'Every field decision needs evidence.', scene: 'solar',
+    eyebrow: 'THE CHALLENGE / MARS SURFACE', title: 'Every field decision needs evidence.', scene: 'terrain',
     deck: 'A future Marswalk concept needs scientific purpose, terrain context, and clear uncertainty. This demonstration keeps those three layers visible throughout the route.',
     stats: [['QUESTION', 'WHERE TO LOOK?'], ['METHOD', 'SOURCE FIRST'], ['STATUS', 'CONCEPT ONLY']],
     quote: 'A useful field plan tells you what to inspect next and what it cannot yet know.',
@@ -48,7 +48,7 @@ export const dossiers: Record<string, Dossier> = {
     ], next: '/timeline', nextLabel: 'MISSION TIMELINE',
   },
   timeline: {
-    eyebrow: 'MISSION CHRONOLOGY / CURATED', title: 'From ancient lake to fieldwork.', scene: 'mars',
+    eyebrow: 'MISSION CHRONOLOGY / CURATED', title: 'From ancient lake to fieldwork.', scene: 'solar',
     deck: 'A compact sequence links Jezero’s environmental history with the Mars 2020 mission and the present demonstration.',
     stats: [['ANCIENT', 'LAKE + DELTA'], ['2020', 'LAUNCH'], ['2021', 'LANDING']],
     quote: 'The chronology is a reading guide, not an estimate of the age of a particular seeded map point.',
@@ -76,7 +76,7 @@ export const dossiers: Record<string, Dossier> = {
     ], next: '/eonet', nextLabel: 'EARTH CONTEXT',
   },
   data: {
-    eyebrow: 'DATA CATALOG / NASA + USGS', title: 'Every layer has a provenance.', scene: 'mars',
+    eyebrow: 'DATA CATALOG / NASA + USGS', title: 'Every layer has a provenance.', scene: 'layers',
     deck: 'An explicit inventory separates NASA raster layers, curated region annotations, the local source corpus, and Earth event metadata.',
     stats: [['MARS', 'TREK TILES'], ['JEZERO', 'SEED GEOJSON'], ['EARTH', 'EONET V3']],
     quote: 'A measured image, an approximate annotation, and a heuristic score deserve different labels.',
@@ -90,7 +90,7 @@ export const dossiers: Record<string, Dossier> = {
     ], next: '/analog', nextLabel: 'EARTH ANALOG',
   },
   analog: {
-    eyebrow: 'COMPARATIVE CONTEXT / EARTH ONLY', title: 'Analogy is a question, not a transfer.', scene: 'solar',
+    eyebrow: 'COMPARATIVE CONTEXT / EARTH ONLY', title: 'Analogy is a question, not a transfer.', scene: 'earth',
     deck: 'Earth events may sharpen observation questions about water, sediment, and landscape change. They do not describe Martian surface hazards.',
     stats: [['FEED', 'NASA EONET'], ['GEOMETRY', 'EARTH ONLY'], ['USE', 'COMPARISON']],
     quote: 'Ask what process is comparable before claiming two places tell the same story.',
@@ -137,7 +137,7 @@ export const dossiers: Record<string, Dossier> = {
     stats: [['LENGTH', '04:00'], ['STOPS', '12'], ['MODEL CALLS', 'ZERO']],
     quote: 'We use accessible NASA data to ask a better field question and show exactly where the answer comes from.',
     sections: [
-      s('opening', '00:00–00:50 / OPEN', 'From challenge to Jezero', '“A future field team needs to understand why a route matters and where its uncertainty begins. Jezero’s ancient lake and delta make it a strong place to ask about past environments.”', ['Show the solar transfer scene.', 'Move from Survival to the Jezero globe.', 'Name the mission source.'], ['objectives']),
+      s('opening', '00:00–00:50 / OPEN', 'From challenge to Jezero', '“A future field team needs to understand why a route matters and where its uncertainty begins. Jezero’s ancient lake and delta make it a strong place to ask about past environments.”', ['Show the orbital Mars globe on Home.', 'Move through the illustrative Survival terrain to the Jezero globe.', 'Name the mission source.'], ['objectives']),
       s('earth', '00:50–01:15 / EARTH', 'Keep EONET in its own world', '“The Earth event feed offers a separate comparison lens. These locations are Earth only; they never appear on the Mars map.”', ['Show the Google Earth map if the key is configured.', 'Point to EARTH / EONET labels.', 'Avoid implying Earth events predict Mars hazards.'], ['eonet']),
       s('map', '01:15–02:15 / MARS', 'Load the Marswalk', '“NASA Trek supplies the orbital context. We load a hypothetical traverse, inspect nearby reference points, and read a clearly heuristic score.”', ['Open Explore and run Demo Marswalk.', 'Switch one Trek layer.', 'Show the method badge and caveat.'], ['trekApi']),
       s('answer', '02:15–02:40 / EVIDENCE', 'Ask and trace', '“The default assistant retrieves local NASA notes and assembles a cited answer. The trace shows retrieve, Earth tool decision, grade, and template synthesis.”', ['Open a source link.', 'Show /traces.', 'State that no cloud model is needed.']),

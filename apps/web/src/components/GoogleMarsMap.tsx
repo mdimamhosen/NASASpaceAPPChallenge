@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { JEZERO_CENTER, TREK_BASE_URL } from '@mars-explorer/shared';
-import type { LayerId, POI, RouteWaypoint } from '@mars-explorer/shared';
+import type { LayerId, POI, RegionData, RouteWaypoint } from '@mars-explorer/shared';
 import { loadGoogleMaps } from '@/lib/load-google-maps';
 
 type Props = {
@@ -9,7 +9,7 @@ type Props = {
   hazards: Array<{ id: string; name: string; severity: string; coordinates: Array<{ lat: number; lon: number }> }>;
   footprints: Array<{ id: string; name: string; instrument: string; coordinates: Array<{ lat: number; lon: number }> }>;
   waypoints: RouteWaypoint[]; drawing: boolean;
-  onAdd: (point: RouteWaypoint) => void; onSelectPoi: (poi: POI) => void;
+  onAdd: (point: RouteWaypoint) => void; onSelectPoi: (poi: POI) => void; onSelectHazard: (hazard: RegionData['hazards'][number]) => void;
 };
 
 function trekType(maps: typeof google.maps, layer: 'viking' | 'imagery' | 'none') {
@@ -30,11 +30,11 @@ function trekType(maps: typeof google.maps, layer: 'viking' | 'imagery' | 'none'
   return mapType;
 }
 
-export default function GoogleMarsMap({ mode, layers, pois, hazards, footprints, waypoints, drawing, onAdd, onSelectPoi }: Props) {
+export default function GoogleMarsMap({ mode, layers, pois, hazards, footprints, waypoints, drawing, onAdd, onSelectPoi, onSelectHazard }: Props) {
   const node = useRef<HTMLDivElement>(null);
   const map = useRef<google.maps.Map | null>(null);
-  const callbacks = useRef({ drawing, onAdd, onSelectPoi });
-  callbacks.current = { drawing, onAdd, onSelectPoi };
+  const callbacks = useRef({ drawing, onAdd, onSelectPoi, onSelectHazard });
+  callbacks.current = { drawing, onAdd, onSelectPoi, onSelectHazard };
   const [status, setStatus] = useState('Loading Google Maps shell and NASA Trek tiles…');
   useEffect(() => {
     let active = true;
@@ -75,7 +75,7 @@ export default function GoogleMarsMap({ mode, layers, pois, hazards, footprints,
       const marker = new maps.Marker({ map: instance, position: { lat: poi.lat, lng: poi.lon }, title: `${poi.name} / approximate`, icon: { path: maps.SymbolPath.CIRCLE, scale: 6, fillColor: '#eee', fillOpacity: 1, strokeColor: '#111', strokeWeight: 2 } });
       marker.addListener('click', () => callbacks.current.onSelectPoi(poi)); shapes.push(marker);
     });
-    if (layers.has('hazards')) hazards.forEach((hazard) => shapes.push(new maps.Polygon({ map: instance, paths: hazard.coordinates.map((point) => ({ lat: point.lat, lng: point.lon })), strokeColor: '#ddd', strokeOpacity: .9, strokeWeight: 1, fillColor: '#aaa', fillOpacity: .2 })));
+    if (layers.has('hazards')) hazards.forEach((hazard) => { const polygon = new maps.Polygon({ map: instance, paths: hazard.coordinates.map((point) => ({ lat: point.lat, lng: point.lon })), strokeColor: '#ddd', strokeOpacity: .9, strokeWeight: 1, fillColor: '#aaa', fillOpacity: .2 }); polygon.addListener('click', () => callbacks.current.onSelectHazard(hazard as RegionData['hazards'][number])); shapes.push(polygon); });
     if (layers.has('hirise')) footprints.forEach((footprint) => shapes.push(new maps.Polygon({ map: instance, paths: footprint.coordinates.map((point) => ({ lat: point.lat, lng: point.lon })), strokeColor: '#fff', strokeOpacity: .7, strokeWeight: 1, fillOpacity: 0 })));
     if (waypoints.length > 1) shapes.push(new maps.Polyline({ map: instance, path: waypoints.map((point) => ({ lat: point.lat, lng: point.lon })), strokeColor: '#eee', strokeWeight: 3 }));
     waypoints.forEach((point, i) => shapes.push(new maps.Marker({ map: instance, position: { lat: point.lat, lng: point.lon }, title: `WP ${i + 1}`, icon: { path: maps.SymbolPath.CIRCLE, scale: 5, fillColor: '#fff', fillOpacity: 1, strokeColor: '#111', strokeWeight: 2 } })));

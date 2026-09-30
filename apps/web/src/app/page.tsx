@@ -19,6 +19,7 @@ export default function Home() {
           </a>
         </header>
         <section className="landing-hero">
+          <SceneStage kind="mars-hero" className="landing-scene" permanent />
           <div className="landing-copy">
             <p className="eyebrow">
               SURFACE INTELLIGENCE PLATFORM <span>— MARS / JEZERO</span>
@@ -44,7 +45,6 @@ export default function Home() {
               </div>
             </div>
           </div>
-          <SceneStage kind="solar" className="landing-scene" />
         </section>
         <section className="landing-workflow" aria-label="How Mars Explorer works">
           <div>

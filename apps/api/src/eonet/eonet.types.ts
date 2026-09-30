@@ -23,15 +23,4 @@ export type EonetEvent = {
 
 export type EonetEventsResponse = { title?: string; description?: string; link?: string; events: EonetEvent[] };
 
-export type EarthEventSummary = {
-  id: string;
-  title: string;
-  category: string;
-  date?: string;
-  lat?: number;
-  lon?: number;
-  sources: Array<{ id: string; url?: string }>;
-  closed: boolean;
-  label: 'EARTH';
-  provider: 'EONET';
-};
+export type { EarthEventSummary } from '@mars-explorer/shared';

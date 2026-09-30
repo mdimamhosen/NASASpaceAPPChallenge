@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: mars-explorer-api
+    runtime: node
+    plan: free
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @mars-explorer/shared build && pnpm --filter @mars-explorer/api build
+    startCommand: cd apps/api && node dist/main.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 22.16.0
+      - key: CORS_ORIGINS
+        sync: false
+      - key: EONET_CACHE_TTL_SEC
+        value: "75"
+      - key: POSTGIS_ENABLED
+        value: "false"

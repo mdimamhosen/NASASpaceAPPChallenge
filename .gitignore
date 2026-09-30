@@ -7,3 +7,6 @@ coverage
 *.log
 
 apps/web/.next-video
+apps/web/.next-senior
+data/eonet/*.json
+!data/eonet/README.md
