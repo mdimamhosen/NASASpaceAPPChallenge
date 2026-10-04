@@ -16,7 +16,7 @@ async function request<T>(path: string, body?: unknown): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export const getRegion = () => request<RegionData>('/regions/jezero');
+export const getRegion = (demo = false) => request<RegionData>(`/regions/jezero${demo ? '?demo=true' : ''}`);
 export const getLayers = () => request<MapLayer[]>('/layers');
 export const analyzeRoute = (waypoints: RouteWaypoint[]) => request<RouteAnalysis>('/routes/analyze', { waypoints });
 export const askAssistant = (question: string, waypoints: RouteWaypoint[], useCloudModels = false, compareModels = false) => request<AssistantResponse>('/assistant/ask', { question, waypoints, useCloudModels, compareModels });

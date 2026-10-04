@@ -169,7 +169,7 @@ export class AssistantService {
     }
     const answer =
       analysis && !result.refused
-        ? `${result.answer}\n\nCurrent sketch: ${analysis.distanceKm.toFixed(2)} km; heuristic terrain score ${analysis.riskScore}/100. ${analysis.riskNotes.join(' ')}`
+        ? `${result.answer}\n\nCurrent sketch: ${analysis.distanceKm.toFixed(2)} km; non-certifying ${analysis.terrainMethod} Risk Index ${analysis.riskScore}/100. ${analysis.riskNotes.join(' ')}`
         : result.answer;
     const comparison: NonNullable<AssistantResponse['comparison']> = [];
     if (useCloudModels && compareModels && !result.refused) {
@@ -218,7 +218,8 @@ export class AssistantService {
       '',
       `**Route length:** ${analysis.distanceKm.toFixed(2)} km`,
       `**Exploration points:** ${waypoints.length}`,
-      `**Heuristic terrain score:** ${analysis.riskScore}/100`,
+      `**Traverse Risk Index (NON-CERTIFYING):** ${analysis.riskScore}/100 · ${analysis.terrainMethod}`,
+      ...analysis.riskIndex.components.map((item) => `- ${item.label}: ${item.score} / ${item.source}`),
       '',
       '## Scientific objectives',
       ...objectives.map((item) => `- ${item}`),
@@ -229,12 +230,12 @@ export class AssistantService {
       '## Nearby science context',
       ...(analysis.nearbyPois.length
         ? analysis.nearbyPois.map((poi) => `- ${poi.name}: ${poi.summary}`)
-        : ['- No seeded points fall within 2 km of this route.']),
+        : ['- No verified science points are associated with this route.']),
       '',
       '## Sources',
       ...citations.map((citation) => `- [${citation.title}](${citation.url}) — ${citation.excerpt}`),
       '',
-      '*Planning context only. Approximate markers and heuristic terrain scores are not operational or safety guidance.*',
+      '*Planning context only. DTM samples and application risk weights are non-certifying and not operational or safety guidance.*',
     ].join('\n');
     return {
       title: 'Jezero Marswalk Mission Briefing',
@@ -246,6 +247,7 @@ export class AssistantService {
       recommendedInvestigationPoints: analysis.nearbyPois.map((poi) => poi.name),
       citations,
       markdown,
+      riskIndex: analysis.riskIndex,
     };
   }
 }

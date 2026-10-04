@@ -1,0 +1,9 @@
+{
+  "product": "Mars 2020 Rover PLACES best_interp.csv",
+  "sourceUrl": "https://pds-geosciences.wustl.edu/m2020/urn-nasa-pds-mars2020_rover_places/data_localizations/best_interp.csv",
+  "labelUrl": "https://pds-geosciences.wustl.edu/m2020/urn-nasa-pds-mars2020_rover_places/data_localizations/best_interp.csv.xml",
+  "retrievedAt": "2026-10-04T06:35:41.178619+00:00",
+  "sha256": "58fbc62f2676195a00b40b2da53a797a70284a8d2344b288c999d325b7ccb4cc",
+  "coordinateSystem": "planetocentric latitude; east-positive longitude",
+  "note": "CSV supplies sol and SCLK, not a UTC observation date. Track is a published rover localization, not an EVA traverse."
+}

@@ -6,6 +6,9 @@ import { RoutesService } from './routes.service';
 export class RoutesController {
   constructor(private readonly routes: RoutesService) {}
 
+  @Post('suggest')
+  suggest(@Body() body: AnalyzeRouteDto) { return this.routes.suggest(body.waypoints); }
+
   @Post('analyze')
   analyze(@Body() body: AnalyzeRouteDto) {
     return this.routes.analyze(body.waypoints);

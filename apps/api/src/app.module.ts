@@ -12,6 +12,7 @@ import { RagModule } from './rag/rag.module';
 import { AgentModule } from './agent/agent.module';
 import { OpsModule } from './ops/ops.module';
 import { BriefingsModule } from './briefings/briefings.module';
+import { PlacesModule } from './places/places.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { BriefingsModule } from './briefings/briefings.module';
     RagModule,
     AgentModule,
     BriefingsModule,
+    PlacesModule,
     OpsModule,
   ],
 })

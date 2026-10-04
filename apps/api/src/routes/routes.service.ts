@@ -1,35 +1,36 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import type { RouteAnalysis, RouteWaypoint } from '@mars-explorer/shared';
-import { JezeroSpatialService } from './jezero-spatial.service';
-import { RegionsService } from '../regions/regions.service';
-import { haversineKm, pointInPolygon, pointSegmentDistanceKm } from './geo/haversine';
+import type { RouteAnalysis, RouteWaypoint, SuggestedRoute } from '@mars-explorer/shared';
+import { DtmService } from './dtm.service';
+import { haversineKm } from './geo/haversine';
 
 @Injectable()
 export class RoutesService {
-  constructor(private readonly regions: RegionsService, private readonly spatial: JezeroSpatialService) {}
-
+  constructor(private readonly dtm: DtmService) {}
   async analyze(waypoints: RouteWaypoint[]): Promise<RouteAnalysis> {
-    if (waypoints.length < 2) throw new BadRequestException('Add at least two route waypoints.');
-    if (waypoints.length > 100) throw new BadRequestException('A route can contain at most 100 waypoints.');
-    const total = waypoints.slice(1).reduce((sum, point, index) => sum + haversineKm(waypoints[index], point), 0);
-    const region = await this.regions.getJezero();
-    const segments = waypoints.slice(1).map((point, index) => [waypoints[index], point] as const);
-    const spatial = await this.spatial.inspect(waypoints);
-    const nearbyPois = region.pois.filter((poi) => spatial ? spatial.poiIds.includes(poi.id) : segments.some(([a, b]) => pointSegmentDistanceKm(poi, a, b) <= 2));
-    let crossed = 0;
-    for (const hazard of region.hazards) {
-      const hits = spatial ? spatial.hazardIds.includes(hazard.id) : segments.some(([a, b]) =>
-        Array.from({ length: 9 }, (_, i) => ({
-          lat: a.lat + ((b.lat - a.lat) * i) / 8,
-          lon: a.lon + ((b.lon - a.lon) * i) / 8,
-        })).some((sample) => pointInPolygon(sample, hazard.coordinates)),
-      );
-      if (hits) crossed += hazard.severity === 'high' ? 2 : 1;
-    }
-    const riskScore = Math.min(100, 8 + crossed * 24 + Math.max(0, segments.length - 3) * 2);
-    const riskNotes = crossed
-      ? [`Route intersects ${crossed} illustrative terrain watch zone(s).`, 'Terrain zones are not derived from a validated slope model.']
-      : ['No seeded terrain watch zones intersect the sampled route.', 'This heuristic is not an EVA safety assessment.'];
-    return { distanceKm: Number(total.toFixed(2)), riskScore, riskNotes, nearbyPois, terrainMethod: spatial ? 'postgis-jezero' : 'heuristic' };
+    if (waypoints.length < 2 || waypoints.length > 100) throw new BadRequestException('A route needs 2–100 waypoints.');
+    if (waypoints.some((p)=>!Number.isFinite(p.lat)||!Number.isFinite(p.lon)||p.lat < -90||p.lat > 90||p.lon < -180||p.lon > 180)) throw new BadRequestException('Invalid Mars coordinate.');
+    const distanceKm=waypoints.slice(1).reduce((sum,p,i)=>sum+haversineKm(waypoints[i],p),0);
+    const {samples,coverage}=this.dtm.sampleRoute(waypoints);
+    const method=coverage>=.8 ? 'dtm-sample' : 'heuristic';
+    const maxSlope=samples.length?Math.max(...samples.map((p)=>p.slopeDeg??0)):0;
+    const slopeScore=method==='dtm-sample'?Math.min(38,Math.round(maxSlope*2.5)):0;
+    const lengthScore=Math.min(22,Math.round(distanceKm*3));
+    const turnsScore=Math.min(12,Math.max(0,waypoints.length-2)*2);
+    const gapScore=Math.round((1-coverage)*28);
+    const components=[
+      {id:'slope',label:'Peak sampled grid slope',score:slopeScore,source:method==='dtm-sample'?this.dtm.sourceUrl:'Outside sampled DTM coverage; no slope claim'},
+      {id:'distance',label:'Traverse length',score:lengthScore,source:'Waypoint great-circle distance; Mars mean radius 3389.5 km'},
+      {id:'turns',label:'Route complexity',score:turnsScore,source:'Application heuristic: interior waypoint count'},
+      {id:'coverage',label:'Missing DTM coverage',score:gapScore,source:this.dtm.sourceUrl},
+    ];
+    const total=Math.min(100,components.reduce((n,c)=>n+c.score,0));
+    const riskNotes=[`${Math.round(coverage*100)}% of route samples within the coarse NASA PLACES orbital DTM grid.`,method==='dtm-sample'?`Peak sampled grid slope ${maxSlope.toFixed(1)}°. The grid is ~118 m spacing and cannot resolve local hazards.`:'DTM coverage is incomplete; slope has not been assessed for the full route.','Risk Index weights are application heuristics. NON-CERTIFYING; not an EVA safety assessment.'];
+    return {distanceKm:Number(distanceKm.toFixed(2)),riskScore:total,riskNotes,nearbyPois:[],terrainMethod:method,riskIndex:{total,components,method,certifying:false},terrainSamples:samples,dtmCoverage:Number(coverage.toFixed(3)),elevationDeltaM:samples.length>1?Number((samples.at(-1)!.elevationM-samples[0].elevationM).toFixed(1)):undefined};
+  }
+  suggest(waypoints: RouteWaypoint[]): SuggestedRoute {
+    if (waypoints.length!==2) throw new BadRequestException('Suggested corridor needs exactly two endpoints.');
+    const path=this.dtm.suggest(waypoints[0],waypoints[1]);
+    if(!path) throw new BadRequestException('No corridor is available within the sampled DTM grid for these endpoints.');
+    return {waypoints:path,method:'dtm-grid-astar',sourceUrl:this.dtm.sourceUrl,certifying:false,note:'Coarse DTM grid A* uses slope-weighted distance. NON-CERTIFYING; inspect original imagery and mission data.'};
   }
 }

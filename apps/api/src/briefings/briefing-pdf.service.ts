@@ -20,10 +20,11 @@ export class BriefingPdfService {
         for (const line of lines) doc.text(`• ${line}`, { indent: 12, paragraphGap: 4 });
       };
       section('Scientific objectives', briefing.scientificObjectives);
-      section('Terrain considerations / heuristic', briefing.terrainConsiderations);
-      section('Nearby science context', briefing.relevantObservations.length ? briefing.relevantObservations : ['No nearby seeded point.']);
+      section('Traverse Risk Index / NON-CERTIFYING', [`${briefing.riskIndex.total}/100 · ${briefing.riskIndex.method}`, ...briefing.riskIndex.components.map((item) => `${item.label}: ${item.score} / ${item.source}`)]);
+      section('Terrain considerations', briefing.terrainConsiderations);
+      section('Nearby science context', briefing.relevantObservations.length ? briefing.relevantObservations : ['No verified nearby science point.']);
       section('Sources', briefing.citations.map((citation) => `${citation.title} — ${citation.url}`));
-      doc.moveDown().fontSize(8).text('Planning context only. Approximate markers and heuristic terrain scores are non-certifying and not operational guidance.');
+      doc.moveDown().fontSize(8).text('Planning context only. DTM sampling and application risk weights are non-certifying and not operational guidance.');
       doc.end();
     });
   }
