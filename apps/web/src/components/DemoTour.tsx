@@ -10,7 +10,6 @@ const stops = [
   ['EONET', '/eonet', '0:50 · Live NASA Earth events'],
   ['EXPLORE', '/explore', '1:15 · PLACES track and NASA Trek Marswalk'],
   ['TRACES', '/traces', '2:25 · Durable evidence traces'],
-  ['EONET LIVE', '/eonet?tour=refresh', '2:40 · Refresh the real EARTH / EONET feed'],
   ['BRIEF', '/briefing/preview', '2:55 · Server PDF'],
   ['TARGETS', '/targets', '3:15 · Demo seed science points'],
   ['HAZARDS', '/hazards', '3:27 · Non-certifying demo zones'],
@@ -42,5 +41,5 @@ export default function DemoTour({ active = '/' }: { active?: string }) {
     if (playing) { setPlaying(false); sessionStorage.removeItem('mars-tour-step'); }
     else { setStep(index); sessionStorage.setItem('mars-tour-step',String(index)); setPlaying(true); }
   };
-  return <><nav className="demo-tour" aria-label="Twelve-stop demo tour">{stops.map(([label,href,cue],i) => <Link key={`${href}-${i}`} className={i === index ? 'active' : i < index ? 'complete' : ''} href={href} title={cue} aria-label={`${label}: ${cue}`} onClick={() => { if (playing) { setPlaying(false); sessionStorage.removeItem('mars-tour-step'); } }}><span>{String(i+1).padStart(2,'0')}</span>{label}</Link>)}<button className="tour-play" onClick={toggle} aria-label={playing?'Pause story mode':'Autoplay story mode'}>{playing?'PAUSE STORY':'PLAY STORY ▶'}</button></nav>{playing && <div className="story-caption" role="status"><strong>STORY MODE / {String(step+1).padStart(2,'0')}</strong><span>{stops[step][2]}</span></div>}</>;
+  return <><nav className="demo-tour" aria-label="Eleven-stop demo tour">{stops.map(([label,href,cue],i) => <Link key={`${href}-${i}`} className={i === index ? 'active' : i < index ? 'complete' : ''} href={href} title={cue} aria-label={`${label}: ${cue}`} onClick={() => { if (playing) { setPlaying(false); sessionStorage.removeItem('mars-tour-step'); } }}><span>{String(i+1).padStart(2,'0')}</span>{label}</Link>)}<button className="tour-play" onClick={toggle} aria-label={playing?'Pause story mode':'Autoplay story mode'}>{playing?'PAUSE STORY':'PLAY STORY ▶'}</button></nav>{playing && <div className="story-caption" role="status"><strong>STORY MODE / {String(step+1).padStart(2,'0')}</strong><span>{stops[step][2]}</span></div>}</>;
 }

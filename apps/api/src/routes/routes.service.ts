@@ -32,6 +32,8 @@ export class RoutesService {
     const nearbyPois=region.pois.filter((poi)=>waypoints.slice(1).some((point,i)=>pointSegmentDistanceKm(poi,waypoints[i],point)<=0.5));
     return {distanceKm:Number(distanceKm.toFixed(2)),riskScore:total,riskNotes,nearbyPois,terrainMethod:method,riskIndex:{total,components,method,certifying:false},terrainSamples:samples,dtmCoverage:Number(coverage.toFixed(3)),elevationDeltaM:method==='dtm-sample' && startElevation && endElevation ? Number((endElevation.elevationM-startElevation.elevationM).toFixed(1)):undefined};
   }
+  dtmGrid() { return this.dtm.publicGrid(); }
+
   suggest(waypoints: RouteWaypoint[]): SuggestedRoute {
     if (waypoints.length!==2) throw new BadRequestException('Suggested corridor needs exactly two endpoints.');
     const path=this.dtm.suggest(waypoints[0],waypoints[1]);

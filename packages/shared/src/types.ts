@@ -8,6 +8,7 @@ export type PlacesPoint = LatLon & { sol: number; elevationM?: number; sclk?: nu
 export type PlacesTrack = { provider: 'PLACES'; label: 'MARS'; quality: 'interpolated_published'; sourceUrl: string; retrievedAt: string; latestSol: number; points: PlacesPoint[] };
 export type RiskBreakdown = { total: number; components: Array<{ id: string; label: string; score: number; source: string }>; method: TerrainMethod; certifying: false };
 export type TerrainSample = LatLon & { elevationM: number; slopeDeg?: number };
+export type DtmGrid = { product: string; sourceUrl: string; labelUrl: string; latMin: number; lonMin: number; sampleSpacingDegrees: number; rows: Array<Array<number | null>>; nonCertifying: true };
 export type SuggestedRoute = { waypoints: RouteWaypoint[]; method: 'dtm-grid-astar'; sourceUrl: string; certifying: false; note: string };
 export type RouteAnalysis = { distanceKm: number; riskScore: number; riskNotes: string[]; nearbyPois: POI[]; elevationDeltaM?: number; terrainMethod: TerrainMethod; riskIndex: RiskBreakdown; terrainSamples: TerrainSample[]; dtmCoverage: number; suggestedPath?: RouteWaypoint[] };
 export type Citation = { title: string; url: string; mission?: string; excerpt: string };

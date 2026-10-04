@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { readFileSync, statSync } from 'node:fs';
-import type { LatLon, RouteWaypoint, TerrainSample } from '@mars-explorer/shared';
+import type { DtmGrid, LatLon, RouteWaypoint, TerrainSample } from '@mars-explorer/shared';
 import { DataPathService } from '../common/data-path';
 import { haversineKm } from './geo/haversine';
 
 type Grid = {
+  product: string;
   sourceUrl: string;
   labelUrl: string;
   latMin: number;
@@ -27,6 +28,12 @@ export class DtmService {
   get sourceUrl() {
     this.reloadIfNeeded();
     return this.grid.labelUrl;
+  }
+
+  publicGrid(): DtmGrid {
+    this.reloadIfNeeded();
+    const { product, sourceUrl, labelUrl, latMin, lonMin, sampleSpacingDegrees, rows } = this.grid;
+    return { product, sourceUrl, labelUrl, latMin, lonMin, sampleSpacingDegrees, rows, nonCertifying: true };
   }
 
   private reloadIfNeeded() {

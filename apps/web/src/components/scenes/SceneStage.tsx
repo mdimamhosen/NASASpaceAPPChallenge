@@ -15,7 +15,7 @@ const titles: Record<SceneKind, string> = {
   story: 'STORY / TWELVE-STOP EDITORIAL PATH · NOT A FLIGHT TRAJECTORY',
   earth: 'EARTH / NASA BLUE MARBLE REFERENCE',
   ops: 'SIMULATED / RELAY VIGNETTE',
-  architecture: 'WEB / API / SHARED / DATA',
+  architecture: 'NASA SOURCES → NEST API → WEB · ANIMATED DEPENDENCY FLOW',
 };
 
 export default function SceneStage({

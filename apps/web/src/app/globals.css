@@ -914,3 +914,91 @@ a { color: inherit; text-decoration: none; }
 .evidence-cockpit .risk-component > div strong { font-size:11px; }
 .evidence-cockpit .risk-component > span { color:#d0d9dc; font-size:9px; line-height:1.45; }
 .evidence-cockpit .risk-component a { width:max-content; font-size:9px; }
+
+/* Route elevation / slope profile (NASA PLACES orbital DEM samples) */
+.terrain-profile { border-top: 1px solid var(--line); padding: 6px 10px 7px; }
+.terrain-profile header, .terrain-profile footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; color: var(--muted); font-size: 7px; }
+.terrain-profile header span:last-child { color: var(--fg); font-size: 8px; font-variant-numeric: tabular-nums; }
+.terrain-profile svg { display: block; width: 100%; height: 74px; margin: 5px 0; cursor: crosshair; }
+.terrain-profile footer { justify-content: flex-start; }
+.terrain-profile footer i { display: inline-block; width: 8px; height: 6px; margin-right: 4px; vertical-align: middle; }
+.terrain-profile footer a { margin-left: auto; color: var(--focus); }
+.tp-grid { stroke: var(--faint); stroke-width: 1; }
+.tp-area { fill: rgba(242, 240, 234, .07); }
+.tp-line { fill: none; stroke: var(--fg); stroke-width: 1.4; }
+.tp-cursor { stroke: var(--mars); stroke-width: 1; }
+
+/* Route vs Perseverance PLACES track */
+.track-compare { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin: 8px 0; border: 1px solid var(--line); background: var(--line); }
+.track-compare > span { grid-column: 1 / -1; padding: 5px 7px; background: var(--panel); color: var(--muted); font-size: 7px; }
+.track-compare div { display: flex; flex-direction: column; gap: 3px; padding: 7px; background: var(--bg); }
+.track-compare strong { font: 500 13px var(--display); font-variant-numeric: tabular-nums; }
+.track-compare small { color: var(--muted); font-size: 6.5px; line-height: 1.4; }
+
+/* 3D terrain model: NASA Trek HiRISE/CTX orthomosaic on PLACES DEM */
+.terrain-3d { position: absolute; inset: 0; background: #07090d; }
+.terrain-3d canvas { touch-action: none; }
+.terrain-hud { position: absolute; left: 12px; right: 12px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; pointer-events: none; font-size: 8px; color: #c9c7c1; }
+.terrain-hud span { border: 1px solid #2a303c; background: rgba(7, 9, 13, .78); padding: 5px 8px; backdrop-filter: blur(4px); font-variant-numeric: tabular-nums; }
+.terrain-hud-top { top: 12px; }
+.terrain-hud-bottom { bottom: 34px; }
+.terrain-badge { color: var(--muted); }
+.terrain-controls { position: absolute; top: 46px; right: 12px; display: flex; flex-direction: column; gap: 6px; width: 190px; border: 1px solid #2a303c; background: rgba(7, 9, 13, .85); padding: 9px; font-size: 7.5px; color: #c9c7c1; }
+.terrain-controls label { display: flex; flex-direction: column; gap: 6px; }
+.terrain-controls input[type=range] { width: 100%; accent-color: var(--mars); }
+.terrain-controls button { min-height: 28px; border: 1px solid #f2f0ea; color: #f2f0ea; font-size: 8px; }
+.terrain-controls button:hover:not(:disabled) { background: #f2f0ea; color: #090909; }
+.terrain-credit { position: absolute; left: 12px; right: 12px; bottom: 9px; overflow: hidden; color: #7d828c; font-size: 6.5px; white-space: nowrap; text-overflow: ellipsis; }
+.terrain-credit a { color: #b9b7b1; }
+.terrain-labels { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.terrain-label { position: absolute; top: 0; left: 0; display: none; border-left: 2px solid; background: rgba(7, 9, 13, .88); padding: 3px 6px; color: #f2f0ea; font: 500 8px var(--mono); white-space: nowrap; will-change: transform; }
+.terrain-3d.is-showcase .terrain-hud-bottom { bottom: 26px; }
+@media (max-width: 720px) {
+  .terrain-controls { top: auto; bottom: 60px; width: auto; left: 12px; }
+  .terrain-hud span { font-size: 7px; }
+  .track-compare strong { font-size: 11px; }
+}
+
+/* Data-driven 3D sections (Data3DSection) */
+.data3d { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(260px, 1fr) 2.2fr; margin: 0 4.2vw 56px; border: 1px solid #333; background: #07090d; }
+.data3d-copy { display: flex; flex-direction: column; gap: 14px; border-right: 1px solid #333; padding: 28px 24px; }
+.data3d-copy h2 { margin: 0; font: 600 clamp(26px, 3vw, 40px)/1 var(--display); letter-spacing: -.01em; }
+.data3d-copy p { margin: 0; color: #b8b6b0; font-size: 11px; line-height: 1.8; }
+.data3d-copy dl { display: grid; gap: 7px; margin: 4px 0 0; font-size: 9px; }
+.data3d-copy dl div { display: grid; grid-template-columns: 74px 1fr; gap: 12px; }
+.data3d-copy dt { color: #7d828c; }
+.data3d-copy dd { margin: 0; color: #f2f0ea; }
+.data3d-copy a.enter-button { align-self: flex-start; margin-top: auto; }
+.data3d-stage { position: relative; min-height: 480px; overflow: hidden; }
+.data3d-stage .map-loading { position: absolute; inset: 0; display: grid; place-items: center; color: #8b909a; font-size: 9px; }
+.dossier-page .data3d, .theater-page .data3d { margin: 40px 4.2vw; }
+@media (max-width: 900px) {
+  .data3d { grid-template-columns: 1fr; margin: 0 16px 40px; }
+  .dossier-page .data3d, .theater-page .data3d { margin: 28px 16px; }
+  .data3d-copy { border-right: 0; border-bottom: 1px solid #333; }
+  .data3d-stage { min-height: 380px; }
+}
+
+/* Orbit, landing-site, and planet-pair scenes */
+.orbit-controls { width: 230px; }
+.orbit-buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.orbit-buttons button { min-height: 24px; font-size: 7px; }
+.sites-strip { position: absolute; left: 12px; right: 12px; bottom: 30px; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+.sites-strip button { display: flex; flex: 1 0 auto; flex-direction: column; gap: 2px; min-width: 76px; border: 1px solid #2a303c; background: rgba(7, 9, 13, .82); padding: 5px 7px; color: #c9c7c1; font-size: 7px; text-align: left; transition: border-color .2s, color .2s; }
+.sites-strip button small { color: #6b707a; font-size: 6.5px; }
+.sites-strip button.active { border-color: var(--mars); color: #fff; }
+.sites-strip button:hover { border-color: #8b909a; }
+.planet-facts { position: absolute; right: 12px; bottom: 30px; border-collapse: collapse; border: 1px solid #2a303c; background: rgba(7, 9, 13, .85); font-size: 7.5px; font-variant-numeric: tabular-nums; }
+.planet-facts th, .planet-facts td { border-bottom: 1px solid #1c2029; padding: 5px 9px; text-align: left; font-weight: 400; }
+.planet-facts tbody th { color: #7d828c; }
+.planet-facts td { color: #f2f0ea; }
+@media (max-width: 720px) {
+  .orbit-controls { left: 12px; right: 12px; width: auto; top: auto; bottom: 54px; }
+  .planet-facts { left: 12px; right: 12px; bottom: 26px; }
+}
+
+/* Legends for columns, slope field, and curtain scenes */
+.column-ramp { position: absolute; right: 12px; bottom: 30px; display: flex; align-items: center; gap: 8px; border: 1px solid #2a303c; background: rgba(7, 9, 13, .82); padding: 5px 8px; color: #c9c7c1; font-size: 7px; }
+.column-ramp i { width: 120px; height: 6px; background: linear-gradient(90deg, #1d2430, #3b3f45, #6e5a48, #b07a52, #e2c9a6, #f5f1e8); }
+.slope-legend { position: absolute; left: 12px; bottom: 30px; display: flex; flex-wrap: wrap; gap: 10px; border: 1px solid #2a303c; background: rgba(7, 9, 13, .82); padding: 5px 8px; color: #c9c7c1; font-size: 7px; }
+.slope-legend i { display: inline-block; width: 8px; height: 6px; margin-right: 4px; vertical-align: middle; }

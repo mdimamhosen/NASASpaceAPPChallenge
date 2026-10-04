@@ -1,0 +1,307 @@
+1
+00:00:00,000 --> 00:00:05,110
+This is Mars Explorer, a source-grounded
+research console for planning a Marswalk
+
+2
+00:00:05,110 --> 00:00:08,706
+in Jezero Crater, where NASA's
+Perseverance rover landed.
+
+3
+00:00:08,706 --> 00:00:13,627
+Every number on screen comes from a
+published NASA product, and every route is
+
+4
+00:00:13,627 --> 00:00:15,078
+labeled non-certifying.
+
+5
+00:00:15,878 --> 00:00:17,917
+Below the hero is real ground.
+
+6
+00:00:17,917 --> 00:00:23,286
+NASA HiRISE and CTX orbital images from
+Mars Trek are draped over the Mars 2020
+
+7
+00:00:23,286 --> 00:00:28,450
+PLACES elevation model, and the white line
+is Perseverance's published path.
+
+8
+00:00:29,250 --> 00:00:30,973
+Earth gets its own lane.
+
+9
+00:00:30,973 --> 00:00:36,715
+This live NASA EONET feed lists wildfires,
+storms, and sea ice events with their
+
+10
+00:00:36,715 --> 00:00:37,289
+sources.
+
+11
+00:00:37,289 --> 00:00:40,376
+Earth coordinates never touch the Mars
+map.
+
+12
+00:00:41,176 --> 00:00:43,245
+The challenge starts with scale.
+
+13
+00:00:43,245 --> 00:00:48,161
+Here are Earth and Mars at true relative
+size, tilt, and spin, from the NASA
+
+14
+00:00:48,161 --> 00:00:49,519
+Planetary Fact Sheet.
+
+15
+00:00:49,519 --> 00:00:54,240
+Mars is about half as wide, with
+thirty-eight percent of Earth's gravity.
+
+16
+00:00:55,040 --> 00:00:56,844
+This is Jezero, cell by cell.
+
+17
+00:00:56,844 --> 00:01:01,572
+Each of these four thousand five hundred
+columns is one sample of the PLACES
+
+18
+00:01:01,572 --> 00:01:06,486
+orbital elevation model, rising from the
+dark crater floor to the delta and the
+
+19
+00:01:06,486 --> 00:01:06,735
+rim.
+
+20
+00:01:07,535 --> 00:01:09,437
+The EONET page goes deeper.
+
+21
+00:01:09,437 --> 00:01:14,581
+Filter live Earth events, open a record's
+timeline and sources, and check
+
+22
+00:01:14,581 --> 00:01:20,218
+provenance: the upstream fetch time, the
+content hash, and whether the feed came
+
+23
+00:01:20,218 --> 00:01:20,993
+from cache.
+
+24
+00:01:21,793 --> 00:01:23,330
+Now the mission console.
+
+25
+00:01:23,330 --> 00:01:25,444
+NASA Trek layers sit on the left.
+
+26
+00:01:25,444 --> 00:01:30,439
+The PLACES rover track crosses Jezero, and
+the sol scrubber walks Perseverance
+
+27
+00:01:30,439 --> 00:01:32,489
+through its published positions.
+
+28
+00:01:33,289 --> 00:01:35,871
+Load a published route, or draw your own.
+
+29
+00:01:35,871 --> 00:01:41,161
+The API samples the elevation model along
+it and returns a Traverse Risk Index, with
+
+30
+00:01:41,161 --> 00:01:45,066
+every component and its source listed in
+the evidence cockpit.
+
+31
+00:01:45,866 --> 00:01:50,572
+Under the map, the elevation and slope
+profile shows the measured terrain along
+
+32
+00:01:50,572 --> 00:01:51,167
+the route.
+
+33
+00:01:51,167 --> 00:01:56,171
+The cockpit compares the route with where
+Perseverance actually drove, and names the
+
+34
+00:01:56,171 --> 00:01:57,482
+closest published sol.
+
+35
+00:01:58,282 --> 00:02:03,479
+Switch to 3D, and the same route is draped
+on HiRISE imagery over the elevation
+
+36
+00:02:03,479 --> 00:02:03,874
+model.
+
+37
+00:02:03,874 --> 00:02:08,480
+Fly route follows it across the delta,
+with exaggeration you can tune.
+
+38
+00:02:09,280 --> 00:02:13,928
+The mission assistant answers from a local
+corpus of cited NASA sources.
+
+39
+00:02:13,928 --> 00:02:18,706
+Cloud models are optional and off by
+default, and every answer carries its
+
+40
+00:02:18,706 --> 00:02:19,352
+citations.
+
+41
+00:02:20,152 --> 00:02:25,490
+Traces records each assistant run,
+retrieve, grade, and assemble, so anyone
+
+42
+00:02:25,490 --> 00:02:28,337
+can inspect exactly what the system did.
+
+43
+00:02:29,137 --> 00:02:33,556
+The briefing turns a route into a mission
+note and a server-rendered PDF.
+
+44
+00:02:33,556 --> 00:02:37,975
+Below, that route is raised into an
+elevation curtain, colored by sampled
+
+45
+00:02:37,975 --> 00:02:38,339
+slope.
+
+46
+00:02:39,139 --> 00:02:41,470
+Targets shows Perseverance's climb.
+
+47
+00:02:41,470 --> 00:02:46,797
+Each pillar rises to a published PLACES
+elevation, about eight hundred meters of
+
+48
+00:02:46,797 --> 00:02:49,928
+ascent, with NASA-verified locations in
+orange.
+
+49
+00:02:50,728 --> 00:02:52,645
+Hazards maps measured slope.
+
+50
+00:02:52,645 --> 00:02:57,986
+Orange cells reach fifteen degrees, where
+the risk index slope term saturates.
+
+51
+00:02:57,986 --> 00:03:01,273
+The grid cannot see rocks, and the page
+says so.
+
+52
+00:03:02,073 --> 00:03:05,427
+The mission space-time cube stacks the
+traverse by sol.
+
+53
+00:03:05,427 --> 00:03:09,025
+Ground position is where the rover was,
+and height is when.
+
+54
+00:03:09,825 --> 00:03:14,358
+The timeline computes where Earth and Mars
+are on any day from NASA JPL orbital
+
+55
+00:03:14,358 --> 00:03:18,777
+elements, with the distance and the
+one-way light delay a command must cross.
+
+56
+00:03:19,577 --> 00:03:24,130
+The data page tours all nine NASA Mars
+landings, from Viking in nineteen
+
+57
+00:03:24,130 --> 00:03:27,228
+seventy-six to Perseverance in twenty
+twenty-one.
+
+58
+00:03:28,028 --> 00:03:33,862
+Science explodes the three source layers,
+elevation, imagery, and rover positions,
+
+59
+00:03:33,862 --> 00:03:37,704
+and its register lists every product,
+date, and limit.
+
+60
+00:03:38,504 --> 00:03:40,790
+Architecture shows the real system.
+
+61
+00:03:40,790 --> 00:03:46,081
+NASA sources flow through NestJS modules
+into the web console, with Earth data on
+
+62
+00:03:46,081 --> 00:03:47,257
+its own blue lane.
+
+63
+00:03:48,057 --> 00:03:53,324
+Any route can be shared as a link and a
+mission card, shown here in 3D, front and
+
+64
+00:03:53,324 --> 00:03:53,649
+back.
+
+65
+00:03:54,449 --> 00:03:55,477
+Mars Explorer.
+
+66
+00:03:55,477 --> 00:04:01,274
+Real NASA data, cited answers, and honest
+limits, from a surface question to an
+
+67
+00:04:01,274 --> 00:04:02,815
+accountable briefing.

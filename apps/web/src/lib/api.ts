@@ -1,4 +1,4 @@
-import type { AssistantResponse, LayerId, MapLayer, MissionBriefing, POI, RegionData, RouteAnalysis, RouteWaypoint, PlacesTrack, SuggestedRoute, EonetProvenance } from '@mars-explorer/shared';
+import type { AssistantResponse, LayerId, MapLayer, MissionBriefing, POI, RegionData, RouteAnalysis, RouteWaypoint, PlacesTrack, SuggestedRoute, EonetProvenance, DtmGrid } from '@mars-explorer/shared';
 import type { EarthEventSummary, EarthEventDetail } from './earth-types';
 
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
@@ -20,6 +20,7 @@ export const getRegion = (demo = false) => request<RegionData>(`/regions/jezero$
 export const getPlaces = (fromSol?: number, toSol?: number) => request<PlacesTrack>(`/places/perseverance${fromSol == null ? '' : `?fromSol=${fromSol}&toSol=${toSol ?? fromSol}`}`);
 export const suggestRoute = (waypoints: RouteWaypoint[]) => request<SuggestedRoute>('/routes/suggest', { waypoints });
 export const getEonetProvenance = (limit = 60, status: 'open' | 'closed' | 'all' = 'open') => request<EonetProvenance>(`/eonet/provenance?limit=${limit}&status=${status}`);
+export const getDtmGrid = () => request<DtmGrid>('/routes/dtm-grid');
 export const getLayers = () => request<MapLayer[]>('/layers');
 export const analyzeRoute = (waypoints: RouteWaypoint[]) => request<RouteAnalysis>('/routes/analyze', { waypoints });
 export const askAssistant = (question: string, waypoints: RouteWaypoint[], useCloudModels = false, compareModels = false) => request<AssistantResponse>('/assistant/ask', { question, waypoints, useCloudModels, compareModels });

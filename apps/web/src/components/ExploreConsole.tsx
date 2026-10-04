@@ -4,8 +4,10 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowDownToLine, ArrowUpRight, Crosshair, HelpCircle, Layers3, LocateFixed, MapPin, Minus, Plus, Route, Send, Sparkles, Undo2, X, Search, Maximize2, Minimize2, Printer } from 'lucide-react';
-import type { AssistantResponse, Citation, LayerId, MapLayer, MissionBriefing, POI, RegionData, RouteAnalysis, RouteWaypoint, PlacesTrack, SuggestedRoute } from '@mars-explorer/shared';
-import { analyzeRoute, askAssistant, createBriefing, downloadBriefingPdf, getLayers, getPlaces, getRegion, suggestRoute } from '@/lib/api';
+import type { AssistantResponse, Citation, DtmGrid, LayerId, MapLayer, MissionBriefing, POI, RegionData, RouteAnalysis, RouteWaypoint, PlacesTrack, SuggestedRoute } from '@mars-explorer/shared';
+import { analyzeRoute, askAssistant, createBriefing, downloadBriefingPdf, getDtmGrid, getLayers, getPlaces, getRegion, suggestRoute } from '@/lib/api';
+import { compareWithTrack } from '@/lib/geo';
+import RouteProfile from './RouteProfile';
 import SolClock from './SolClock';
 import DemoTour from './DemoTour';
 import { hasGoogleMapsKey } from '@/lib/load-google-maps';
@@ -13,6 +15,7 @@ import DetailModal from './ui/DetailModal';
 
 const MarsMap = dynamic(() => import('./MarsMap'), { ssr: false, loading: () => <div className="map-loading">CONNECTING TO MARS TREK WMTS…</div> });
 const GoogleMarsMap = dynamic(() => import('./GoogleMarsMap'), { ssr: false, loading: () => <div className="map-loading">CONNECTING GOOGLE SHELL TO NASA TREK…</div> });
+const TerrainView3D = dynamic(() => import('./scenes/TerrainView3D'), { ssr: false, loading: () => <div className="map-loading">BUILDING 3D TERRAIN FROM NASA PLACES DEM…</div> });
 const initialLayerIds = new Set<LayerId>(['imagery', 'pois']);
 
 export default function ExploreConsole() {
@@ -22,7 +25,8 @@ export default function ExploreConsole() {
   const [waypoints, setWaypoints] = useState<RouteWaypoint[]>([]);
   const [analysis, setAnalysis] = useState<RouteAnalysis | null>(null);
   const [mapMode, setMapMode] = useState<'global' | 'jezero'>('jezero');
-  const [mapEngine, setMapEngine] = useState<'leaflet' | 'google'>('leaflet');
+  const [mapEngine, setMapEngine] = useState<'leaflet' | 'google' | '3d'>('leaflet');
+  const [dtmGrid, setDtmGrid] = useState<DtmGrid | null>(null);
   const [mapView, setMapView] = useState<{lat:number;lon:number;zoom:number} | null>(null);
   const [drawing, setDrawing] = useState(false);
   const [tab, setTab] = useState<'assistant' | 'briefing' | 'point'>('assistant');
@@ -54,6 +58,7 @@ export default function ExploreConsole() {
   useEffect(() => {
     Promise.all([getRegion(), getLayers(), getPlaces()]).then(([data, layerData, track]) => { setRegion(data); setCatalog(layerData); setPlaces(track); setSelectedSol(track.latestSol); const poiId = new URLSearchParams(window.location.search).get('poi'); const poi = data.pois.find((item) => item.id === poiId); if (poi) { setSelectedPoi(poi); setTab('point'); } }).catch((reason: Error) => setError(`${reason.message}. Start the API with pnpm dev.`));
     if (new URLSearchParams(window.location.search).get('demo') === 'true') setDemoSeeds(true);
+    if (new URLSearchParams(window.location.search).get('view') === '3d') setMapEngine('3d');
     if (!localStorage.getItem('me_onboarded')) setCoachStep(0);
     try { const cached = JSON.parse(localStorage.getItem('me_saved_routes') || '[]') as Array<{ waypoints?: RouteWaypoint[] }>; setSavedRoute(cached[0]?.waypoints ?? null); } catch { setSavedRoute(null); }
     const shared = new URLSearchParams(window.location.search).get('wp');
@@ -74,6 +79,8 @@ export default function ExploreConsole() {
   }, [waypoints]);
 
   useEffect(() => { getRegion(demoSeeds).then((data)=>{setRegion(data); const poiId=new URLSearchParams(window.location.search).get('poi'); const poi=data.pois.find((item)=>item.id===poiId); if(poi){setSelectedPoi(poi);setTab('point');}}).catch((reason: Error) => setError(reason.message)); }, [demoSeeds]);
+  useEffect(() => { if (mapEngine === '3d' && !dtmGrid) getDtmGrid().then(setDtmGrid).catch((reason: Error) => setError(reason.message)); }, [mapEngine, dtmGrid]);
+  const trackComparison = useMemo(() => (waypoints.length > 1 && places ? compareWithTrack(waypoints, places.points) : null), [waypoints, places]);
   const selectedTrackPoint = useMemo(() => places?.points.filter((p) => p.sol <= selectedSol).at(-1), [places, selectedSol]);
   const visibleTrack = useMemo(() => showTrack ? places?.points.filter((p) => p.sol <= selectedSol) ?? [] : [], [places, selectedSol, showTrack]);
   const addWaypoint = useCallback((point: RouteWaypoint) => setWaypoints((current) => [...current, point]), []);
@@ -214,8 +221,8 @@ export default function ExploreConsole() {
 
       <section className="map-workspace" aria-label="Interactive Mars map">
         <div className="map-topbar"><div className="map-breadcrumb"><span>PLANETARY SURFACE</span><span>/</span><strong>{mapMode === 'jezero' ? 'JEZERO QUADRANGLE' : 'MARS / GLOBAL'}</strong></div><div className="map-tools">
-          <div className="map-engine-toggle" role="group" aria-label="Mars map viewer"><button className={mapEngine === 'leaflet' ? 'active' : ''} onClick={() => setMapEngine('leaflet')}>LEAFLET / TREK</button><button className={mapEngine === 'google' ? 'active' : ''} onClick={() => setMapEngine('google')} disabled={!hasGoogleMapsKey} title={hasGoogleMapsKey ? 'Google Maps shell with NASA Trek Mars imagery' : 'Configure the Google Maps browser key first'}>GOOGLE / TREK</button></div>
-          <button className={drawing ? 'tool-button active' : 'tool-button'} onClick={() => setDrawing((value) => !value)} title="Toggle route drawing"><Route size={15} /><span>{drawing ? 'DRAWING' : 'DRAW ROUTE'}</span></button>
+          <div className="map-engine-toggle" role="group" aria-label="Mars map viewer"><button className={mapEngine === 'leaflet' ? 'active' : ''} onClick={() => setMapEngine('leaflet')}>LEAFLET / TREK</button><button className={mapEngine === 'google' ? 'active' : ''} onClick={() => setMapEngine('google')} disabled={!hasGoogleMapsKey} title={hasGoogleMapsKey ? 'Google Maps shell with NASA Trek Mars imagery' : 'Configure the Google Maps browser key first'}>GOOGLE / TREK</button><button className={mapEngine === '3d' ? 'active' : ''} onClick={() => setMapEngine('3d')} title="NASA HiRISE and CTX imagery draped on the PLACES orbital DEM">3D / DEM</button></div>
+          <button className={drawing ? 'tool-button active' : 'tool-button'} onClick={() => { if (mapEngine === '3d') setMapEngine('leaflet'); setDrawing((value) => !value); }} title="Toggle route drawing"><Route size={15} /><span>{drawing ? 'DRAWING' : 'DRAW ROUTE'}</span></button>
           <button className="icon-tool" onClick={undo} disabled={!waypoints.length} title="Undo last waypoint"><Undo2 size={15} /></button>
           <button className="icon-tool" onClick={() => { setWaypoints([]); setResponse(null); setBriefing(null); }} disabled={!waypoints.length} title="Clear route"><X size={15} /></button>
           <span className="tool-divider" />
@@ -223,13 +230,13 @@ export default function ExploreConsole() {
           <button className={solLighting ? 'tool-button active' : 'tool-button'} onClick={() => setSolLighting(!solLighting)} title="Toggle illustrative Sol lighting">SOL</button>
         </div></div>
         <div className={`map-frame ${solLighting ? 'sol-lit' : ''}`}>
-          {mapEngine === 'leaflet' ? <MarsMap mode={mapMode} layers={layers} pois={region?.pois ?? []} hazards={region?.hazards ?? []} footprints={region?.footprints ?? []} waypoints={waypoints} track={visibleTrack} trackPoint={showTrack ? selectedTrackPoint : undefined} suggestedPath={suggestion?.waypoints ?? []} drawing={drawing} onAdd={addWaypoint} onSelectPoi={selectPoi} onSelectHazard={setSelectedHazard} onViewChange={setMapView} /> : <GoogleMarsMap mode={mapMode} layers={layers} pois={region?.pois ?? []} hazards={region?.hazards ?? []} footprints={region?.footprints ?? []} waypoints={waypoints} track={visibleTrack} trackPoint={showTrack ? selectedTrackPoint : undefined} suggestedPath={suggestion?.waypoints ?? []} drawing={drawing} onAdd={addWaypoint} onSelectPoi={selectPoi} onSelectHazard={setSelectedHazard} onViewChange={setMapView} />}
-          {visibleTrack.length > 2 && mapMode === 'jezero' && <TrackInset points={visibleTrack} selected={selectedTrackPoint} />}
-          {mapMode === 'global' && <div className="global-callout"><span>REGIONAL FOCUS</span><strong>Jezero Crater</strong><button onClick={() => setMapMode('jezero')}>FLY TO SITE <ArrowUpRight size={13} /></button></div>}
-          {drawing && <div className="drawing-hint"><Crosshair size={13} /> SELECT SURFACE TO PLACE WAYPOINT <span>ESC TO EXIT</span></div>}
-          {!waypoints.length && !drawing && <div className="map-empty"><Crosshair size={13} /><span>NO ACTIVE TRAVERSE</span><button onClick={seedRoute}>LOAD PUBLISHED ROUTE <ArrowUpRight size={12} /></button><button onClick={() => void demoMarswalk()}>CLASSROOM MODE <ArrowUpRight size={12} /></button></div>}
+          {mapEngine === '3d' ? (dtmGrid ? <TerrainView3D grid={dtmGrid} waypoints={waypoints} suggestedPath={suggestion?.waypoints ?? []} track={showTrack ? visibleTrack : []} trackPoint={showTrack ? selectedTrackPoint : undefined} pois={region?.pois ?? []} /> : <div className="map-loading">LOADING NASA PLACES DEM GRID…</div>) : mapEngine === 'leaflet' ? <MarsMap mode={mapMode} layers={layers} pois={region?.pois ?? []} hazards={region?.hazards ?? []} footprints={region?.footprints ?? []} waypoints={waypoints} track={visibleTrack} trackPoint={showTrack ? selectedTrackPoint : undefined} suggestedPath={suggestion?.waypoints ?? []} drawing={drawing} onAdd={addWaypoint} onSelectPoi={selectPoi} onSelectHazard={setSelectedHazard} onViewChange={setMapView} /> : <GoogleMarsMap mode={mapMode} layers={layers} pois={region?.pois ?? []} hazards={region?.hazards ?? []} footprints={region?.footprints ?? []} waypoints={waypoints} track={visibleTrack} trackPoint={showTrack ? selectedTrackPoint : undefined} suggestedPath={suggestion?.waypoints ?? []} drawing={drawing} onAdd={addWaypoint} onSelectPoi={selectPoi} onSelectHazard={setSelectedHazard} onViewChange={setMapView} />}
+          {mapEngine !== '3d' && visibleTrack.length > 2 && mapMode === 'jezero' && <TrackInset points={visibleTrack} selected={selectedTrackPoint} />}
+          {mapEngine !== '3d' && mapMode === 'global' && <div className="global-callout"><span>REGIONAL FOCUS</span><strong>Jezero Crater</strong><button onClick={() => setMapMode('jezero')}>FLY TO SITE <ArrowUpRight size={13} /></button></div>}
+          {drawing && mapEngine !== '3d' && <div className="drawing-hint"><Crosshair size={13} /> SELECT SURFACE TO PLACE WAYPOINT <span>ESC TO EXIT</span></div>}
+          {!waypoints.length && !drawing && mapEngine !== '3d' && <div className="map-empty"><Crosshair size={13} /><span>NO ACTIVE TRAVERSE</span><button onClick={seedRoute}>LOAD PUBLISHED ROUTE <ArrowUpRight size={12} /></button><button onClick={() => void demoMarswalk()}>CLASSROOM MODE <ArrowUpRight size={12} /></button></div>}
           {mapEngine === 'leaflet' && <div className="map-controls"><button title="Zoom in" onClick={() => window.dispatchEvent(new CustomEvent('mars-zoom', { detail: 1 }))}><Plus size={15} /></button><button title="Zoom out" onClick={() => window.dispatchEvent(new CustomEvent('mars-zoom', { detail: -1 }))}><Minus size={15} /></button></div>}
-          <div className="map-scale">MAP PROJECTION / EQUIRECTANGULAR</div>
+          {mapEngine !== '3d' && <div className="map-scale">MAP PROJECTION / EQUIRECTANGULAR</div>}
         </div>
         <div className="map-coordinates" aria-label="Current Mars map center and zoom"><span>CENTER LAT&nbsp; {mapView ? `${Math.abs(mapView.lat).toFixed(5)}° ${mapView.lat < 0 ? 'S' : 'N'}` : '—'}</span><span>CENTER LON&nbsp; {mapView ? `${Math.abs(mapView.lon).toFixed(5)}° ${mapView.lon < 0 ? 'W' : 'E'}` : '—'}</span><span>ZOOM&nbsp; {mapView?.zoom ?? '—'}</span><span className="map-coord-right">LEFT CLICK TO ADD WAYPOINT WHEN ROUTE MODE IS ACTIVE</span></div>
         <section className="bottom-hud"><div className="hud-title"><span>ACTIVE TRAVERSE</span><small>{waypoints.length ? `${String(waypoints.length).padStart(2, '0')} WAYPOINTS` : 'AWAITING ROUTE'}</small></div>
@@ -244,6 +251,7 @@ export default function ExploreConsole() {
           const segment = Math.hypot((point.lat - previous.lat) * latScale, (point.lon - previous.lon) * lonScale);
           return <span key={point.id}><small>SEG {String(index + 1).padStart(2, '0')}</small><strong>{segment.toFixed(2)} KM</strong><i style={{ width: `${Math.max(12, Math.min(100, segment * 11))}%` }} /></span>;
         })}</div>}
+        {analysis && analysis.terrainSamples.length > 1 && <RouteProfile samples={analysis.terrainSamples} />}
         <div className="route-actions"><button onClick={() => void makeSuggestion()} disabled={waypoints.length !== 2}>SUGGEST DTM CORRIDOR</button>{suggestion && <button onClick={() => setWaypoints(suggestion.waypoints)}>USE SUGGESTION · NON-CERTIFYING</button>}<button onClick={saveRoute} disabled={waypoints.length < 2}>SAVE ROUTE</button><button onClick={() => setWaypoints(savedRoute ?? [])} disabled={!savedRoute?.length}>RESTORE LAST SAVE</button><button onClick={() => void shareRoute()} disabled={waypoints.length < 2}>COPY SHARE LINK</button>{routeNotice && <span role="status">{routeNotice}</span>}</div>
         <div className="route-tip">{waypoints.length > 1 ? `${analysis?.terrainMethod?.toUpperCase() ?? 'HEURISTIC'} · NON-CERTIFYING. Check each source before interpreting this research sketch.` : 'Choose a published traverse or draw a route to compare distance and DTM coverage.'}</div>
       </section>
@@ -252,7 +260,7 @@ export default function ExploreConsole() {
         <div className="right-tabs"><button className={tab === 'assistant' ? 'selected' : ''} onClick={() => setTab('assistant')}>MISSION ASSISTANT</button><button className={tab === 'briefing' ? 'selected' : ''} onClick={() => setTab('briefing')}>BRIEFING</button></div>
         {tab === 'assistant' && <div className="assistant-pane">
           <div className="assistant-status"><span className="status-square" /> {busy ? 'RETRIEVING CORPUS…' : 'EVIDENCE MODE'} <span>LANGGRAPH / LOCAL CORPUS</span></div>
-          <div className="evidence-cockpit"><strong>EVIDENCE COCKPIT</strong><div><span>ROUTE {analysis?.distanceKm.toFixed(2) ?? "—"} KM</span><span>RISK {analysis?.riskIndex.total ?? "—"}/100</span><span>DTM COVERAGE {analysis ? Math.round(analysis.dtmCoverage * 100) : "—"}%</span><span>{analysis?.terrainMethod?.toUpperCase() ?? "METHOD —"} · NON-CERTIFYING</span></div><small><a href={places?.sourceUrl ?? "https://pds-geosciences.wustl.edu/missions/mars2020/places.htm"} target="_blank" rel="noreferrer">NASA PLACES ↗</a> · <a href="https://trek.nasa.gov/tiles/apidoc/trekAPI.html?body=mars" target="_blank" rel="noreferrer">NASA TREK ↗</a> · <a href="https://pds-geosciences.wustl.edu/m2020/urn-nasa-pds-mars2020_rover_places/data_maps/m20_orbital_dem.xml" target="_blank" rel="noreferrer">NASA DTM ↗</a> · <a href="https://eonet.gsfc.nasa.gov/docs/v3" target="_blank" rel="noreferrer">EARTH / NASA EONET ↗</a></small>{analysis?.riskIndex.components.map((item) => <section className="risk-component" key={item.id}><div><span>{item.label}</span><strong>+{item.score}</strong></div><RiskSource source={item.source} /></section>)}{response?.citations.slice(0, 2).map((item) => <a key={item.url} href={item.url} target="_blank" rel="noreferrer">{item.title} ↗</a>)}</div><div className="assistant-intro"><span className="eyebrow">MISSION SUPPORT / 01</span><h2>Field intelligence</h2><p>Ask about mission context, Jezero geology, or the active route. Responses use the cited local source notes.</p></div>
+          <div className="evidence-cockpit"><strong>EVIDENCE COCKPIT</strong><div><span>ROUTE {analysis?.distanceKm.toFixed(2) ?? "—"} KM</span><span>RISK {analysis?.riskIndex.total ?? "—"}/100</span><span>DTM COVERAGE {analysis ? Math.round(analysis.dtmCoverage * 100) : "—"}%</span><span>{analysis?.terrainMethod?.toUpperCase() ?? "METHOD —"} · NON-CERTIFYING</span></div>{trackComparison && <section className="track-compare" aria-label="Route compared with Perseverance PLACES track"><span>VS PERSEVERANCE · NASA PLACES</span><div><strong>{Math.round(trackComparison.withinShare * 100)}%</strong><small>WAYPOINTS ≤200 M OF ROVER TRACK</small></div><div><strong>{(trackComparison.meanOffsetKm * 1000).toFixed(0)} M</strong><small>MEAN OFFSET</small></div><div><strong>SOL {trackComparison.nearestSol}</strong><small>CLOSEST PUBLISHED POSITION · {(trackComparison.nearestKm * 1000).toFixed(0)} M</small></div></section>}<small><a href={places?.sourceUrl ?? "https://pds-geosciences.wustl.edu/missions/mars2020/places.htm"} target="_blank" rel="noreferrer">NASA PLACES ↗</a> · <a href="https://trek.nasa.gov/tiles/apidoc/trekAPI.html?body=mars" target="_blank" rel="noreferrer">NASA TREK ↗</a> · <a href="https://pds-geosciences.wustl.edu/m2020/urn-nasa-pds-mars2020_rover_places/data_maps/m20_orbital_dem.xml" target="_blank" rel="noreferrer">NASA DTM ↗</a> · <a href="https://eonet.gsfc.nasa.gov/docs/v3" target="_blank" rel="noreferrer">EARTH / NASA EONET ↗</a></small>{analysis?.riskIndex.components.map((item) => <section className="risk-component" key={item.id}><div><span>{item.label}</span><strong>+{item.score}</strong></div><RiskSource source={item.source} /></section>)}{response?.citations.slice(0, 2).map((item) => <a key={item.url} href={item.url} target="_blank" rel="noreferrer">{item.title} ↗</a>)}</div><div className="assistant-intro"><span className="eyebrow">MISSION SUPPORT / 01</span><h2>Field intelligence</h2><p>Ask about mission context, Jezero geology, or the active route. Responses use the cited local source notes.</p></div>
           <div className="prompt-label">SUGGESTED INQUIRY</div>
           <button className="suggestion" onClick={() => { setQuestion('Why is this route scientifically interesting?'); void submitQuestion('Why is this route scientifically interesting?'); }}>“Why is this route scientifically interesting?” <ArrowUpRight size={13} /></button>
           <button className="suggestion" onClick={() => { setQuestion('What are Perseverance’s mission objectives?'); void submitQuestion('What are Perseverance’s mission objectives?'); }}>“What are Perseverance’s mission objectives?” <ArrowUpRight size={13} /></button>

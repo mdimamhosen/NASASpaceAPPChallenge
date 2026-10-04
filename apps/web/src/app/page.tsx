@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import EarthEventsFeed from '@/components/landing/EarthEventsFeed';
+import Data3DSection from '@/components/scenes/Data3DSection';
 import SceneStage from '@/components/scenes/SceneStage';
 import MissionNav from '@/components/MissionNav';
 
@@ -70,6 +71,13 @@ export default function Home() {
           </div>
           <Link href="/survival">START THE FOUR-MINUTE TOUR ↗</Link>
         </section>
+        <Data3DSection
+          variant="terrain"
+          eyebrow="MEASURED SURFACE / JEZERO DELTA"
+          title="The ground Perseverance actually drove."
+          body="NASA HiRISE and CTX orbital images draped over the Mars 2020 PLACES elevation model. The white line is the rover’s published localized path."
+          cta={{ href: '/explore?view=3d', label: 'OPEN IN 3D CONSOLE' }}
+        />
         <EarthEventsFeed />
         <footer className="landing-footer">
           <span>18°26′N&nbsp;&nbsp; 77°27′E</span>

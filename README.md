@@ -15,7 +15,7 @@ pnpm dev
 
 Open `http://localhost:3000`; Nest runs on port 4000. The local evidence assistant and PDF briefing work without a cloud model key. Cloud model credentials stay in the API environment and are used only after explicit opt-in. A browser-restricted Google Maps key optionally enables the Google shell; Leaflet with NASA Trek is the default Mars viewer.
 
-The homepage and dossier pages contain 3D visual studies. Those scenes are illustrations. The Explore console is the measured-data surface.
+The homepage and dossier hero scenes are illustrations. Below them, each page carries a different data-driven 3D section (`Data3DSection`): DEM terrain with HiRISE/CTX imagery (landing), DEM columns (Jezero), Earth–Mars true scale (survival), PLACES space-time cube (mission), JPL-element orbit scrubber (timeline), NASA landing-site globe (data), source stack (science), PLACES elevation pillars (targets), DEM slope field (hazards), route elevation curtain (briefing), and a 3D mission card (share). The architecture hero animates the real NASA source → Nest module → web dependency flow. Checks: `node apps/web/src/lib/geo.check.ts` and `node apps/web/src/lib/orbits.check.ts`.
 
 ## Published data and limits
 
@@ -24,6 +24,8 @@ The homepage and dossier pages contain 3D visual studies. Those scenes are illus
 | [Mars 2020 PLACES `best_interp.csv`](https://pds-geosciences.wustl.edu/m2020/urn-nasa-pds-mars2020_rover_places/data_localizations/best_interp.csv) | Rover track, sol scrubber, verified mission locations, classroom route | Interpolated published localization; no UTC observation date in the CSV and no live rover telemetry. |
 | [PLACES `m20_orbital_dem.img`](https://pds-geosciences.wustl.edu/m2020/urn-nasa-pds-mars2020_rover_places/data_maps/m20_orbital_dem.xml) | Coarse sampled elevation/slope, Risk Index, A* corridor | The app samples the 1 m source product into a ~118 m grid in Jezero. It cannot resolve local hazards. |
 | [NASA Mars Trek WMTS](https://trek.nasa.gov/tiles/apidoc/trekAPI.html?body=mars) | MOLA, Viking, and MOLA/HRSC image layers | Raster color and hillshade are context, not route measurements. |
+| [NASA Mars Trek Jezero orthomosaics](https://trek.nasa.gov/mars/) (HiRISE 25 cm, CTX 6 m) | Texture for the 3D terrain view and landing showcase, draped on the PLACES DEM | Resampled to ~10 m/px over a ~118 m DEM with vertical exaggeration; visual context only. |
+| [JPL approximate planet positions](https://ssd.jpl.nasa.gov/planets/approx_pos.html), [NSSDCA](https://nssdc.gsfc.nasa.gov/planetary/planets/marspage.html), [Planetary Fact Sheet](https://nssdc.gsfc.nasa.gov/planetary/factsheet/) | 3D orbit scrubber (timeline), NASA landing-site globe (data), Earth–Mars scale scene (survival) | Bundled constants; orbit geometry is approximate and not a trajectory. |
 | [NASA EONET v3](https://eonet.gsfc.nasa.gov/docs/v3) | Earth event map, source provenance, category museum, Earth assistant tool | Earth geometry never enters the Mars map or Risk Index. |
 | [NASA Perseverance mission](https://science.nasa.gov/mission/mars-2020-perseverance/) | Mission facts and local cited corpus | Mission context does not validate a user-drawn route. |
 
@@ -43,11 +45,13 @@ Approximate `data/jezero` points and watch polygons are **DEMO · NOT NASA PRODU
 
 1. Inspect NASA Trek layers and the PLACES track; scrub to a published sol.
 2. Load a PLACES route, draw a sketch, or run Classroom Mode. Classroom Mode forces cloud models off.
-3. Review the Risk Index components and DTM coverage. For two endpoints, request an A* suggested corridor.
+3. Review the Risk Index components, the DEM elevation/slope profile, and DTM coverage. The Evidence Cockpit compares waypoints with the PLACES rover track. Switch to **3D / DEM** to see the route draped on HiRISE/CTX imagery over the DEM and use **FLY ROUTE**. For two endpoints, request an A* suggested corridor.
 4. Ask the assistant, inspect citations, and generate a briefing or server PDF.
 5. Copy a `/route/share` link and download its 1200 × 630 mission card SVG.
 
-**PLAY STORY** in the tour strip advances through the twelve-stop narrative. Use the full spoken teleprompter in [docs/VIDEO_SCRIPT_4MIN.txt](docs/VIDEO_SCRIPT_4MIN.txt) (beat clock, click cues, backup lines). A short table version lives in [docs/VIDEO_SCRIPT.md](docs/VIDEO_SCRIPT.md). The tour uses a real EONET refresh where older versions showed simulated `/ops` activity.
+A narrated, subtitled 4:00 walkthrough is in [`docs/video/`](docs/video/NARRATION_4MIN.md).
+
+**PLAY STORY** in the tour strip advances through the eleven-stop narrative. Use the full spoken teleprompter in [docs/VIDEO_SCRIPT_4MIN.txt](docs/VIDEO_SCRIPT_4MIN.txt) (beat clock, click cues, backup lines). A short table version lives in [docs/VIDEO_SCRIPT.md](docs/VIDEO_SCRIPT.md). The tour uses a real EONET refresh where older versions showed simulated `/ops` activity.
 
 Assistant traces persist as the last 100 records in Postgres when `DATABASE_URL` is usable, or `data/traces/assistant.json` otherwise. EONET snapshots use a durable file/Postgres cache and expose upstream fetch time, content hash, and cache status in the Earth UI.
 
@@ -60,6 +64,7 @@ Assistant traces persist as the last 100 records in Postgres when `DATABASE_URL`
 | GET | `/places/perseverance?fromSol=&toSol=` | Downsampled published PLACES localizations |
 | GET | `/regions/jezero?demo=true` | Verified locations; optional DEMO seeds |
 | POST | `/routes/analyze` | Distance, DTM samples, coverage, Risk Index |
+| GET | `/routes/dtm-grid` | Sampled PLACES DEM grid for the 3D terrain view |
 | POST | `/routes/suggest` | Coarse DTM A* corridor for two endpoints |
 | POST | `/assistant/ask` | Cited local answer by default |
 | GET | `/assistant/traces/recent` | Durable recent trace records |

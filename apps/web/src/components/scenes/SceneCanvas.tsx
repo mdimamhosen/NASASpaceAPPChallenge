@@ -7,6 +7,7 @@ import type { Group } from 'three';
 import type { EarthScenePoint, SceneKind } from './SceneStage';
 import { eonetColor } from '@/lib/eonet-colors';
 import { JEZERO_CENTER } from '@mars-explorer/shared';
+import PipelineScene from './PipelineScene';
 
 const MARS = '#C45C26';
 const EARTH = '#3D9EBD';
@@ -14,7 +15,9 @@ const SUN = '#F4C542';
 const ARC = '#E8DCC8';
 const jezeroLatitude = JEZERO_CENTER.lat * Math.PI / 180;
 const jezeroLongitude = JEZERO_CENTER.lon * Math.PI / 180;
-const jezeroPin: [number, number, number] = [1.27 * Math.cos(jezeroLatitude) * Math.sin(jezeroLongitude), 1.27 * Math.sin(jezeroLatitude), 1.27 * Math.cos(jezeroLatitude) * Math.cos(jezeroLongitude)];
+// Matches three.js SphereGeometry UVs for the −180°…180° E equirectangular Viking texture (u = 0.5 at 0° E).
+const jezeroPhi = jezeroLongitude + Math.PI;
+const jezeroPin: [number, number, number] = [-1.27 * Math.cos(jezeroLatitude) * Math.cos(jezeroPhi), 1.27 * Math.sin(jezeroLatitude), 1.27 * Math.cos(jezeroLatitude) * Math.sin(jezeroPhi)];
 
 function SolarTransferScene() {
   const orbit = useRef<Group>(null);
@@ -323,66 +326,6 @@ function OpsHudScene() {
   );
 }
 
-const nodes: [number, number, number][] = [
-  [-1.0, 0.5, 0.15],
-  [0.85, 0.62, -0.08],
-  [0, -0.38, 0.55],
-  [0.55, -0.75, -0.45],
-];
-
-function ArchitectureOrbit() {
-  const group = useRef<Group>(null);
-  useFrame((_, delta) => {
-    if (group.current) group.current.rotation.y += delta * 0.04;
-  });
-  return (
-    <>
-      <color attach="background" args={['#0B0E14']} />
-      <ambientLight intensity={0.8} />
-      <directionalLight position={[2, 3, 4]} intensity={2} />
-      <group ref={group} scale={0.95}>
-        {nodes.map((point, i) => (
-          <group key={i} position={point}>
-            <mesh>
-              <icosahedronGeometry args={[i === 2 ? 0.26 : 0.2, 1]} />
-              <meshStandardMaterial
-                color={i === 2 ? MARS : '#b8bcc4'}
-                metalness={0.35}
-                roughness={0.45}
-                emissive={i === 2 ? '#3a1a0d' : '#111'}
-                emissiveIntensity={0.3}
-              />
-            </mesh>
-            <mesh rotation={[0, 0, Math.PI / 2]}>
-              <torusGeometry args={[0.32, 0.004, 4, 40]} />
-              <meshBasicMaterial color="#7a8290" />
-            </mesh>
-          </group>
-        ))}
-        {[
-          [0, 1],
-          [0, 2],
-          [1, 2],
-          [2, 3],
-        ].map(([a, b], i) => {
-          const start = new THREE.Vector3(...nodes[a]);
-          const end = new THREE.Vector3(...nodes[b]);
-          return (
-            <mesh
-              key={i}
-              position={start.clone().add(end).multiplyScalar(0.5)}
-              quaternion={new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), end.clone().sub(start).normalize())}
-            >
-              <cylinderGeometry args={[0.005, 0.005, start.distanceTo(end), 5]} />
-              <meshBasicMaterial color="#7a8290" />
-            </mesh>
-          );
-        })}
-      </group>
-    </>
-  );
-}
-
 export default function SceneCanvas({ kind, earthPoints = [] }: { kind: SceneKind; earthPoints?: EarthScenePoint[] }) {
   return (
     <Canvas
@@ -415,7 +358,7 @@ export default function SceneCanvas({ kind, earthPoints = [] }: { kind: SceneKin
         ) : kind === 'ops' ? (
           <OpsHudScene />
         ) : (
-          <ArchitectureOrbit />
+          <PipelineScene />
         )}
       </Suspense>
     </Canvas>

@@ -34,11 +34,13 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    ".next-video/types/**/*.ts",
     ".next/types/**/*.ts",
     "next-env.d.ts",
-    ".next-video/types/**/*.ts"
+    ".next-verify/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "**/*.check.ts"
   ]
 }
