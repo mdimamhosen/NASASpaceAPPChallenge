@@ -2,7 +2,7 @@
 import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
 
-export type SceneKind = 'solar' | 'mars' | 'mars-hero' | 'terrain' | 'layers' | 'sample' | 'earth' | 'ops' | 'architecture';
+export type SceneKind = 'solar' | 'mars' | 'mars-hero' | 'terrain' | 'layers' | 'sample' | 'story' | 'earth' | 'ops' | 'architecture';
 export type EarthScenePoint = { lat: number; lon: number; categoryId: string };
 const SceneCanvas = dynamic(() => import('./SceneCanvas'), { ssr: false });
 const titles: Record<SceneKind, string> = {
@@ -12,6 +12,7 @@ const titles: Record<SceneKind, string> = {
   terrain: 'MARS SURFACE / ILLUSTRATIVE TERRAIN STUDY · NOT NAVIGATION DATA',
   layers: 'MARS DATA / ILLUSTRATIVE LAYER STACK · NOT A MEASURED TERRAIN MODEL',
   sample: 'MARS GEOLOGY / ILLUSTRATIVE ROCK FORM · NOT A COLLECTED SAMPLE',
+  story: 'STORY / TWELVE-STOP EDITORIAL PATH · NOT A FLIGHT TRAJECTORY',
   earth: 'EARTH / NASA BLUE MARBLE REFERENCE',
   ops: 'SIMULATED / RELAY VIGNETTE',
   architecture: 'WEB / API / SHARED / DATA',
@@ -94,7 +95,7 @@ export default function SceneStage({
       </div>
       {showCanvas && <SceneCanvas kind={kind} earthPoints={earthPoints} />}
       <span className="scene-caption">{kind === 'earth' && earthPoints.length ? 'EARTH / NASA BLUE MARBLE · LIVE EONET POINTS' : titles[kind]}</span>
-      {(kind === 'mars' || kind === 'mars-hero') && (
+      {(kind === 'mars' || kind === 'mars-hero' || kind === 'story') && (
         <a className="scene-credit" href="https://science.nasa.gov/3d-resources/mars/" target="_blank" rel="noreferrer">
           TEXTURE / NASA JPL-CALTECH ↗
         </a>

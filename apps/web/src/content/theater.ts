@@ -132,7 +132,7 @@ export const dossiers: Record<string, Dossier> = {
     ], next: '/story', nextLabel: 'THE FOUR-MINUTE STORY',
   },
   story: {
-    eyebrow: 'RECORDING SCRIPT / FOUR MINUTES', title: 'A field question, carried carefully.', scene: 'solar',
+    eyebrow: 'RECORDING SCRIPT / FOUR MINUTES', title: 'A field question, carried carefully.', scene: 'story',
     deck: 'The spoken path follows the product: challenge, Jezero, Earth boundary, Marswalk, evidence trace, simulated operations, briefing, and limitations.',
     stats: [['LENGTH', '04:00'], ['STOPS', '12'], ['MODEL CALLS', 'ZERO']],
     quote: 'We use accessible NASA data to ask a better field question and show exactly where the answer comes from.',

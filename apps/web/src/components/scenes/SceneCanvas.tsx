@@ -1,6 +1,6 @@
 'use client';
 import { Suspense, useMemo, useRef } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import type { Group } from 'three';
@@ -105,6 +105,42 @@ function MarsGlobeScene({ landing = false }: { landing?: boolean }) {
       </mesh>}
     </>
   );
+}
+
+const storyStops = Array.from({ length: 12 }, (_, index) => {
+  const angle = -Math.PI / 2 + index * Math.PI / 6;
+  return [1.46 * Math.cos(angle), 1.46 * Math.sin(angle), 0] as [number, number, number];
+});
+
+function StoryPathScene() {
+  const planet = useRef<Group>(null);
+  const path = useRef<Group>(null);
+  const compact = useThree(({ size }) => size.width < 650);
+  const texture = useTexture('/textures/mars-nasa.jpg');
+  texture.colorSpace = THREE.SRGBColorSpace;
+  useFrame((_, delta) => {
+    if (planet.current) planet.current.rotation.y += delta * 0.035;
+    if (path.current) path.current.rotation.z += delta * 0.008;
+  });
+  return <>
+    <color attach="background" args={['#0B0E14']} />
+    <ambientLight intensity={0.5} />
+    <directionalLight position={[-2.5, 3, 4]} intensity={2.3} color="#fff0dd" />
+    <directionalLight position={[2, -1, -2]} intensity={0.7} color="#b97954" />
+    <group position={compact ? [0, 0, 0] : [1.05, 0, 0]} scale={compact ? 0.82 : 1}>
+    <group ref={planet} rotation={[0.16, -0.7, 0]}>
+      <mesh><sphereGeometry args={[0.96, 64, 64]} /><meshStandardMaterial map={texture} roughness={0.95} metalness={0.01} /></mesh>
+    </group>
+    <group ref={path} rotation={[0.24, -0.22, 0]}>
+      <mesh><torusGeometry args={[1.46, 0.006, 5, 144]} /><meshBasicMaterial color="#c9b4a5" transparent opacity={0.62} /></mesh>
+      <mesh rotation={[0.42, 0.26, -0.14]}><torusGeometry args={[1.68, 0.002, 4, 144]} /><meshBasicMaterial color="#746f70" transparent opacity={0.42} /></mesh>
+      {storyStops.map((position, index) => <group key={index} position={position}>
+        <mesh><sphereGeometry args={[index % 3 === 0 ? 0.05 : 0.026, 12, 12]} /><meshBasicMaterial color={index % 3 === 0 ? '#e2a071' : '#eee0d3'} /></mesh>
+        {index % 3 === 0 && <mesh><ringGeometry args={[0.085, 0.092, 24]} /><meshBasicMaterial color="#e2a071" side={THREE.DoubleSide} transparent opacity={0.68} /></mesh>}
+      </group>)}
+    </group>
+    </group>
+  </>;
 }
 
 function terrainHeight(x: number, z: number) {
@@ -352,7 +388,7 @@ export default function SceneCanvas({ kind, earthPoints = [] }: { kind: SceneKin
     <Canvas
       className="scene-canvas"
       dpr={[1, 1.5]}
-      camera={{ position: kind === 'terrain' || kind === 'layers' ? [0, 2.6, 5.5] : [0, 0.15, kind === 'mars' || kind === 'mars-hero' ? 4.8 : 4.2], fov: 40, near: 0.1, far: 40 }}
+      camera={{ position: kind === 'terrain' || kind === 'layers' ? [0, 2.6, 5.5] : [0, 0.15, kind === 'mars' || kind === 'mars-hero' || kind === 'story' ? 4.8 : 4.2], fov: 40, near: 0.1, far: 40 }}
       gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
       style={{ width: '100%', height: '100%', display: 'block' }}
       onCreated={({ gl }) => {
@@ -366,6 +402,8 @@ export default function SceneCanvas({ kind, earthPoints = [] }: { kind: SceneKin
           <SolarTransferScene />
         ) : kind === 'mars' || kind === 'mars-hero' ? (
           <MarsGlobeScene landing={kind === 'mars-hero'} />
+        ) : kind === 'story' ? (
+          <StoryPathScene />
         ) : kind === 'terrain' ? (
           <TerrainStudyScene />
         ) : kind === 'layers' ? (

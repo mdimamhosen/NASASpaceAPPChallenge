@@ -12,9 +12,10 @@ import { CTANext, QuoteBand, SectionBlock, SourceRegister, StatStrip } from './T
 export default function TheaterPage({ page, active }: { page: string; active?: string }) {
   const data = dossiers[page];
   if (!data) return null;
+  const cinematic = page === 'survival' || page === 'jezero' || page === 'story';
   const sourceIds = [...new Set(data.sections.flatMap((section) => section.sourceIds ?? []))] as SourceId[];
   return <main className="theater-page dossier-page"><MissionNav active={active ?? `/${page}`} />
-    <header className={`dossier-hero ${page === 'survival' || page === 'jezero' ? 'dossier-hero-cinematic' : ''}`}><div className="dossier-hero-copy"><p className="eyebrow">{data.eyebrow}</p><h1>{data.title}</h1><p>{data.deck}</p><Link href="#contents" className="hero-scroll">READ THE DOSSIER <span>↓</span></Link></div><SceneStage kind={data.scene} className="dossier-scene" permanent={page === 'survival' || page === 'jezero'} /></header>
+    <header className={`dossier-hero ${cinematic ? 'dossier-hero-cinematic' : ''} ${page === 'story' ? 'dossier-hero-story' : ''}`}><div className="dossier-hero-copy"><p className="eyebrow">{data.eyebrow}</p><h1>{data.title}</h1><p>{data.deck}</p><Link href="#contents" className="hero-scroll">READ THE DOSSIER <span>↓</span></Link></div><SceneStage kind={data.scene} className="dossier-scene" permanent={cinematic} /></header>
     <StatStrip stats={data.stats} />
     {page === 'jezero' && <RegionFactsWidget />}
     {page === 'data' && <LayerCatalogWidget />}
