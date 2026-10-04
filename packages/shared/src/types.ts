@@ -1,7 +1,7 @@
 export type LatLon = { lat: number; lon: number };
-export type LayerId = 'imagery' | 'viking' | 'hazards' | 'pois' | 'hirise';
+export type LayerId = 'imagery' | 'viking' | 'hrsc-color' | 'hrsc-shade' | 'hazards' | 'pois' | 'hirise';
 export type MapLayer = { id: LayerId; name: string; description: string; source: string; trekLayerId?: string; enabledByDefault: boolean };
-export type POI = { id: string; name: string; lat: number; lon: number; category: 'geology' | 'mission' | 'hazard' | 'other'; summary: string; sourceUrl: string; mission?: string };
+export type POI = { id: string; name: string; lat: number; lon: number; category: 'geology' | 'mission' | 'hazard' | 'other'; summary: string; sourceUrl: string; mission?: string; sourceKind?: 'NASA_PLACES' | 'DEMO' };
 export type RouteWaypoint = LatLon & { id: string };
 export type TerrainMethod = 'heuristic' | 'dtm-sample' | 'postgis-jezero';
 export type PlacesPoint = LatLon & { sol: number; elevationM?: number; sclk?: number };

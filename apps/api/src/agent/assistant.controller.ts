@@ -34,6 +34,9 @@ class AskDto {
 export class AssistantController {
   constructor(private readonly assistant: AssistantService) {}
 
+  @Get('traces/recent')
+  recentTraces() { return this.assistant.getRecentTraces(); }
+
   @Get('traces')
   traces() { return this.assistant.getTrace(); }
 

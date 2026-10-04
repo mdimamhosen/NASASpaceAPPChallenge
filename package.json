@@ -3,9 +3,10 @@
   "private": true,
   "packageManager": "pnpm@9.15.9",
   "scripts": {
-  "dev": "pnpm --filter @mars-explorer/shared build && pnpm --parallel --filter @mars-explorer/web --filter @mars-explorer/api dev",
+    "dev": "pnpm --filter @mars-explorer/shared build && pnpm --parallel --filter @mars-explorer/web --filter @mars-explorer/api dev",
     "build": "pnpm --filter @mars-explorer/shared build && pnpm --filter @mars-explorer/api build && pnpm --filter @mars-explorer/web build",
-    "lint": "pnpm --filter @mars-explorer/web lint && pnpm --filter @mars-explorer/api lint"
+    "lint": "pnpm --filter @mars-explorer/web lint && pnpm --filter @mars-explorer/api lint",
+    "refresh:nasa": "python3 scripts/refresh-nasa-archives.py"
   },
   "devDependencies": { "typescript": "^5.7.3" }
 }

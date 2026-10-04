@@ -6,6 +6,9 @@ import { EonetService } from './eonet.service';
 export class EonetController {
   constructor(private readonly eonet: EonetService) {}
 
+  @Get('provenance')
+  provenance(@Query() query: EonetQueryDto) { return this.eonet.getProvenance(query); }
+
   @Get('events/geojson')
   eventsGeoJson(@Query() query: EonetQueryDto) {
     return this.eonet.getEventsGeoJson(query);

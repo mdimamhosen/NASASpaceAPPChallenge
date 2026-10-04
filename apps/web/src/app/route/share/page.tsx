@@ -1,21 +1,25 @@
 'use client';
 import LongFormExtras from '@/components/LongFormExtras';
-
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
 import MissionNav from '@/components/MissionNav';
 
+type Point={lat:number;lon:number};
+function distance(a:Point,b:Point){const rad=Math.PI/180,dLat=(b.lat-a.lat)*rad,dLon=(b.lon-a.lon)*rad,h=Math.sin(dLat/2)**2+Math.cos(a.lat*rad)*Math.cos(b.lat*rad)*Math.sin(dLon/2)**2;return 2*3390*Math.asin(Math.sqrt(h));}
+function cardSvg(points:Point[],km:number){
+  const minLat=Math.min(...points.map(p=>p.lat)),maxLat=Math.max(...points.map(p=>p.lat)),minLon=Math.min(...points.map(p=>p.lon)),maxLon=Math.max(...points.map(p=>p.lon));
+  const x=(lon:number)=>630+(lon-minLon)/(maxLon-minLon||1)*450;
+  const y=(lat:number)=>510-(lat-minLat)/(maxLat-minLat||1)*350;
+  const line=points.map((p,i)=>`${i?'L':'M'}${x(p.lon).toFixed(1)},${y(p.lat).toFixed(1)}`).join(' ');
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630"><rect width="1200" height="630" fill="#111619"/><path d="M40 80H1160M40 550H1160" stroke="#667178"/><text x="52" y="55" fill="#e8e8e8" font-family="Arial" font-size="18" letter-spacing="4">MARS EXPLORER / FIELD SYSTEMS</text><text x="52" y="185" fill="#ffffff" font-family="Arial" font-size="62" font-weight="bold">JEZERO</text><text x="52" y="258" fill="#ffffff" font-family="Arial" font-size="62" font-weight="bold">MARSWALK</text><text x="52" y="360" fill="#c7d0d4" font-family="Arial" font-size="25">${km.toFixed(2)} KM / ${points.length} WAYPOINTS</text><text x="52" y="421" fill="#c7d0d4" font-family="Arial" font-size="16">MARS COORDINATES / SHARED ROUTE SKETCH</text><text x="52" y="523" fill="#ffffff" font-family="Arial" font-size="16">NON-CERTIFYING · VERIFY ALL SOURCE DATA</text><rect x="595" y="122" width="530" height="400" fill="#1c2529" stroke="#59666c"/><path d="${line}" fill="none" stroke="#f0f0ed" stroke-width="5"/>${points.map((p,i)=>`<circle cx="${x(p.lon).toFixed(1)}" cy="${y(p.lat).toFixed(1)}" r="9" fill="#111619" stroke="#fff" stroke-width="3"/><text x="${(x(p.lon)+14).toFixed(1)}" y="${(y(p.lat)-10).toFixed(1)}" fill="#fff" font-family="Arial" font-size="16">${i+1}</text>`).join('')}</svg>`;
+}
 export default function SharedRoutePage() {
-  const [points, setPoints] = useState<Array<{ lat: number; lon: number }> | null>(null);
-  useEffect(() => {
-    try {
-      const raw = new URLSearchParams(window.location.search).get('wp');
-      const decoded = raw ? JSON.parse(raw) as Array<{ lat: number; lon: number }> : [];
-      if (decoded.length >= 2 && decoded.length <= 24 && decoded.every((point) => Number.isFinite(point.lat) && Number.isFinite(point.lon))) setPoints(decoded);
-      else setPoints([]);
-    } catch { setPoints([]); }
-  }, []);
-  const query = points?.length ? `?wp=${encodeURIComponent(JSON.stringify(points))}` : '';
-  return <main className="theater-page"><MissionNav active="/route/share" /><section className="theater-hero"><div><p className="eyebrow">ROUTE HANDOFF / LOCAL GEOMETRY</p><h1>Shared Marswalk route</h1><p>Route links contain waypoint coordinates only. They do not certify terrain, validate safety, or represent a rover position.</p></div><aside><span>DECODE STATUS</span><strong>{points === null ? 'READING…' : points.length ? `${points.length} POINTS` : 'NO VALID ROUTE'}</strong><small>LOCAL URL PAYLOAD</small></aside></section>{points?.length ? <section className="theater-section"><div className="theater-section-head"><span>WAYPOINT REGISTER</span><span>{String(points.length).padStart(2, '0')} POINTS</span></div><div className="theater-records">{points.map((point, index) => <article key={`${point.lat}:${point.lon}`}><span className="record-index">{String(index + 1).padStart(2, '0')}</span><div><small>APPROXIMATE SURFACE COORDINATE</small><h2>{point.lat.toFixed(4)}°, {point.lon.toFixed(4)}°</h2><p>Shared route vertex. Not a validated rover stop or certified navigation waypoint.</p></div></article>)}</div><Link className="stage-link" href={`/explore${query}`}>OPEN ROUTE IN CONSOLE <ArrowUpRight size={14} /></Link></section> : points !== null && <section className="theater-section"><p className="compare-note">This URL does not contain a valid route. Open Explore, load or draw a route, then copy its share link.</p><Link className="stage-link" href="/explore">OPEN CONSOLE <ArrowUpRight size={14} /></Link></section>}<LongFormExtras page="share" /></main>;
+  const [points,setPoints]=useState<Point[]|null>(null);
+  useEffect(()=>{try{const raw=new URLSearchParams(window.location.search).get('wp');const decoded=raw?JSON.parse(raw) as Point[]:[];setPoints(decoded.length>=2&&decoded.length<=24&&decoded.every(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lon)&&p.lat>=-90&&p.lat<=90&&p.lon>=-180&&p.lon<=180)?decoded:[]);}catch{setPoints([]);}},[]);
+  const km=useMemo(()=>points?.slice(1).reduce((sum,p,i)=>sum+distance(points[i],p),0)??0,[points]);
+  const svg=points?.length?cardSvg(points,km):'';
+  const query=points?.length?`?wp=${encodeURIComponent(JSON.stringify(points))}`:'';
+  function download(){const url=URL.createObjectURL(new Blob([svg],{type:'image/svg+xml'}));const a=document.createElement('a');a.href=url;a.download='jezero-marswalk-card.svg';a.click();URL.revokeObjectURL(url);}
+  return <main className="theater-page"><MissionNav active="/route/share"/><section className="theater-hero"><div><p className="eyebrow">ROUTE HANDOFF / MARS GEOMETRY</p><h1>Shared Marswalk route</h1><p>This link contains waypoint coordinates. Its mission card is a shareable graphic of the same geometry; neither certifies the terrain.</p></div><aside><span>ROUTE STATUS</span><strong>{points===null?'READING…':points.length?`${points.length} POINTS`:'NO VALID ROUTE'}</strong><small>{points?.length?`${km.toFixed(2)} KM · MARS SPHERE`:'LOCAL URL PAYLOAD'}</small></aside></section>{points?.length?<section className="theater-section"><div className="theater-section-head"><span>MISSION CARD / 1200 × 630 SVG</span><span>NON-CERTIFYING</span></div><div className="mission-card-preview" dangerouslySetInnerHTML={{__html:svg}}/><div className="route-actions"><button onClick={download}>DOWNLOAD CARD SVG</button><Link href={`/explore${query}`}>OPEN IN CONSOLE ↗</Link></div><div className="theater-records">{points.map((p,i)=><article key={`${i}-${p.lat}`}><span className="record-index">{String(i+1).padStart(2,'0')}</span><div><small>SHARED ROUTE VERTEX</small><h2>{p.lat.toFixed(5)}°, {p.lon.toFixed(5)}°</h2><p>Not a validated rover stop or certified waypoint.</p></div></article>)}</div></section>:points!==null&&<section className="theater-section"><p className="compare-note">This URL has no valid route. Open Explore, draw or load one, then copy a share link.</p><Link className="stage-link" href="/explore">OPEN CONSOLE <ArrowUpRight size={14}/></Link></section>}<LongFormExtras page="share"/></main>;
 }

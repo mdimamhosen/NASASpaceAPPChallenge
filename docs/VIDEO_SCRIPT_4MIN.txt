@@ -1,0 +1,397 @@
+================================================================================
+MARS EXPLORER — FINAL FOUR-MINUTE VIDEO SCRIPT
+================================================================================
+Product:     Mars Explorer | Surface Intelligence
+Audience:    NASA Space Apps judges / demo viewers
+Length:      Exactly ~4:00 (spoken + UI actions)
+Resolution:  1440 × 900 (or 1920 × 1080; keep UI readable)
+Audio:       Clear VO, no music under science claims (soft bed OK under title)
+Cloud AI:    OFF (Classroom Mode / local evidence only)
+Honesty:     Every Mars claim cites NASA Trek, PLACES, or PDS DEM.
+             Earth claims cite NASA EONET only. Never mix geometries.
+             Risk Index / A* = NON-CERTIFYING research aids.
+Tour strip:  Use PLAY STORY for auto-advance, or click stops manually.
+             Pause Story Mode while you click inside Explore.
+
+Optional prep (30–60 s before record):
+  - pnpm dev  (web :3000, API :4000)
+  - pnpm refresh:nasa   (optional if archives are stale)
+  - Hard-refresh browser; hide bookmarks bar
+  - Cursor large / highlight clicks if available
+  - Open /explore once so Trek tiles and PLACES warm the cache
+
+================================================================================
+BEAT CLOCK (twelve stops)
+================================================================================
+  0:00–0:25   LANDING      /
+  0:25–0:38   SURVIVAL     /survival
+  0:38–0:50   JEZERO       /jezero
+  0:50–1:15   EONET        /eonet
+  1:15–2:25   EXPLORE      /explore          ← longest beat
+  2:25–2:40   TRACES       /traces
+  2:40–2:55   EONET LIVE   /eonet?tour=refresh
+  2:55–3:15   BRIEF        /briefing/preview
+  3:15–3:27   TARGETS      /targets
+  3:27–3:40   HAZARDS      /hazards
+  3:40–3:53   ARCH         /architecture
+  3:53–4:00   STORY        /story   (+ flash /science if time)
+
+NOTE: /ops exists but is SIMULATED. Do NOT use it in this real-data video.
+
+================================================================================
+FULL SPOKEN SCRIPT (read aloud)
+================================================================================
+
+
+────────────────────────────────────────────────────────────────────────────────
+[0:00 – 0:25]  LANDING  —  http://localhost:3000/
+ON SCREEN: Hero with Mars visual / brand. Scroll briefly to Earth events strip
+           if it is visible without leaving the page.
+────────────────────────────────────────────────────────────────────────────────
+
+SPOKEN:
+
+“This is Mars Explorer — a surface intelligence console for planning a
+hypothetical Marswalk at Jezero Crater.
+
+We join real NASA Mars Trek imagery with published Mars 2020 Perseverance
+localizations from the NASA PDS PLACES archive, a coarse orbital elevation
+grid from the same NASA product family, and a cited local mission assistant.
+
+Below the hero, Earth natural events come from NASA EONET. That feed is
+Earth-only. Those coordinates never enter the Mars map.”
+
+CLICK / SHOW:
+  - Hold on brand + hero for ~8 s
+  - Optional: scroll to Earth events strip; point at EARTH / EONET label
+  - Click DEMO TOUR or navigate to /survival
+
+
+────────────────────────────────────────────────────────────────────────────────
+[0:25 – 0:38]  SURVIVAL  —  /survival
+ON SCREEN: Challenge dossier hero (cinematic 3D / glow). Do not linger on art.
+────────────────────────────────────────────────────────────────────────────────
+
+SPOKEN:
+
+“The challenge is simple: every field decision needs evidence.
+
+These theater pages set the science question. They are storytelling frames.
+The measured NASA products — Trek tiles, PLACES positions, and the orbital
+DEM samples — show up in the Explore console.”
+
+CLICK / SHOW:
+  - Pan title + first paragraph
+  - Advance to Jezero
+
+
+────────────────────────────────────────────────────────────────────────────────
+[0:38 – 0:50]  JEZERO  —  /jezero
+ON SCREEN: Jezero dossier; textured Mars globe if present.
+────────────────────────────────────────────────────────────────────────────────
+
+SPOKEN:
+
+“Jezero is an ancient lake and delta site — the Perseverance landing region.
+
+We treat it as a research setting, not a flight-planning tool. Next we prove
+the planetary boundary: Earth events stay on Earth.”
+
+CLICK / SHOW:
+  - Brief hold on title / Mars globe
+  - Go to /eonet
+
+
+────────────────────────────────────────────────────────────────────────────────
+[0:50 – 1:15]  EONET  —  /eonet
+ON SCREEN: Colored Earth map + event list. Open one event modal. Show live chip
+           (UPDATED · … ago), cache status if shown, category legend.
+────────────────────────────────────────────────────────────────────────────────
+
+SPOKEN:
+
+“This is NASA EONET version three — live Earth natural events.
+
+You can search and filter by category. Opening an event shows location context
+and official source links inside our detail modal — not a raw dump of tabs.
+
+Watch the update chip: the API caches full EONET payloads so a flaky mobile
+network still serves last-good NASA data until the content changes.
+
+Critical rule for judges: no EONET geometry is ever plotted on Mars Trek.”
+
+CLICK / SHOW:
+  - Point at live / cache provenance
+  - Click one wildfire or storm → modal → sources
+  - Close modal → navigate to /explore
+
+
+────────────────────────────────────────────────────────────────────────────────
+[1:15 – 2:25]  EXPLORE  —  /explore   ★ CORE DEMO (≈70 seconds)
+ON SCREEN: NASA Trek basemap, PLACES track, Evidence Cockpit, Risk Index.
+ACTIONS (pause Story Mode here):
+  1) Confirm SHOW DEMO SEEDS is OFF
+  2) Toggle SHOW PUBLISHED TRACK ON
+  3) Scrub sol slider; FOCUS SELECTED SOL ON MAP
+  4) Load published PLACES route / Classroom Mode (cloud models stay OFF)
+  5) Point at Evidence Cockpit: distance, risk, DTM coverage %, method badge
+  6) Expand one Risk Index component source line
+  7) If two endpoints ready: request A* suggested corridor
+  8) Ask one short local question; open one citation
+────────────────────────────────────────────────────────────────────────────────
+
+SPOKEN:
+
+“Here is the Mars console.
+
+The basemap is NASA Mars Trek — orbital mosaics and hillshade served as tiles.
+This is real NASA imagery context, not a fake Mars Google layer.
+
+Along the surface you see the Perseverance track from NASA PDS PLACES —
+published interpolated rover localizations by sol. Scrub the sol. Focus the
+map. The CSV gives sol and spacecraft clock; we do not invent a UTC date.
+
+Demo seed markers stay off. When they are on, they are labeled DEMO — not a
+NASA product. They do not drive the elevation score.
+
+Load a published localization route — or Classroom Mode, which forces the
+local evidence path and keeps cloud models off.
+
+Now the Evidence Cockpit. Distance uses a Mars-radius great-circle model.
+Where the route sits inside our sampled NASA orbital DEM grid, we report
+DTM-SAMPLE elevation and slope. Outside that grid we fall back to HEURISTIC.
+Either way the Traverse Risk Index is NON-CERTIFYING — research weights, not
+EVA safety.
+
+Ask for a suggested corridor: A-star on that coarse DEM grid. Suggestion only.
+Ask the assistant a Jezero science question. Answers cite local NASA-linked
+notes. Open a citation.”
+
+CLICK / SHOW:
+  - Slow sol scrub (~5 s)
+  - Evidence Cockpit close-up (~8 s)
+  - Risk component list (~5 s)
+  - Brief A* path flash if available
+  - One assistant answer + one citation click
+  - Then /traces
+
+
+────────────────────────────────────────────────────────────────────────────────
+[2:25 – 2:40]  TRACES  —  /traces
+ON SCREEN: Deterministic step log / durable traces.
+────────────────────────────────────────────────────────────────────────────────
+
+SPOKEN:
+
+“Traces show the deterministic pipeline for the last asks — retrieve, grade,
+assemble — so judges can inspect what the system actually did.
+
+Recent traces persist to Postgres when a database is available, or to a local
+file. This is process transparency, not a full observability product.”
+
+CLICK / SHOW:
+  - Scroll one full trace
+  - Jump to /eonet?tour=refresh
+
+
+────────────────────────────────────────────────────────────────────────────────
+[2:40 – 2:55]  EONET LIVE  —  /eonet?tour=refresh
+ON SCREEN: Earth feed refresh. Point at UPDATED time changing or cache hash.
+────────────────────────────────────────────────────────────────────────────────
+
+SPOKEN:
+
+“We return to the real Earth feed — not simulated rover operations.
+
+If you open Ops elsewhere, it is labeled SIMULATED and is outside this story.
+Here the activity is NASA EONET, refreshed and source-linked.”
+
+CLICK / SHOW:
+  - Trigger refresh / wait for UPDATED chip
+  - Go to /briefing/preview
+
+
+────────────────────────────────────────────────────────────────────────────────
+[2:55 – 3:15]  BRIEF  —  /briefing/preview
+ON SCREEN: Briefing facts + Traverse Risk Index chapter. Click DOWNLOAD SERVER PDF.
+           Show PDF first page if the OS opens it (optional).
+────────────────────────────────────────────────────────────────────────────────
+
+SPOKEN:
+
+“The mission briefing is assembled from the route analysis and cited notes.
+
+The server PDF includes every Traverse Risk Index component and its source
+string — so a judge can download the same honesty you see on screen.
+
+Distance, waypoints, risk total, method badge — all visible before export.”
+
+CLICK / SHOW:
+  - Highlight RISK INDEX block
+  - Click DOWNLOAD SERVER PDF
+  - Advance to /targets
+
+
+────────────────────────────────────────────────────────────────────────────────
+[3:15 – 3:27]  TARGETS  —  /targets
+ON SCREEN: Toggle SHOW DEMO (or catalog demo switch) ON briefly, then mention OFF.
+────────────────────────────────────────────────────────────────────────────────
+
+SPOKEN:
+
+“Targets worth a closer look.
+
+By default you see verified NASA PLACES localization markers. Optional DEMO
+science points are approximate local annotations. Switch them on only to show
+the label: DEMO — NOT NASA PRODUCT.”
+
+CLICK / SHOW:
+  - Toggle demo on → point at label → leave on or off as you prefer
+  - Go to /hazards
+
+
+────────────────────────────────────────────────────────────────────────────────
+[3:27 – 3:40]  HAZARDS  —  /hazards
+ON SCREEN: Watch zones with DEMO disclaimer.
+────────────────────────────────────────────────────────────────────────────────
+
+SPOKEN:
+
+“Watch zones are illustrative polygons for teaching route questions.
+
+They are not certified hazards, and they do not drive the NASA DEM risk score.
+The score samples the published orbital elevation product — with clear limits.”
+
+CLICK / SHOW:
+  - One zone row / map hint if present
+  - Go to /architecture
+
+
+────────────────────────────────────────────────────────────────────────────────
+[3:40 – 3:53]  ARCHITECTURE  —  /architecture
+ON SCREEN: Web / API / shared / data honesty board.
+────────────────────────────────────────────────────────────────────────────────
+
+SPOKEN:
+
+“Architecture is the evidence boundary.
+
+Browser owns Trek pixels. Nest owns route math, PLACES and DEM reads, EONET
+proxy, and briefings. Shared types keep the contract honest. No secret claims
+about live rover telemetry.”
+
+CLICK / SHOW:
+  - Pan flow grid
+  - Go to /story (and /science if you have ~5 s)
+
+
+────────────────────────────────────────────────────────────────────────────────
+[3:53 – 4:00]  STORY (+ SCIENCE flash)  —  /story   then optional /science
+ON SCREEN: Closing narrative; if time, open /science product register.
+────────────────────────────────────────────────────────────────────────────────
+
+SPOKEN:
+
+“Mars Explorer is research storytelling with inspectable NASA sources —
+Trek imagery, PDS PLACES localizations, a coarse NASA orbital DEM sample,
+and Earth-only EONET.
+
+Every route conclusion stays non-certifying. Thank you.”
+
+CLICK / SHOW:
+  - Hold story title
+  - Optional hard cut to /science “Published product register” for 2–3 s
+  - End card: MARS EXPLORER · NASA Space Apps · NOT FOR OPERATIONAL NAVIGATION
+
+
+================================================================================
+BACKUP LINES (if a screen is slow)
+================================================================================
+- Trek tiles spinning: “While Trek loads from NASA, the PLACES track and
+  Evidence Cockpit still show published localization and method badges.”
+- EONET 503: “We are serving the durable NASA EONET snapshot from cache —
+  same Earth-only rule.”
+- DEM uncovered route: “Outside the sampled grid the badge returns to
+  HEURISTIC — still non-certifying, and we say so.”
+- No Google Maps key: “Earth map falls back to OpenStreetMap tiles; events
+  remain NASA EONET.”
+
+
+================================================================================
+WHAT NOT TO SAY
+================================================================================
+- Do not say “live rover telemetry,” “mission control,” or “certified safe.”
+- Do not say EONET events are on Mars.
+- Do not present DEMO seeds as NASA products.
+- Do not present /ops WebSocket ticks as real.
+
+
+================================================================================
+ON-SCREEN SUPER / LOWER-THIRD SUGGESTIONS
+================================================================================
+  0:00   MARS EXPLORER · JEZERO RESEARCH CONSOLE
+  0:50   EARTH ONLY · NASA EONET V3
+  1:15   NASA TREK + PDS PLACES + ORBITAL DEM
+  1:45   TRAVERSE RISK INDEX · NON-CERTIFYING
+  2:40   REAL EARTH FEED · NOT SIMULATED OPS
+  3:15   DEMO OVERLAYS · OFF BY DEFAULT
+  3:53   SOURCES INSPECTABLE · RESEARCH AID
+
+
+================================================================================
+POST-RECORD CHECKLIST
+================================================================================
+[ ] Cloud model toggle never shown as ON
+[ ] DEMO seeds explained as DEMO
+[ ] EONET labeled EARTH
+[ ] Risk Index said NON-CERTIFYING at least once
+[ ] PDF download visible or mentioned
+[ ] /ops not presented as real data
+[ ] Closing line includes “research” / “not operational navigation”
+
+
+================================================================================
+WORD-COUNT GUIDE (≈150 wpm → ~600 words for 4:00)
+================================================================================
+This script’s main spoken track is written for ~580–620 words including short
+pauses for clicks. If you run long in Explore, trim the Survival/Jezero beats
+by one sentence each. If Explore is fast, add one sentence reading a single
+Risk Index component source URL aloud.
+
+
+================================================================================
+QUICK TELEPROMPTER (compressed — one page)
+================================================================================
+
+0:00  Mars Explorer: Jezero Marswalk console. NASA Trek + PDS PLACES + DEM
+      samples + cited assistant. Earth strip is NASA EONET — Earth only.
+
+0:25  Challenge: field decisions need evidence. Theater sets the question;
+      measured data is in Explore.
+
+0:38  Jezero = ancient lake/delta setting. Research aid, not flight software.
+
+0:50  EONET v3: search, modal sources, cache provenance. No Earth points on Mars.
+
+1:15  Explore: Trek basemap. PLACES sol scrub. Demo seeds OFF. Classroom/local
+      ask. Evidence Cockpit. DTM-SAMPLE or HEURISTIC. Risk Index non-certifying.
+      A* suggestion only. Open a citation.
+
+2:25  Traces: durable pipeline log.
+
+2:40  Back to real EONET refresh — not simulated ops.
+
+2:55  Briefing + server PDF with Risk Index components and sources.
+
+3:15  Targets: PLACES verified; DEMO labeled if shown.
+
+3:27  Hazards: illustrative; not in DEM score.
+
+3:40  Architecture: honest boundaries — no fake telemetry.
+
+3:53  Close: inspectable NASA sources. Research storytelling. Thank you.
+
+
+================================================================================
+END OF SCRIPT
+================================================================================

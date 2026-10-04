@@ -1,8 +1,9 @@
 'use client';
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { EonetProvenance } from '@mars-explorer/shared';
 import type { EarthEventDetail, EarthEventSummary } from '@/lib/earth-types';
-import { getEarthEvent, getEarthEventSummaries, getEonetCategories, getEonetGeoJson } from '@/lib/api';
+import { getEarthEvent, getEarthEventSummaries, getEonetCategories, getEonetGeoJson, getEonetProvenance } from '@/lib/api';
 import { eonetColor } from '@/lib/eonet-colors';
 import DetailModal, { type DetailSource } from './ui/DetailModal';
 
@@ -14,8 +15,10 @@ function earthPoint(lat: number, lon: number) { return `${Math.abs(lat).toFixed(
 
 export default function EarthEventsExplorer({ mode = 'home' }: { mode?: 'home' | 'eonet' | 'analog' }) {
   const [events, setEvents] = useState<EarthEventSummary[]>([]);
+  const [provenance, setProvenance] = useState<EonetProvenance | null>(null);
   const [categoryCatalog, setCategoryCatalog] = useState<Array<[string, string]>>([]);
   const [geometrySamples, setGeometrySamples] = useState<number | null>(null);
+  const [museumCounts, setMuseumCounts] = useState<Array<{id:string;title:string;count:number}>>([]);
   const [status, setStatus] = useState<'open' | 'closed' | 'all'>('open');
   const [category, setCategory] = useState('all');
   const [search, setSearch] = useState('');
@@ -37,10 +40,23 @@ export default function EarthEventsExplorer({ mode = 'home' }: { mode?: 'home' |
   useEffect(() => {
     let active = true;
     const refresh = async () => {
-      if (mode === 'eonet') getEonetGeoJson(60, status).then((payload) => { if (active) setGeometrySamples(payload.features.length); }).catch(() => { if (active) setGeometrySamples(null); });
+      getEonetGeoJson(mode === 'home' ? 24 : 60, status).then((payload) => {
+        if (!active) return;
+        setGeometrySamples(payload.features.length);
+        const groups = new Map<string,{title:string;ids:Set<string>}>();
+        for (const feature of payload.features) {
+          const id = feature.properties?.id;
+          if (!id) continue;
+          for (const category of feature.properties?.categories ?? []) {
+            const group = groups.get(category.id) ?? {title:category.title,ids:new Set<string>()};
+            group.ids.add(id);groups.set(category.id,group);
+          }
+        }
+        setMuseumCounts([...groups].map(([id,group])=>({id,title:group.title,count:group.ids.size})).sort((a,b)=>b.count-a.count));
+      }).catch(() => { if (active) { setGeometrySamples(null);setMuseumCounts([]); } });
       try {
         const rows = await getEarthEventSummaries(mode === 'home' ? 24 : 60, status);
-        if (active) { const receivedAt = Date.now(); setEvents(rows); setUpdated(receivedAt); setNow(receivedAt); setError(''); }
+        if (active) { void getEonetProvenance(mode === 'home' ? 24 : 60, status).then(setProvenance).catch(() => setProvenance(null)); const receivedAt = Date.now(); setEvents(rows); setUpdated(receivedAt); setNow(receivedAt); setError(''); }
       } catch (reason) { if (active) setError(reason instanceof Error ? reason.message : 'EONET unavailable'); }
       finally { if (active) setLoading(false); }
     };
@@ -67,6 +83,8 @@ export default function EarthEventsExplorer({ mode = 'home' }: { mode?: 'home' |
 
   return <section className={`earth-explorer earth-explorer-${mode}`} aria-label="NASA EONET Earth event explorer">
     <div className="earth-explorer-head"><div><span className="eyebrow">EARTH / NASA EONET V3 · LIVE PUBLIC FEED</span><h2>{mode === 'analog' ? 'Earth analogs, kept on Earth.' : 'Natural events, on their own planet.'}</h2><p>Open a record to inspect its timeline and original sources. Earth event geometry never appears on the Mars Trek map.</p></div><span className="live-chip" role="status"><i />{loading ? 'CONTACTING EONET' : updated ? `UPDATED · ${Math.max(0, Math.floor((now - updated) / 1000))}s AGO` : 'EARTH FEED UNAVAILABLE'}</span></div>
+    <div className="earth-provenance"><a href="https://eonet.gsfc.nasa.gov/docs/v3" target="_blank" rel="noreferrer">NASA EONET V3 ↗</a><span>UPSTREAM FETCHED {provenance ? `${provenance.fetchedAt.slice(0,19).replace('T',' ')} UTC` : "—"}</span><span>SHA256 {provenance?.contentHash.slice(0, 12) ?? "—"}</span><span>{provenance?.servedFromCache ? "SERVED FROM CACHE" : "UPSTREAM SNAPSHOT"}</span></div>
+    <div className="earth-museum" aria-label="Earth event category counts in current NASA EONET sample"><strong>EARTH EVENT MUSEUM / GEOJSON · LAST 30 DAYS · {status.toUpperCase()}</strong>{museumCounts.map((row) => <span key={row.id}>{row.title.toUpperCase()} <b>{row.count}</b></span>)}</div>
     <div className="earth-filters"><label>SEARCH TITLE / PLACE<input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search events…" /></label><label>CATEGORY<select value={category} onChange={(event) => setCategory(event.target.value)}><option value="all">ALL CATEGORIES</option>{filterCategories.map(([id, title]) => <option key={id} value={id}>{title.toUpperCase()}</option>)}</select></label><label>STATUS<select value={status} onChange={(event) => { setStatus(event.target.value as typeof status); setCategory('all'); }}><option value="open">OPEN</option><option value="closed">CLOSED</option><option value="all">ALL</option></select></label></div>
     <div className="earth-legend" aria-label="EONET category legend">{categories.map(([id, title]) => <span key={id}><i style={{ backgroundColor: eonetColor(id) }} />{title}</span>)}</div>
     <div className="earth-explorer-grid"><div className="earth-explorer-list" aria-label="Earth event records">{error && <p className="earth-list-message" role="status">EONET unavailable: {error}. Last received records remain visible.</p>}{loading && !events.length && <p className="earth-list-message">CONTACTING NASA EONET…</p>}{!loading && !error && !filtered.length && <p className="earth-list-message">No Earth events match these filters.</p>}{filtered.map((event, index) => <button className="earth-explorer-row" key={event.id} onClick={() => selectEvent(event.id)}><span className="earth-event-index">{String(index + 1).padStart(2, '0')}</span><span className="earth-event-dot" style={{ backgroundColor: eonetColor(event.categoryId) }} /><span><small>EARTH / {event.category.toUpperCase()} · {event.closed ? 'CLOSED' : 'OPEN'}</small><strong>{event.title}</strong><em>{date(event.date)} · {event.geometryCount} GEOMETR{event.geometryCount === 1 ? 'Y' : 'IES'}</em></span><b>↗</b></button>)}</div><div className="earth-explorer-map"><div className="earth-map-inner">{mode === 'eonet' ? <EonetEarthMap events={filtered} onSelect={selectEvent} /> : <EarthMiniMap events={filtered} onSelect={selectEvent} />}</div><span>EARTH COORDINATES / EONET · {filtered.length} VISIBLE EVENTS{geometrySamples == null ? '' : ` · ${geometrySamples} GEOJSON GEOMETRIES`}</span></div></div>

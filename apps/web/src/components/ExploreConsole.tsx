@@ -4,8 +4,8 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowDownToLine, ArrowUpRight, Crosshair, HelpCircle, Layers3, LocateFixed, MapPin, Minus, Plus, Route, Send, Sparkles, Undo2, X, Search, Maximize2, Minimize2, Printer } from 'lucide-react';
-import type { AssistantResponse, Citation, LayerId, MapLayer, MissionBriefing, POI, RegionData, RouteAnalysis, RouteWaypoint } from '@mars-explorer/shared';
-import { analyzeRoute, askAssistant, createBriefing, downloadBriefingPdf, getLayers, getRegion } from '@/lib/api';
+import type { AssistantResponse, Citation, LayerId, MapLayer, MissionBriefing, POI, RegionData, RouteAnalysis, RouteWaypoint, PlacesTrack, SuggestedRoute } from '@mars-explorer/shared';
+import { analyzeRoute, askAssistant, createBriefing, downloadBriefingPdf, getLayers, getPlaces, getRegion, suggestRoute } from '@/lib/api';
 import SolClock from './SolClock';
 import DemoTour from './DemoTour';
 import { hasGoogleMapsKey } from '@/lib/load-google-maps';
@@ -23,6 +23,7 @@ export default function ExploreConsole() {
   const [analysis, setAnalysis] = useState<RouteAnalysis | null>(null);
   const [mapMode, setMapMode] = useState<'global' | 'jezero'>('jezero');
   const [mapEngine, setMapEngine] = useState<'leaflet' | 'google'>('leaflet');
+  const [mapView, setMapView] = useState<{lat:number;lon:number;zoom:number} | null>(null);
   const [drawing, setDrawing] = useState(false);
   const [tab, setTab] = useState<'assistant' | 'briefing' | 'point'>('assistant');
   const [selectedPoi, setSelectedPoi] = useState<POI | null>(null);
@@ -44,9 +45,15 @@ export default function ExploreConsole() {
   const [routeNotice, setRouteNotice] = useState('');
   const [savedRoute, setSavedRoute] = useState<RouteWaypoint[] | null>(null);
   const [solLighting, setSolLighting] = useState(false);
+  const [demoSeeds, setDemoSeeds] = useState(false);
+  const [places, setPlaces] = useState<PlacesTrack | null>(null);
+  const [selectedSol, setSelectedSol] = useState(0);
+  const [showTrack, setShowTrack] = useState(true);
+  const [suggestion, setSuggestion] = useState<SuggestedRoute | null>(null);
 
   useEffect(() => {
-    Promise.all([getRegion(), getLayers()]).then(([data, layerData]) => { setRegion(data); setCatalog(layerData); const poiId = new URLSearchParams(window.location.search).get('poi'); const poi = data.pois.find((item) => item.id === poiId); if (poi) { setSelectedPoi(poi); setTab('point'); } }).catch((reason: Error) => setError(`${reason.message}. Start the API with pnpm dev.`));
+    Promise.all([getRegion(), getLayers(), getPlaces()]).then(([data, layerData, track]) => { setRegion(data); setCatalog(layerData); setPlaces(track); setSelectedSol(track.latestSol); const poiId = new URLSearchParams(window.location.search).get('poi'); const poi = data.pois.find((item) => item.id === poiId); if (poi) { setSelectedPoi(poi); setTab('point'); } }).catch((reason: Error) => setError(`${reason.message}. Start the API with pnpm dev.`));
+    if (new URLSearchParams(window.location.search).get('demo') === 'true') setDemoSeeds(true);
     if (!localStorage.getItem('me_onboarded')) setCoachStep(0);
     try { const cached = JSON.parse(localStorage.getItem('me_saved_routes') || '[]') as Array<{ waypoints?: RouteWaypoint[] }>; setSavedRoute(cached[0]?.waypoints ?? null); } catch { setSavedRoute(null); }
     const shared = new URLSearchParams(window.location.search).get('wp');
@@ -66,18 +73,13 @@ export default function ExploreConsole() {
     return () => window.clearTimeout(timer);
   }, [waypoints]);
 
+  useEffect(() => { getRegion(demoSeeds).then((data)=>{setRegion(data); const poiId=new URLSearchParams(window.location.search).get('poi'); const poi=data.pois.find((item)=>item.id===poiId); if(poi){setSelectedPoi(poi);setTab('point');}}).catch((reason: Error) => setError(reason.message)); }, [demoSeeds]);
+  const selectedTrackPoint = useMemo(() => places?.points.filter((p) => p.sol <= selectedSol).at(-1), [places, selectedSol]);
+  const visibleTrack = useMemo(() => showTrack ? places?.points.filter((p) => p.sol <= selectedSol) ?? [] : [], [places, selectedSol, showTrack]);
   const addWaypoint = useCallback((point: RouteWaypoint) => setWaypoints((current) => [...current, point]), []);
-  const toggleLayer = (id: LayerId) => setLayers((current) => { const next = new Set(current); next.has(id) ? next.delete(id) : next.add(id); return next; });
+  const toggleLayer = (id: LayerId) => setLayers((current) => { const next = new Set(current); if (['imagery','viking','hrsc-color','hrsc-shade'].includes(id)) { for (const base of ['imagery','viking','hrsc-color','hrsc-shade'] as LayerId[]) next.delete(base); next.add(id); } else next.has(id) ? next.delete(id) : next.add(id); return next; });
   const selectPoi = (poi: POI) => { setSelectedPoi(poi); setTab('point'); };
-  const seedRoute = () => {
-    setMapMode('jezero'); setDrawing(false);
-    setWaypoints([
-      { id: crypto.randomUUID(), lat: 18.435, lon: 77.405 },
-      { id: crypto.randomUUID(), lat: 18.445, lon: 77.435 },
-      { id: crypto.randomUUID(), lat: 18.455, lon: 77.465 },
-      { id: crypto.randomUUID(), lat: 18.445, lon: 77.495 },
-    ]);
-  };
+  const seedRoute = () => presetRoute('delta');
   const undo = () => setWaypoints((current) => current.slice(0, -1));
 
   useEffect(() => {
@@ -93,6 +95,7 @@ export default function ExploreConsole() {
     window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey);
   });
 
+  useEffect(() => { setSuggestion(null); }, [waypoints]);
   const metrics = useMemo(() => ({ distance: analysis?.distanceKm ?? 0, risk: analysis?.riskScore ?? 0, points: analysis?.nearbyPois.length ?? 0 }), [analysis]);
   async function submitQuestion(text = question) {
     if (!text.trim()) return;
@@ -114,12 +117,11 @@ export default function ExploreConsole() {
     const link = document.createElement('a'); link.href = url; link.download = 'jezero-marswalk-briefing.md'; link.click(); URL.revokeObjectURL(url);
   }
   function presetRoute(preset: 'delta' | 'rim' | 'short') {
-    const routes = {
-      delta: [[18.435, 77.405], [18.445, 77.435], [18.455, 77.465], [18.445, 77.495]],
-      rim: [[18.40, 77.35], [18.44, 77.39], [18.49, 77.44], [18.53, 77.50]],
-      short: [[18.435, 77.425], [18.445, 77.445], [18.452, 77.465]],
-    } as const;
-    setMapMode('jezero'); setDrawing(false); setWaypoints(routes[preset].map(([lat, lon]) => ({ id: crypto.randomUUID(), lat, lon })));
+    if (!places?.points.length) { setError('NASA PLACES track is still loading.'); return; }
+    const sols = preset === 'delta' ? [400, 420, 430] : preset === 'rim' ? [700, 750, 800] : [420, 430];
+    const points = sols.map((sol) => places.points.reduce((closest, point) => Math.abs(point.sol - sol) < Math.abs(closest.sol - sol) ? point : closest));
+    setMapMode('jezero'); setDrawing(false); setWaypoints(points.map((p) => ({ id: crypto.randomUUID(), lat: p.lat, lon: p.lon })));
+    setRouteNotice(`NASA PLACES PUBLISHED LOCALIZATIONS · SOLS ${points.map((p) => p.sol).join(' / ')}`);
   }
   function finishCoach() { localStorage.setItem('me_onboarded', '1'); setCoachStep(null); }
   function saveRoute() {
@@ -132,21 +134,28 @@ export default function ExploreConsole() {
   async function shareRoute() {
     if (waypoints.length < 2) return;
     const points = encodeURIComponent(JSON.stringify(waypoints.map(({ lat, lon }) => ({ lat, lon }))));
-    const url = `${window.location.origin}/explore?wp=${points}`;
+    const url = `${window.location.origin}/route/share?wp=${points}`;
     try { await navigator.clipboard.writeText(url); setRouteNotice('SHARE LINK COPIED'); }
     catch { window.prompt('Copy this route link', url); }
   }
   async function demoMarswalk() {
-    const route = [
-      { id: 'demo-a', lat: 18.435, lon: 77.405 }, { id: 'demo-b', lat: 18.445, lon: 77.435 },
-      { id: 'demo-c', lat: 18.455, lon: 77.465 }, { id: 'demo-d', lat: 18.445, lon: 77.495 },
-    ];
-    setMapMode('jezero'); setDrawing(false); setWaypoints(route); setBusy(true); setError('');
+    if (!places?.points.length) { setError('NASA PLACES track is still loading.'); return; }
+    const sols = [400, 420, 430];
+    const route = sols.map((sol, index) => {
+      const p = places.points.reduce((closest, point) => Math.abs(point.sol - sol) < Math.abs(closest.sol - sol) ? point : closest);
+      return { id: `published-${index}`, lat: p.lat, lon: p.lon };
+    });
+    setUseCloudModels(false); setMapMode('jezero'); setDrawing(false); setWaypoints(route); setBusy(true); setError('');
     try {
-      const [answer, note] = await Promise.all([askAssistant('Why is Jezero Crater scientifically interesting for this traverse?', route), createBriefing(route)]);
-      setResponse(answer); setBriefing(note); setTab('briefing');
-    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Demo Marswalk could not be prepared.'); }
+      const [answer, note] = await Promise.all([askAssistant('Why is Jezero Crater scientifically interesting for this traverse?', route, false), createBriefing(route)]);
+      setResponse(answer); setBriefing(note); setTab('briefing'); setRouteNotice('CLASSROOM MODE · NASA PLACES TRACK · LOCAL EVIDENCE');
+    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Classroom Marswalk could not be prepared.'); }
     finally { setBusy(false); }
+  }
+  async function makeSuggestion() {
+    if (waypoints.length !== 2) { setError('Place exactly two endpoints to suggest a corridor.'); return; }
+    try { setSuggestion(await suggestRoute(waypoints)); setRouteNotice('SUGGESTED · NON-CERTIFYING · NASA DTM GRID'); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : 'No DTM corridor available.'); }
   }
   const currentStep = briefing ? 3 : response ? 2 : waypoints.length > 1 ? 1 : 0;
   const riskLabel = metrics.risk < 35 ? 'LOW' : metrics.risk < 70 ? 'WATCH' : 'HIGH';
@@ -185,20 +194,22 @@ export default function ExploreConsole() {
           </button>)}</div>
           {!catalog.length && <p className="quiet-note">LOADING DATA CATALOG…</p>}
         </section>
+        <section className="rail-section places-controls"><div className="section-title"><span>NASA PLACES · ROVER TRACK</span></div><label><input type="checkbox" checked={showTrack} onChange={(e) => setShowTrack(e.target.checked)} /> SHOW PUBLISHED TRACK</label><input type="range" aria-label="Perseverance sol" min={0} max={places?.latestSol ?? 1} value={selectedSol} onChange={(e) => setSelectedSol(Number(e.target.value))} /><p>SOL {selectedTrackPoint?.sol ?? '—'} · {selectedTrackPoint ? `${selectedTrackPoint.lat.toFixed(5)}° N, ${selectedTrackPoint.lon.toFixed(5)}° E` : 'NO LOCALIZATION'}</p><small>PLACES CSV provides sol and spacecraft clock, not UTC observation date.</small><a href={places?.sourceUrl ?? 'https://pds-geosciences.wustl.edu/missions/mars2020/places.htm'} target="_blank" rel="noreferrer">NASA PLACES SOURCE ↗</a>{selectedTrackPoint && <button onClick={() => window.dispatchEvent(new CustomEvent("mars-focus",{detail:selectedTrackPoint}))}>FOCUS SELECTED SOL ON MAP</button>}</section>
         <section className="rail-section"><div className="section-title"><span>TRAVERSE PRESETS</span><Route size={13} /></div><div className="preset-list"><button onClick={() => presetRoute('delta')}>Delta traverse</button><button onClick={() => presetRoute('rim')}>Crater rim</button><button onClick={() => presetRoute('short')}>Short EVA</button></div></section>
+        <section className="rail-section"><label className="demo-toggle"><input type="checkbox" checked={demoSeeds} onChange={(e) => setDemoSeeds(e.target.checked)} /> SHOW DEMO SEEDS</label>{demoSeeds && <strong>DEMO · NOT NASA PRODUCT</strong>}</section>
         <section className="mission-stack"><strong>MISSION STACK</strong><p>NASA TREK · orbital base mosaic</p><p>PERSEVERANCE · mission context</p><p>HIRISE · curated orbital context</p><p>LOCAL CORPUS · cited science notes</p><p className="earth-label">EARTH / EONET · landing feed only</p></section>
 
         <section className="rail-section point-section"><div className="section-title"><span>SCIENCE CONTEXT</span><span className="row-count">{region?.pois.length ?? '—'} POINTS</span></div>
-          <div className="poi-list">{region?.pois.map((poi, index) => <button className={`poi-row ${closeToRoute.has(poi.id) ? 'near-route' : ''}`} key={poi.id} onClick={() => selectPoi(poi)}><span className="poi-index">0{index + 1}</span><span><strong>{poi.name}</strong><small>{closeToRoute.has(poi.id) ? 'NEAR CURRENT ROUTE · ' : ''}{poi.category.toUpperCase()} / MARS 2020</small></span><ArrowUpRight size={12} /></button>)}</div>
+          <div className="poi-list">{region?.pois.map((poi, index) => <button className={`poi-row ${closeToRoute.has(poi.id) ? 'near-route' : ''}`} key={poi.id} onClick={() => selectPoi(poi)}><span className="poi-index">0{index + 1}</span><span><strong>{poi.name}</strong><small>{closeToRoute.has(poi.id) ? 'NEAR CURRENT ROUTE · ' : ''}{poi.sourceKind === 'DEMO' ? 'DEMO · NOT NASA PRODUCT' : 'NASA PLACES / VERIFIED LOCALIZATION'}</small></span><ArrowUpRight size={12} /></button>)}</div>
           <a className="source-link" href="https://science.nasa.gov/mission/mars-2020-perseverance/" target="_blank" rel="noreferrer">NASA MISSION SOURCE <ArrowUpRight size={12} /></a>
         </section>
         <section className="rail-section field-notes"><div className="section-title"><span>FIELD NOTES / METHOD</span><span className="row-count">04 NOTES</span></div>
           <details><summary>01 / Read the layer source</summary><p>MOLA shading and Viking color are NASA Trek raster context. Screen color is not a sampled route elevation or slope.</p></details>
           <details><summary>02 / Interpret a nearby point</summary><p>“Nearby” means within the route corridor. It does not mean reachable, validated, or the most valuable science stop.</p></details>
-          <details><summary>03 / Read the risk badge</summary><p>Seeded watch zones and route complexity drive the score. Neither heuristic nor PostGIS mode certifies traversability.</p></details>
+          <details><summary>03 / Read the risk badge</summary><p>NASA PLACES orbital DTM samples support a coarse slope estimate when the route is covered. Application weights and gaps remain non-certifying.</p></details>
           <details><summary>04 / Carry a source</summary><p>Ask a focused local corpus question, open the NASA source, and keep its caveat in the exported briefing.</p></details>
         </section>
-        <div className="rail-footnote">POINTS ARE APPROXIMATE MAP ANNOTATIONS.<br />NOT VALIDATED ROVER LOCATIONS.</div>
+        <div className="rail-footnote">DEMO POINTS ARE APPROXIMATE AND OFF BY DEFAULT.<br />NASA PLACES TRACK IS PUBLISHED LOCALIZATION.</div>
       </aside>
 
       <section className="map-workspace" aria-label="Interactive Mars map">
@@ -212,17 +223,18 @@ export default function ExploreConsole() {
           <button className={solLighting ? 'tool-button active' : 'tool-button'} onClick={() => setSolLighting(!solLighting)} title="Toggle illustrative Sol lighting">SOL</button>
         </div></div>
         <div className={`map-frame ${solLighting ? 'sol-lit' : ''}`}>
-          {mapEngine === 'leaflet' ? <MarsMap mode={mapMode} layers={layers} pois={region?.pois ?? []} hazards={region?.hazards ?? []} footprints={region?.footprints ?? []} waypoints={waypoints} drawing={drawing} onAdd={addWaypoint} onSelectPoi={selectPoi} onSelectHazard={setSelectedHazard} /> : <GoogleMarsMap mode={mapMode} layers={layers} pois={region?.pois ?? []} hazards={region?.hazards ?? []} footprints={region?.footprints ?? []} waypoints={waypoints} drawing={drawing} onAdd={addWaypoint} onSelectPoi={selectPoi} onSelectHazard={setSelectedHazard} />}
+          {mapEngine === 'leaflet' ? <MarsMap mode={mapMode} layers={layers} pois={region?.pois ?? []} hazards={region?.hazards ?? []} footprints={region?.footprints ?? []} waypoints={waypoints} track={visibleTrack} trackPoint={showTrack ? selectedTrackPoint : undefined} suggestedPath={suggestion?.waypoints ?? []} drawing={drawing} onAdd={addWaypoint} onSelectPoi={selectPoi} onSelectHazard={setSelectedHazard} onViewChange={setMapView} /> : <GoogleMarsMap mode={mapMode} layers={layers} pois={region?.pois ?? []} hazards={region?.hazards ?? []} footprints={region?.footprints ?? []} waypoints={waypoints} track={visibleTrack} trackPoint={showTrack ? selectedTrackPoint : undefined} suggestedPath={suggestion?.waypoints ?? []} drawing={drawing} onAdd={addWaypoint} onSelectPoi={selectPoi} onSelectHazard={setSelectedHazard} onViewChange={setMapView} />}
+          {visibleTrack.length > 2 && mapMode === 'jezero' && <TrackInset points={visibleTrack} selected={selectedTrackPoint} />}
           {mapMode === 'global' && <div className="global-callout"><span>REGIONAL FOCUS</span><strong>Jezero Crater</strong><button onClick={() => setMapMode('jezero')}>FLY TO SITE <ArrowUpRight size={13} /></button></div>}
           {drawing && <div className="drawing-hint"><Crosshair size={13} /> SELECT SURFACE TO PLACE WAYPOINT <span>ESC TO EXIT</span></div>}
-          {!waypoints.length && !drawing && <div className="map-empty"><Crosshair size={13} /><span>NO ACTIVE TRAVERSE</span><button onClick={seedRoute}>LOAD DEMO ROUTE <ArrowUpRight size={12} /></button><button onClick={() => void demoMarswalk()}>RUN DEMO MARSWALK <ArrowUpRight size={12} /></button></div>}
+          {!waypoints.length && !drawing && <div className="map-empty"><Crosshair size={13} /><span>NO ACTIVE TRAVERSE</span><button onClick={seedRoute}>LOAD PUBLISHED ROUTE <ArrowUpRight size={12} /></button><button onClick={() => void demoMarswalk()}>CLASSROOM MODE <ArrowUpRight size={12} /></button></div>}
           {mapEngine === 'leaflet' && <div className="map-controls"><button title="Zoom in" onClick={() => window.dispatchEvent(new CustomEvent('mars-zoom', { detail: 1 }))}><Plus size={15} /></button><button title="Zoom out" onClick={() => window.dispatchEvent(new CustomEvent('mars-zoom', { detail: -1 }))}><Minus size={15} /></button></div>}
           <div className="map-scale">MAP PROJECTION / EQUIRECTANGULAR</div>
         </div>
-        <div className="map-coordinates"><span>LAT&nbsp; {mapMode === 'jezero' ? '18°26′24″ N' : '00°00′00″'}</span><span>LON&nbsp; {mapMode === 'jezero' ? '077°27′00″ E' : '000°00′00″'}</span><span>ZOOM&nbsp; {mapMode === 'jezero' ? '05' : '02'}</span><span className="map-coord-right">LEFT CLICK TO ADD WAYPOINT WHEN ROUTE MODE IS ACTIVE</span></div>
+        <div className="map-coordinates" aria-label="Current Mars map center and zoom"><span>CENTER LAT&nbsp; {mapView ? `${Math.abs(mapView.lat).toFixed(5)}° ${mapView.lat < 0 ? 'S' : 'N'}` : '—'}</span><span>CENTER LON&nbsp; {mapView ? `${Math.abs(mapView.lon).toFixed(5)}° ${mapView.lon < 0 ? 'W' : 'E'}` : '—'}</span><span>ZOOM&nbsp; {mapView?.zoom ?? '—'}</span><span className="map-coord-right">LEFT CLICK TO ADD WAYPOINT WHEN ROUTE MODE IS ACTIVE</span></div>
         <section className="bottom-hud"><div className="hud-title"><span>ACTIVE TRAVERSE</span><small>{waypoints.length ? `${String(waypoints.length).padStart(2, '0')} WAYPOINTS` : 'AWAITING ROUTE'}</small></div>
-          <div className="hud-metric"><span>DIST · WALK ETA</span><strong>{metrics.distance.toFixed(2)} <small>KM · {Math.ceil(metrics.distance / 3 * 60)} MIN</small></strong></div>
-          <button className="hud-metric risk-metric" onClick={() => setRiskHelp(true)}><span>RISK · {analysis?.terrainMethod === 'postgis-jezero' ? 'POSTGIS JEZERO' : 'HEURISTIC'}</span><strong className={`risk-${riskLabel.toLowerCase()}`}>{waypoints.length > 1 ? `${String(metrics.risk).padStart(2, '0')}%` : '—'} <small>{waypoints.length > 1 ? riskLabel : 'SCORE'}</small></strong></button>
+          <div className="hud-metric"><span>DIST · DTM ELEV Δ</span><strong>{metrics.distance.toFixed(2)} <small>KM · {analysis?.elevationDeltaM == null ? "—" : `${analysis.elevationDeltaM.toFixed(0)} M`}</small></strong></div>
+          <button className="hud-metric risk-metric" onClick={() => setRiskHelp(true)}><span>RISK INDEX</span><strong className={`risk-${riskLabel.toLowerCase()}`}>{waypoints.length > 1 ? `${String(metrics.risk).padStart(2, '0')}/100` : '—'} <small>{waypoints.length > 1 ? riskLabel : 'SCORE'}</small></strong></button>
           <div className="hud-metric"><span>POIS NEAR ROUTE</span><strong>{String(metrics.points).padStart(2, '0')} <small>POINTS</small></strong></div>
           <button className="brief-cta" onClick={makeBriefing} disabled={busy || waypoints.length < 2}><Sparkles size={14} /> GENERATE BRIEFING <ArrowUpRight size={13} /></button>
         </section>
@@ -232,15 +244,15 @@ export default function ExploreConsole() {
           const segment = Math.hypot((point.lat - previous.lat) * latScale, (point.lon - previous.lon) * lonScale);
           return <span key={point.id}><small>SEG {String(index + 1).padStart(2, '0')}</small><strong>{segment.toFixed(2)} KM</strong><i style={{ width: `${Math.max(12, Math.min(100, segment * 11))}%` }} /></span>;
         })}</div>}
-        <div className="route-actions"><button onClick={saveRoute} disabled={waypoints.length < 2}>SAVE ROUTE</button><button onClick={() => setWaypoints(savedRoute ?? [])} disabled={!savedRoute?.length}>RESTORE LAST SAVE</button><button onClick={() => void shareRoute()} disabled={waypoints.length < 2}>COPY SHARE LINK</button>{routeNotice && <span role="status">{routeNotice}</span>}</div>
-        <div className="route-tip">{waypoints.length > 1 ? 'Planning aid only. Check each source before treating map context as evidence.' : 'Choose a traverse preset or draw a route to compare distance and nearby science points.'}</div>
+        <div className="route-actions"><button onClick={() => void makeSuggestion()} disabled={waypoints.length !== 2}>SUGGEST DTM CORRIDOR</button>{suggestion && <button onClick={() => setWaypoints(suggestion.waypoints)}>USE SUGGESTION · NON-CERTIFYING</button>}<button onClick={saveRoute} disabled={waypoints.length < 2}>SAVE ROUTE</button><button onClick={() => setWaypoints(savedRoute ?? [])} disabled={!savedRoute?.length}>RESTORE LAST SAVE</button><button onClick={() => void shareRoute()} disabled={waypoints.length < 2}>COPY SHARE LINK</button>{routeNotice && <span role="status">{routeNotice}</span>}</div>
+        <div className="route-tip">{waypoints.length > 1 ? `${analysis?.terrainMethod?.toUpperCase() ?? 'HEURISTIC'} · NON-CERTIFYING. Check each source before interpreting this research sketch.` : 'Choose a published traverse or draw a route to compare distance and DTM coverage.'}</div>
       </section>
 
       <aside className={`right-rail ${mobilePanel === 'assistant' ? 'mobile-sheet-open mobile-sheet-assistant' : ''}`}>
         <div className="right-tabs"><button className={tab === 'assistant' ? 'selected' : ''} onClick={() => setTab('assistant')}>MISSION ASSISTANT</button><button className={tab === 'briefing' ? 'selected' : ''} onClick={() => setTab('briefing')}>BRIEFING</button></div>
         {tab === 'assistant' && <div className="assistant-pane">
           <div className="assistant-status"><span className="status-square" /> {busy ? 'RETRIEVING CORPUS…' : 'EVIDENCE MODE'} <span>LANGGRAPH / LOCAL CORPUS</span></div>
-          <div className="assistant-intro"><span className="eyebrow">MISSION SUPPORT / 01</span><h2>Field intelligence</h2><p>Ask about mission context, Jezero geology, or the active route. Responses use the cited local source notes.</p></div>
+          <div className="evidence-cockpit"><strong>EVIDENCE COCKPIT</strong><div><span>ROUTE {analysis?.distanceKm.toFixed(2) ?? "—"} KM</span><span>RISK {analysis?.riskIndex.total ?? "—"}/100</span><span>DTM COVERAGE {analysis ? Math.round(analysis.dtmCoverage * 100) : "—"}%</span><span>{analysis?.terrainMethod?.toUpperCase() ?? "METHOD —"} · NON-CERTIFYING</span></div><small><a href={places?.sourceUrl ?? "https://pds-geosciences.wustl.edu/missions/mars2020/places.htm"} target="_blank" rel="noreferrer">NASA PLACES ↗</a> · <a href="https://trek.nasa.gov/tiles/apidoc/trekAPI.html?body=mars" target="_blank" rel="noreferrer">NASA TREK ↗</a> · <a href="https://pds-geosciences.wustl.edu/m2020/urn-nasa-pds-mars2020_rover_places/data_maps/m20_orbital_dem.xml" target="_blank" rel="noreferrer">NASA DTM ↗</a> · <a href="https://eonet.gsfc.nasa.gov/docs/v3" target="_blank" rel="noreferrer">EARTH / NASA EONET ↗</a></small>{analysis?.riskIndex.components.map((item) => <section className="risk-component" key={item.id}><div><span>{item.label}</span><strong>+{item.score}</strong></div><RiskSource source={item.source} /></section>)}{response?.citations.slice(0, 2).map((item) => <a key={item.url} href={item.url} target="_blank" rel="noreferrer">{item.title} ↗</a>)}</div><div className="assistant-intro"><span className="eyebrow">MISSION SUPPORT / 01</span><h2>Field intelligence</h2><p>Ask about mission context, Jezero geology, or the active route. Responses use the cited local source notes.</p></div>
           <div className="prompt-label">SUGGESTED INQUIRY</div>
           <button className="suggestion" onClick={() => { setQuestion('Why is this route scientifically interesting?'); void submitQuestion('Why is this route scientifically interesting?'); }}>“Why is this route scientifically interesting?” <ArrowUpRight size={13} /></button>
           <button className="suggestion" onClick={() => { setQuestion('What are Perseverance’s mission objectives?'); void submitQuestion('What are Perseverance’s mission objectives?'); }}>“What are Perseverance’s mission objectives?” <ArrowUpRight size={13} /></button>
@@ -248,7 +260,7 @@ export default function ExploreConsole() {
           <label className="compare-toggle"><input type="checkbox" checked={useCloudModels} onChange={(event) => setUseCloudModels(event.target.checked)} /> Use cloud model (optional)</label>
           <div className="response-area">
             {busy && <div className="thinking-line"><span className="status-dot" /> {/earth|eonet|wildfire|storm|volcano|landslide|compare|analog|natural event/i.test(question) ? 'RETRIEVING CORPUS… CHECKING EARTH / EONET…' : 'RETRIEVING NASA SOURCE NOTES…'}</div>}
-            {response && <article className="assistant-response"><div className="response-tag">{response.modelUsed.toUpperCase()} / {response.refused ? 'EVIDENCE INSUFFICIENT' : 'SOURCE GROUNDED'}{response.citations.some((citation) => citation.mission === 'EONET' || /eonet/i.test(citation.title)) && <span className="earth-source-tag"> · EARTH / EONET</span>}</div><p>{response.answer}</p>{response.comparison?.length ? <div className="model-compare">{response.comparison.map((item) => <section key={item.model}><strong>{item.model}</strong><p>{item.answer}</p></section>)}</div> : null}{response.citations.map((citation) => <button className="citation-row" key={`${citation.url}-${citation.title}`} onClick={() => setSelectedCitation(citation)}><span><strong>{citation.title}</strong><small>{citation.excerpt}</small></span><ArrowUpRight size={13} /></button>)}</article>}
+            {response && <article className="assistant-response"><div className="response-tag">{response.modelUsed.toUpperCase()} / {response.refused ? 'EVIDENCE INSUFFICIENT' : 'SOURCE GROUNDED'}{response.citations.some((citation) => citation.mission === 'EONET' || /eonet/i.test(citation.title)) && <span className="earth-source-tag"> · EARTH / EONET</span>}</div><p>{response.answer}</p>{response.comparison?.length ? <div className="model-compare">{response.comparison.map((item) => <section key={item.model}><strong>{item.model}</strong><p>{item.answer}</p></section>)}</div> : null}{response.citations.map((citation) => <button className="citation-row" key={`${citation.url}-${citation.title}`} onClick={() => { setSelectedCitation(citation); const linked = region?.pois.find((poi) => poi.sourceKind === 'NASA_PLACES' && poi.name === citation.title); if (linked) { setMapMode('jezero'); window.dispatchEvent(new CustomEvent('mars-focus', {detail: {lat: linked.lat, lon: linked.lon}})); } }}><span><strong>{citation.title}</strong><small>{citation.excerpt}</small></span><ArrowUpRight size={13} /></button>)}</article>}
             {!response && !busy && <div className="assistant-placeholder"><span>—</span><p>Responses are assembled from the local mission corpus and returned with source links.</p></div>}
           </div>
           <form className="ask-form" onSubmit={(event) => { event.preventDefault(); void submitQuestion(); }}><textarea value={question} onChange={(event) => setQuestion(event.target.value)} aria-label="Ask the mission assistant" rows={2} placeholder="Ask a mission question…" /><button aria-label="Send question" disabled={busy || question.trim().length < 3}><Send size={15} /></button></form>
@@ -257,24 +269,40 @@ export default function ExploreConsole() {
         {tab === 'briefing' && <div className="briefing-pane">
           {briefing ? <><div className="briefing-title"><span className="eyebrow">MISSION NOTE / JEZERO</span><h2>{briefing.title}</h2><div className="briefing-summary"><span>DISTANCE<strong>{briefing.distanceKm.toFixed(2)} KM</strong></span><span>WAYPOINTS<strong>{briefing.explorationPoints}</strong></span></div></div>
             <div className="briefing-section"><span>SCIENTIFIC OBJECTIVES</span>{briefing.scientificObjectives.map((item) => <p key={item}>{item}</p>)}</div>
+            <div className="briefing-section"><span>TRAVERSE RISK INDEX · NON-CERTIFYING</span><p>{briefing.riskIndex.total}/100 · {briefing.riskIndex.method}</p>{briefing.riskIndex.components.map((item) => <p key={item.id}>{item.label}: +{item.score} · <RiskSource source={item.source} /></p>)}</div>
             <div className="briefing-section"><span>TERRAIN CONSIDERATIONS</span>{briefing.terrainConsiderations.map((item) => <p key={item}>{item}</p>)}</div>
-            <div className="briefing-section"><span>NEARBY CONTEXT</span>{briefing.recommendedInvestigationPoints.length ? briefing.recommendedInvestigationPoints.map((item) => <p key={item}>{item}</p>) : <p>No seeded science points fall within 2 km.</p>}</div>
+            <div className="briefing-section"><span>NEARBY CONTEXT</span>{briefing.recommendedInvestigationPoints.length ? briefing.recommendedInvestigationPoints.map((item) => <p key={item}>{item}</p>) : <p>No verified science points are attached to this route.</p>}</div>
             <div className="briefing-section"><span>SOURCES</span>{briefing.citations.map((citation) => <a key={citation.url} href={citation.url} target="_blank" rel="noreferrer">{citation.title} <ArrowUpRight size={12} /></a>)}</div>
             <div className="brief-export-actions"><button className="export-button" onClick={exportBriefing}><ArrowDownToLine size={14} /> EXPORT MARKDOWN</button><button className="export-button" onClick={() => void downloadBriefingPdf(waypoints).catch((reason: Error) => setError(reason.message))}><Printer size={14} /> SERVER PDF</button></div>
           </> : <div className="empty-briefing"><span className="eyebrow">MISSION NOTE / 01</span><h2>No briefing generated</h2><p>Sketch at least two waypoints, then generate a briefing from the traverse metrics.</p><button onClick={makeBriefing} disabled={busy || waypoints.length < 2}><Sparkles size={14} /> GENERATE BRIEFING</button></div>}
         </div>}
-        {tab === 'point' && <div className="point-detail-pane">{selectedPoi ? <><div className="point-detail-head"><span className="eyebrow">SCIENCE REFERENCE / {selectedPoi.category.toUpperCase()}</span><button onClick={() => setTab('assistant')} aria-label="Close selected point"><X size={15} /></button></div><h2>{selectedPoi.name}</h2><p>{selectedPoi.summary}</p><dl><div><dt>APPROX. LAT</dt><dd>{selectedPoi.lat.toFixed(4)}° N</dd></div><div><dt>APPROX. LON</dt><dd>{selectedPoi.lon.toFixed(4)}° E</dd></div><div><dt>MISSION</dt><dd>{selectedPoi.mission}</dd></div></dl><a className="point-source" href={selectedPoi.sourceUrl} target="_blank" rel="noreferrer">OPEN NASA SOURCE <ArrowUpRight size={13} /></a><p className="approx-note">APPROXIMATE REGIONAL ANNOTATION. NOT A VERIFIED ROVER STOP.</p></> : <p>Select a science marker to inspect its source context.</p>}</div>}
+        {tab === 'point' && <div className="point-detail-pane">{selectedPoi ? <><div className="point-detail-head"><span className="eyebrow">SCIENCE REFERENCE / {selectedPoi.category.toUpperCase()}</span><button onClick={() => setTab('assistant')} aria-label="Close selected point"><X size={15} /></button></div><h2>{selectedPoi.name}</h2><p>{selectedPoi.summary}</p><dl><div><dt>APPROX. LAT</dt><dd>{selectedPoi.lat.toFixed(4)}° N</dd></div><div><dt>APPROX. LON</dt><dd>{selectedPoi.lon.toFixed(4)}° E</dd></div><div><dt>MISSION</dt><dd>{selectedPoi.mission}</dd></div></dl><a className="point-source" href={selectedPoi.sourceUrl} target="_blank" rel="noreferrer">OPEN NASA SOURCE <ArrowUpRight size={13} /></a><p className="approx-note">{selectedPoi.sourceKind === 'DEMO' ? 'DEMO · NOT NASA PRODUCT' : 'NASA PLACES INTERPOLATED LOCALIZATION. NOT LIVE.'}</p></> : <p>Select a science marker to inspect its source context.</p>}</div>}
       </aside>
     </div>
     <nav className="mobile-sheet-nav" aria-label="Mission panels"><button onClick={() => setMobilePanel(mobilePanel === 'layers' ? null : 'layers')}>LAYERS</button><button onClick={() => setMobilePanel(mobilePanel === 'science' ? null : 'science')}>SCIENCE DATA</button><button onClick={() => setMobilePanel(mobilePanel === 'assistant' ? null : 'assistant')}>ASSISTANT</button><button onClick={() => setMobilePanel(null)} aria-label="Close panel"><X size={15} /></button></nav>
     <footer className="console-footer"><span>DATA: NASA MARS TREK WMTS · MGS MOLA</span><span>ROUTE MODEL: SPHERICAL HAVERSINE / MARS R = 3,390 KM</span><span>NOT FOR OPERATIONAL NAVIGATION · <Link href="/science">SCIENCE & METHODS ↗</Link></span></footer>
     {error && <div className="toast" role="status">{error}<button onClick={() => setError('')} aria-label="Dismiss"><X size={14} /></button></div>}
     {help && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setHelp(false); }}><section className="help-dialog" role="dialog" aria-modal="true" aria-labelledby="help-title"><button className="help-close" onClick={() => setHelp(false)} aria-label="Close shortcuts"><X size={16} /></button><span className="eyebrow">FIELD SYSTEMS / CONTROLS</span><h2 id="help-title">Keyboard reference</h2><div><span>R</span><p>Toggle route drawing</p></div><div><span>F</span><p>Toggle map focus mode</p></div><div><span>⌘ / CTRL + K</span><p>Open command palette</p></div><div><span>⌘ / CTRL + Z</span><p>Undo last waypoint</p></div><div><span>?</span><p>Open this reference</p></div><div><span>ESC</span><p>Close reference</p></div></section></div>}
-    {riskHelp && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setRiskHelp(false); }}><section className="help-dialog" role="dialog" aria-modal="true" aria-labelledby="risk-title"><button className="help-close" onClick={() => setRiskHelp(false)} aria-label="Close risk explanation"><X size={16} /></button><span className="eyebrow">ROUTE ANALYSIS / HEURISTIC</span><h2 id="risk-title">What the score means</h2><p>Terrain watch zones intersected by the sketch and route complexity contribute to this demonstration score. It does not use a validated elevation model and is not a safety assessment.</p><div className="risk-legend"><span className="risk-low">0–34 / LOW</span><span className="risk-mid">35–69 / WATCH</span><span className="risk-high">70–100 / HIGH</span></div><Link href="/science" onClick={() => setRiskHelp(false)}>Open data and methods <ArrowUpRight size={13} /></Link></section></div>}
+    {riskHelp && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setRiskHelp(false); }}><section className="help-dialog" role="dialog" aria-modal="true" aria-labelledby="risk-title"><button className="help-close" onClick={() => setRiskHelp(false)} aria-label="Close risk explanation"><X size={16} /></button><span className="eyebrow">ROUTE ANALYSIS / NON-CERTIFYING</span><h2 id="risk-title">What the score means</h2><p>The score combines coarse DTM grid slope, route length, complexity, and missing coverage. Every weight is an application heuristic. Grid spacing is about 118 m and local hazards are unresolved. This is not a safety assessment.</p><div className="risk-legend"><span className="risk-low">0–34 / LOW</span><span className="risk-mid">35–69 / WATCH</span><span className="risk-high">70–100 / HIGH</span></div><Link href="/science" onClick={() => setRiskHelp(false)}>Open data and methods <ArrowUpRight size={13} /></Link></section></div>}
     {palette && <div className="modal-backdrop palette-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setPalette(false); }}><section className="command-palette" role="dialog" aria-modal="true" aria-label="Command palette"><div><Search size={15} /><input autoFocus value={paletteQuery} placeholder="Search mission actions" onChange={(event) => setPaletteQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Escape') setPalette(false); if (event.key === 'Enter') event.currentTarget.closest('.command-palette')?.querySelector<HTMLButtonElement>('button')?.click(); }} /></div>{commandActions.filter((action) => action.label.toLowerCase().includes(paletteQuery.toLowerCase())).map((action) => <button key={action.label} onClick={() => { action.run(); setPalette(false); }}><span>{action.label}</span><ArrowUpRight size={13} /></button>)}{!commandActions.some((action) => action.label.toLowerCase().includes(paletteQuery.toLowerCase())) && <p className="palette-empty">NO ACTIONS FOUND</p>}</section></div>}
-    {selectedPoi && <DetailModal title={selectedPoi.name} eyebrow="MARS / JEZERO · CURATED POINT" summary={selectedPoi.summary} facts={[["CATEGORY", selectedPoi.category.toUpperCase()], ["APPROX. POINT", `${selectedPoi.lat.toFixed(4)}° N, ${selectedPoi.lon.toFixed(4)}° E`], ["STATUS", "SEEDED / NOT VERIFIED ROVER STOP"]]} sources={[{ title: selectedPoi.mission || 'NASA SOURCE', url: selectedPoi.sourceUrl }]} onClose={() => setSelectedPoi(null)} />}
+    {selectedPoi && <DetailModal title={selectedPoi.name} eyebrow="MARS / JEZERO · PUBLISHED OR DEMO POINT" summary={selectedPoi.summary} facts={[["CATEGORY", selectedPoi.category.toUpperCase()], ["APPROX. POINT", `${selectedPoi.lat.toFixed(4)}° N, ${selectedPoi.lon.toFixed(4)}° E`], ["STATUS", selectedPoi.sourceKind === 'DEMO' ? 'DEMO · NOT NASA PRODUCT' : 'NASA PLACES / PUBLISHED LOCALIZATION']]} sources={[{ title: selectedPoi.mission || 'NASA SOURCE', url: selectedPoi.sourceUrl }]} onClose={() => setSelectedPoi(null)} />}
     {selectedHazard && <DetailModal title={selectedHazard.name} eyebrow="MARS / JEZERO · ILLUSTRATIVE WATCH ZONE" summary="This seeded polygon is used by a non-certifying route heuristic. It is not an assessed EVA hazard." facts={[["SEVERITY", selectedHazard.severity.toUpperCase()], ["VERTICES", String(selectedHazard.coordinates.length)], ["STATUS", "LOCAL / NON-CERTIFYING"]]} sources={[{ title: 'NASA MARS TREK BASEMAP', url: 'https://trek.nasa.gov/mars/', note: 'NASA Trek supplies map imagery. The polygon itself is authored locally.' }]} onClose={() => setSelectedHazard(null)} />}
     {selectedCitation && <DetailModal title={selectedCitation.title} eyebrow={selectedCitation.mission === 'EONET' ? 'EARTH / EONET · ASSISTANT SOURCE' : 'MARS / ASSISTANT SOURCE'} summary={selectedCitation.excerpt} facts={[["SOURCE", selectedCitation.mission || 'NASA'], ["ROLE", "CITED EVIDENCE"]]} sources={[{ title: selectedCitation.title, url: selectedCitation.url }]} onClose={() => setSelectedCitation(null)} />}
-    {coachStep !== null && <div className="coach-shade"><section className="coach-dialog" role="dialog" aria-modal="true"><span className="eyebrow">FIELD GUIDE / {coachStep + 1} OF 4</span><h2>{['Explore the site', 'Sketch a Marswalk', 'Ask with evidence', 'Issue a briefing'][coachStep]}</h2><p>{['Start with NASA Mars Trek imagery and the Jezero science context. Earth EONET events stay on the landing page.', 'Use a route preset or enable Draw Route, then add surface waypoints. Distance, nearby points, and heuristic terrain score update together.', 'Ask a mission question to retrieve local source notes. Cloud models require explicit opt-in and provider keys.', 'Generate the briefing from a route, review citations, then export Markdown or download a server PDF.'][coachStep]}</p><div><button onClick={finishCoach}>SKIP GUIDE</button><button onClick={() => coachStep === 3 ? finishCoach() : setCoachStep(coachStep + 1)}>{coachStep === 3 ? 'FINISH' : 'NEXT'}</button></div></section></div>}
+    {coachStep !== null && <div className="coach-shade"><section className="coach-dialog" role="dialog" aria-modal="true"><span className="eyebrow">FIELD GUIDE / {coachStep + 1} OF 4</span><h2>{['Explore the site', 'Sketch a Marswalk', 'Ask with evidence', 'Issue a briefing'][coachStep]}</h2><p>{['Start with NASA Mars Trek imagery and the Jezero science context. Earth EONET events stay on the landing page.', 'Load a published PLACES route or draw a sketch. DTM coverage and the non-certifying Risk Index update with the waypoints.', 'Ask a mission question to retrieve local source notes. Cloud models require explicit opt-in and provider keys.', 'Generate the briefing from a route, review citations, then export Markdown or download a server PDF.'][coachStep]}</p><div><button onClick={finishCoach}>SKIP GUIDE</button><button onClick={() => coachStep === 3 ? finishCoach() : setCoachStep(coachStep + 1)}>{coachStep === 3 ? 'FINISH' : 'NEXT'}</button></div></section></div>}
   </main>;
+}
+
+function TrackInset({points,selected}:{points:PlacesTrack['points'];selected?:PlacesTrack['points'][number]}) {
+  const minLat=Math.min(...points.map(p=>p.lat)), maxLat=Math.max(...points.map(p=>p.lat));
+  const minLon=Math.min(...points.map(p=>p.lon)), maxLon=Math.max(...points.map(p=>p.lon));
+  const sx=(lon:number)=>12+(lon-minLon)/(maxLon-minLon||1)*176;
+  const sy=(lat:number)=>104-(lat-minLat)/(maxLat-minLat||1)*88;
+  const line=points.map((p,i)=>`${i?'L':'M'}${sx(p.lon).toFixed(1)} ${sy(p.lat).toFixed(1)}`).join(' ');
+  return <div className="track-inset" aria-label={`Published Perseverance track through sol ${selected?.sol ?? 'unknown'}`}><span>NASA PLACES / ROVER TRACK</span><svg viewBox="0 0 200 116" role="img" aria-label="Published interpolated rover localization path"><path d={line} fill="none" stroke="#fff" strokeWidth="2"/>{selected && <circle cx={sx(selected.lon)} cy={sy(selected.lat)} r="5" fill="#fff" stroke="#111" strokeWidth="2"/>}</svg><small>SOL {selected?.sol ?? '—'} · PUBLISHED INTERPOLATED</small></div>;
+}
+
+function RiskSource({source}:{source:string}) {
+  return source.startsWith('https://')
+    ? <a href={source} target="_blank" rel="noreferrer" title={source}>NASA PDS ORBITAL DEM ↗</a>
+    : <span>{source}</span>;
 }

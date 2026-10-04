@@ -10,3 +10,6 @@ apps/web/.next-video
 apps/web/.next-senior
 data/eonet/*.json
 !data/eonet/README.md
+data/nasa-archive-status.json
+apps/web/.next-feature
+data/traces/*.json

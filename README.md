@@ -1,12 +1,10 @@
 # Mars Explorer
 
-A Jezero Marswalk planning demo built from NASA Mars Trek imagery, curated Jezero annotations, local mission notes, and Earth-only NASA EONET events. Route scoring and watch zones are educational heuristics, not operational guidance.
-
-For a timed walkthrough, use [the four-minute spoken script](docs/VIDEO_SCRIPT.md). For free-tier hosting configuration and production smoke steps, use [the deployment guide](docs/DEPLOY.md).
+A source-grounded Jezero Marswalk research console. It connects NASA Mars Trek imagery, published Mars 2020 PLACES rover localizations and orbital elevation data, a cited mission assistant, and an Earth-only NASA EONET feed. Routes and the Traverse Risk Index are **non-certifying research aids**.
 
 ## Run locally
 
-Requirements: Node.js 20+ and pnpm 9+.
+Requires Node.js 20+ and pnpm 9+.
 
 ```sh
 pnpm install
@@ -15,53 +13,60 @@ cp apps/web/.env.local.example apps/web/.env.local
 pnpm dev
 ```
 
-Open `http://localhost:3000`; the Nest API runs on port 4000. The default assistant retrieves from `data/corpus` and assembles cited answers locally. Briefings and server PDFs are deterministic and need no model key.
+Open `http://localhost:3000`; Nest runs on port 4000. The local evidence assistant and PDF briefing work without a cloud model key. Cloud model credentials stay in the API environment and are used only after explicit opt-in. A browser-restricted Google Maps key optionally enables the Google shell; Leaflet with NASA Trek is the default Mars viewer.
 
-For the `/eonet` Earth map, put `NEXT_PUBLIC_GOOGLE_MAP_API_KEY=your-browser-key` in `apps/web/.env.local`, enable the Maps JavaScript API for that key, and restart Next.js. The EONET event register still works without a Maps key. The key is a browser key; restrict it by HTTP referrer and API in Google Cloud. The `/explore` console uses NASA Trek in Leaflet by default and offers a Google Maps shell with NASA Trek `ImageMapType` when the same key is present. This does not use a Google Mars tile service. NASA Trek, EONET, and Google Maps need network access.
+The homepage and dossier pages contain 3D visual studies. Those scenes are illustrations. The Explore console is the measured-data surface.
 
-The landing, dossier, Earth, target, hazard, Ops, and Pipeline pages use lazily loaded Three.js scenes with distinct Mars orbital, illustrative terrain, layer-stack, rock-form, Earth, and systems views. A static poster appears for reduced motion or unavailable WebGL. The Mars globe uses a [NASA/JPL Viking-derived texture](https://science.nasa.gov/3d-resources/mars/); its Jezero pin is schematic. The Earth globe uses a [NASA Blue Marble image](https://eoimages.gsfc.nasa.gov/images/imagerecords/57000/57730/land_ocean_ice_2048.jpg). Terrain, layers, and rock forms are visual studies, not measured products or collected samples. The `/gallery` page in the running app links each image to its NASA caption and credit. The long-form theater pages have source registers and next-stop links.
+## Published data and limits
 
-Optional Claude, Gemini, and DeepSeek credentials belong only in the ignored root `.env`. The assistant uses a cloud model only after **Use cloud model** is selected in the console, or the optional `/compare` page is explicitly run. No model keys are needed for the recording path.
-
-## Four-minute recording path
-
-| Time | Screen | Show |
+| Product | In the app | Limit |
 |---|---|---|
-| 0:00–0:25 | `/` | Textured Mars globe and brand |
-| 0:25–0:50 | `/survival` + `/jezero` | Illustrative terrain study and textured Mars globe |
-| 0:50–1:15 | `/eonet` | Google Maps with EARTH / EONET locations only |
-| 1:15–2:15 | `/explore` | NASA Trek layers, demo Marswalk, route metrics and method badge |
-| 2:15–2:40 | Ask + `/traces` | Local cited answer and deterministic steps |
-| 2:40–3:15 | `/ops` + `/briefing/preview` | Simulated WebSocket ticks and server PDF download |
-| 3:15–3:40 | `/targets` + `/hazards` | Seeded Jezero points and non-certifying watch zones |
-| 3:40–4:00 | `/architecture` + `/story` + `/science` | Source boundaries, narrative, limitations |
+| [Mars 2020 PLACES `best_interp.csv`](https://pds-geosciences.wustl.edu/m2020/urn-nasa-pds-mars2020_rover_places/data_localizations/best_interp.csv) | Rover track, sol scrubber, verified mission locations, classroom route | Interpolated published localization; no UTC observation date in the CSV and no live rover telemetry. |
+| [PLACES `m20_orbital_dem.img`](https://pds-geosciences.wustl.edu/m2020/urn-nasa-pds-mars2020_rover_places/data_maps/m20_orbital_dem.xml) | Coarse sampled elevation/slope, Risk Index, A* corridor | The app samples the 1 m source product into a ~118 m grid in Jezero. It cannot resolve local hazards. |
+| [NASA Mars Trek WMTS](https://trek.nasa.gov/tiles/apidoc/trekAPI.html?body=mars) | MOLA, Viking, and MOLA/HRSC image layers | Raster color and hillshade are context, not route measurements. |
+| [NASA EONET v3](https://eonet.gsfc.nasa.gov/docs/v3) | Earth event map, source provenance, category museum, Earth assistant tool | Earth geometry never enters the Mars map or Risk Index. |
+| [NASA Perseverance mission](https://science.nasa.gov/mission/mars-2020-perseverance/) | Mission facts and local cited corpus | Mission context does not validate a user-drawn route. |
 
-The tour strip follows this path. `/compare` is an optional experiment outside the recording path. The landing, EONET, and analog views share a searchable Earth event explorer with category markers, a 75-second refresh, source-linked detail dialogs, and EONET category/GeoJSON metadata. Its Google Maps view has an OpenStreetMap fallback when no browser key is configured.
+`data/perseverance/SOURCE.json` records the PLACES CSV URL, retrieval time, and checksum. `scripts/build-jezero-dtm-grid.py` reproduces the sparse DEM sampling; the exact DEM label and retrieval date are in the [science register](http://localhost:3000/science). Refresh both archives from NASA with:
 
-## Data and methods
+```sh
+pnpm refresh:nasa
+# or: python3 scripts/refresh-nasa-archives.py
+# flags: --skip-dem | --skip-places | --force
+```
 
-- [NASA Mars Trek](https://trek.nasa.gov/mars/) supplies the Mars basemap. NASA [Perseverance](https://science.nasa.gov/mission/mars-2020-perseverance/) and [Photojournal](https://science.nasa.gov/photojournal/jezero-craters-kodiak-and-scarps/) supply science context.
-- `data/jezero` contains approximate, seeded points, watch zones, and reference areas. The `/pipeline` page lists the actual data path; there is no full-planet PDS ingest or live rover data.
-- The default route score checks seeded polygons and points with a haversine/sample heuristic. Its badge says `HEURISTIC`.
-- Optional PostGIS Jezero mode uses `ST_Intersects` and `ST_DWithin` with a Mars-local approximate kilometer scale. Run `data/jezero/postgis/001_seed.sql` against `DATABASE_URL`, then set `POSTGIS_ENABLED=true` in `.env`. The badge says `POSTGIS JEZERO`; if the DB is unavailable the route returns to the heuristic. Neither method certifies safety.
-- [NASA EONET v3](https://eonet.gsfc.nasa.gov/docs/v3) supplies Earth events only. EONET geometries never appear on the Mars map.
-- The local assistant pipeline retrieves notes, optionally calls the Earth EONET tool for Earth questions, grades evidence, and assembles a template answer. `/traces` shows the last request in this API process, not a persistent observability system.
-- `POST /briefings/pdf` renders the deterministic briefing with PDFKit. The `/ops` WebSocket namespace broadcasts explicitly simulated ticks every three seconds.
+The API reloads PLACES/DEM files by mtime after a refresh. The Risk Index combines coarse sampled slope, route length, turns, and missing DTM coverage using application-defined weights. Its `dtm-sample` and `heuristic` modes are both **NON-CERTIFYING**. The A* corridor is a suggestion only.
+
+Approximate `data/jezero` points and watch polygons are **DEMO · NOT NASA PRODUCT** and off by default. Schematic HiRISE footprint boxes are not plotted. `/targets` and `/hazards` offer an explicit DEMO switch. The `/ops` WebSocket page is visibly simulated and is not part of the real-data tour.
+
+## Explore flow
+
+1. Inspect NASA Trek layers and the PLACES track; scrub to a published sol.
+2. Load a PLACES route, draw a sketch, or run Classroom Mode. Classroom Mode forces cloud models off.
+3. Review the Risk Index components and DTM coverage. For two endpoints, request an A* suggested corridor.
+4. Ask the assistant, inspect citations, and generate a briefing or server PDF.
+5. Copy a `/route/share` link and download its 1200 × 630 mission card SVG.
+
+**PLAY STORY** in the tour strip advances through the twelve-stop narrative. Use the full spoken teleprompter in [docs/VIDEO_SCRIPT_4MIN.txt](docs/VIDEO_SCRIPT_4MIN.txt) (beat clock, click cues, backup lines). A short table version lives in [docs/VIDEO_SCRIPT.md](docs/VIDEO_SCRIPT.md). The tour uses a real EONET refresh where older versions showed simulated `/ops` activity.
+
+Assistant traces persist as the last 100 records in Postgres when `DATABASE_URL` is usable, or `data/traces/assistant.json` otherwise. EONET snapshots use a durable file/Postgres cache and expose upstream fetch time, content hash, and cache status in the Earth UI.
 
 ## API
 
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/health` | Liveness |
-| GET | `/layers` | Mars layer catalog |
-| GET | `/regions/jezero` | Seeded Jezero data |
-| POST | `/routes/analyze` | Route metrics and method badge |
+| GET | `/layers` | NASA Trek layer catalog |
+| GET | `/places/perseverance?fromSol=&toSol=` | Downsampled published PLACES localizations |
+| GET | `/regions/jezero?demo=true` | Verified locations; optional DEMO seeds |
+| POST | `/routes/analyze` | Distance, DTM samples, coverage, Risk Index |
+| POST | `/routes/suggest` | Coarse DTM A* corridor for two endpoints |
 | POST | `/assistant/ask` | Cited local answer by default |
-| GET | `/assistant/traces` | Last deterministic step log |
-| POST | `/briefings` | Template briefing |
-| POST | `/briefings/pdf` | Server PDF |
+| GET | `/assistant/traces/recent` | Durable recent trace records |
+| POST | `/briefings` | Deterministic briefing |
+| POST | `/briefings/pdf` | PDF with Risk Index components |
 | GET | `/eonet/events-summary` | EARTH / EONET feed |
-| WebSocket | `/ops` (`ops.tick`) | Simulated activity |
+| GET | `/eonet/provenance` | Source fetch time and cache state |
+| WebSocket | `/ops` (`ops.tick`) | Explicitly simulated activity |
 
-`docker compose up --build` runs the app. The optional PostGIS database profile is `docker compose --profile database up --build`; seed it with `docker compose exec -T postgres psql -U mars -d mars_explorer < data/jezero/postgis/001_seed.sql` before enabling `POSTGIS_ENABLED=true`. For Docker, set the Google Maps key in the root `.env` so Compose passes it to the web service. This project is a research storytelling aid, not flight software or navigation guidance.
-# NASASpaceAPPChallenge
+`docker compose up --build` runs the app. The [deployment guide](docs/DEPLOY.md) covers optional hosting. This project is a research storytelling aid, not flight software or navigation guidance.

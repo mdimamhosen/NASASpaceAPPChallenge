@@ -8,6 +8,7 @@ import { EonetService } from '../eonet/eonet.service';
 import { RetrieverService } from '../rag/retriever.service';
 import { RoutesService } from '../routes/routes.service';
 import { getEarthNaturalEvents } from './tools/earth-events.tool';
+import { TraceStoreService } from './trace-store.service';
 import type { CorpusDoc } from '../rag/corpus-loader.service';
 
 const AgentState = Annotation.Root({
@@ -32,6 +33,7 @@ export class AssistantService {
     private readonly routes: RoutesService,
     private readonly eonet: EonetService,
     private readonly config: ConfigService,
+    private readonly traceStore: TraceStoreService,
   ) {
     this.graph = new StateGraph(AgentState)
       .addNode('retrieve', async (state) => ({ docs: await this.retriever.retrieve(state.question) }))
@@ -159,6 +161,7 @@ export class AssistantService {
     const analysis = waypoints.length > 1 ? await this.routes.analyze(waypoints) : undefined;
     const cited = result.docs as CorpusDoc[];
     const citations: Citation[] = cited.map(({ title, url, mission, excerpt }) => ({ title, url, mission, excerpt }));
+    if (analysis) citations.push(...analysis.nearbyPois.filter((poi)=>poi.sourceKind==='NASA_PLACES').map((poi)=>({title:poi.name,url:poi.sourceUrl,mission:'PLACES',excerpt:poi.summary})));
     if (result.usedEarthTool) {
       citations.push({
         title: 'NASA EONET v3 — Earth natural events',
@@ -188,9 +191,11 @@ export class AssistantService {
       { step: 'grade', detail: result.refused ? 'Insufficient evidence' : 'Evidence available' },
       { step: 'synthesize', detail: result.modelUsed === 'local-evidence' ? 'Local template; no model call' : `Explicit cloud model: ${result.modelUsed}` },
     ];
+    const traceId = await this.traceStore.save(question, this.lastTrace);
     return {
       answer,
       citations,
+      traceId,
       trace: this.lastTrace,
       modelUsed: result.modelUsed,
       refused: result.refused,
@@ -202,6 +207,7 @@ export class AssistantService {
   }
 
   getTrace() { return this.lastTrace; }
+  getRecentTraces() { return this.traceStore.recent(); }
 
   async briefing(waypoints: RouteWaypoint[]): Promise<MissionBriefing> {
     const analysis: RouteAnalysis = await this.routes.analyze(waypoints);
@@ -212,6 +218,7 @@ export class AssistantService {
       'Search for signs of ancient microbial life.',
       'Collect and cache samples for possible future return.',
     ];
+    citations.push(...analysis.nearbyPois.filter((poi)=>poi.sourceKind==='NASA_PLACES').map((poi)=>({title:poi.name,url:poi.sourceUrl,mission:'PLACES',excerpt:poi.summary})));
     const observations = citations.map((citation) => `${citation.title}: ${citation.excerpt}`);
     const markdown = [
       '# Jezero Marswalk Mission Briefing',

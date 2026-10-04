@@ -1,23 +1,22 @@
-# Senior polish — continuation
+# Feature gap plan — completed local implementation
 
-## Status
+## Phase and task
 
-Codex cinematic heroes restored (full-bleed 3D + blended left/bottom scrim). EONET now warm-caches **full** upstream payloads to `data/eonet/` + Postgres (`eonet_cache`) when `DATABASE_URL` works; snapshots kept until content hash changes; last-good served on mobile/flaky upstream failure.
+The feature plan at `/Users/mdimam/.cursor/plans/feature_gap_research_2f85a91c.plan.md` is implemented locally. Deployment was explicitly excluded by that plan.
 
-## Completed this turn
+## Completed
 
-- Cleaned conflicting `.landing-hero` rules so Codex blended hero wins
-- Photo plane moved under the hero (soft blend) instead of fighting the 3D scrim
-- `EonetDurableStore` + boot warm of events/geojson/categories/sources/layers/magnitudes
-- SQL: `data/jezero/postgis/002_eonet_cache.sql`
+- Published PDS PLACES CSV and reproducible NASA-hosted orbital DEM grid; verified localization markers; DEMO seeds off by default; schematic footprints removed.
+- Evidence Cockpit, DTM/heuristic Risk Index with source breakdown, elevation samples, A* corridor, and PDF index.
+- PLACES track, sol scrubber, citation focus for verified PLACES locations, additional verified Trek layers.
+- Classroom Mode, shareable SVG mission card, Story Mode autoplay with the real EONET beat.
+- EONET cache provenance and category museum; durable assistant traces in Postgres or file.
+- Accessibility focus styling, exact product science register, updated script and README.
 
-## Remaining (optional)
+## Acceptance
 
-- Connect free Vercel + Render and smoke production URLs
-- Start Postgres locally if you want DB cache in addition to file cache: `docker compose --profile database up -d`
+`pnpm --filter @mars-explorer/shared build`, `pnpm --filter @mars-explorer/api build`, and an isolated production web build pass. API and browser smoke checks cover PLACES, regions, covered/uncovered DTM routes, A*, EONET provenance, assistant traces, PDF, Explore, share card, and science pages.
 
-## Do not redo
+## Remaining work
 
-- DetailModal / EarthEventsExplorer cascade
-- Cinematic hero structure (`landing-hero` + `dossier-hero-cinematic`)
-- Deploy docs / video script
+None from the feature plan. Production deployment remains outside its scope.

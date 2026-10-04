@@ -3,15 +3,17 @@ import { ConfigService } from '@nestjs/config';
 import type { AppConfig } from '../config/configuration';
 import type { EonetQueryDto } from './dto/eonet-query.dto';
 import { EonetDurableStore } from './eonet-durable.store';
+import type { EonetProvenance } from '@mars-explorer/shared';
 import type { EarthEventSummary, EonetEvent, EonetEventsResponse } from './eonet.types';
 
-type MemoryEntry = { expires: number; body: unknown; durableKey: string };
+type MemoryEntry = { expires: number; body: unknown; durableKey: string; provenance: EonetProvenance };
 
 @Injectable()
 export class EonetService implements OnModuleInit {
   private readonly log = new Logger(EonetService.name);
   private readonly cache = new Map<string, MemoryEntry>();
   private warming?: Promise<void>;
+  private readonly provenance = new Map<string, EonetProvenance>();
 
   constructor(
     private readonly config: ConfigService,
@@ -45,6 +47,12 @@ export class EonetService implements OnModuleInit {
     const results = await Promise.allSettled(jobs);
     const ok = results.filter((r) => r.status === 'fulfilled').length;
     this.log.log(`EONET warm complete: ${ok}/${results.length} snapshots ready`);
+  }
+
+  async getProvenance(query: EonetQueryDto = {}): Promise<EonetProvenance> {
+    const normalized = this.withDefaults(query);
+    await this.getEvents(normalized);
+    return this.provenance.get(this.buildUrl('/events', normalized))!;
   }
 
   async getEvents(query: EonetQueryDto = {}): Promise<unknown> {
@@ -149,7 +157,7 @@ export class EonetService implements OnModuleInit {
     const durableKey = this.durableKey(url);
     const cached = this.cache.get(url);
     const now = Date.now();
-    if (cached && cached.expires > now) return cached.body;
+    if (cached && cached.expires > now) { this.provenance.set(url, {...cached.provenance, servedFromCache:true, storage:'memory'}); return cached.body; }
 
     for (const [key, entry] of this.cache) {
       if (entry.expires <= now) this.cache.delete(key);
@@ -167,7 +175,9 @@ export class EonetService implements OnModuleInit {
         if (!response.ok) throw new Error(`EONET HTTP ${response.status}`);
         const body = await response.json();
         const persisted = await this.durable.write(durableKey, body, url);
-        this.cache.set(url, {
+        const provenance: EonetProvenance = { fetchedAt: persisted.fetchedAt, contentHash: persisted.contentHash, sourceUrl: url, servedFromCache: false, storage: 'upstream' };
+        this.provenance.set(url, provenance);
+        this.cache.set(url, { provenance,
           expires: now + this.eonet().cacheTtlSec * 1000,
           body: persisted.body,
           durableKey,
@@ -182,12 +192,15 @@ export class EonetService implements OnModuleInit {
     const memoryStale = this.cache.get(url)?.body;
     if (memoryStale !== undefined) {
       this.log.warn(`EONET upstream failed; serving in-memory last-good for ${path}`);
+      const entry = this.cache.get(url)!; this.provenance.set(url, {...entry.provenance, servedFromCache:true, storage:'memory'});
       return memoryStale;
     }
 
     const disk = await this.durable.read(durableKey);
     if (disk) {
-      this.cache.set(url, {
+      const provenance: EonetProvenance = { fetchedAt: disk.fetchedAt, contentHash: disk.contentHash, sourceUrl: url, servedFromCache:true, storage:'durable' };
+      this.provenance.set(url, provenance);
+      this.cache.set(url, { provenance,
         expires: now + this.eonet().cacheTtlSec * 1000,
         body: disk.body,
         durableKey,
