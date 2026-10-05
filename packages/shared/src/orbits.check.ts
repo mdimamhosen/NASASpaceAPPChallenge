@@ -1,4 +1,4 @@
-// Run: node apps/web/src/lib/orbits.check.ts
+// Run: node packages/shared/src/orbits.check.ts
 import assert from 'node:assert/strict';
 import { earthMarsGeometry, planetPosition } from './orbits.ts';
 

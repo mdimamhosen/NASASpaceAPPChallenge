@@ -12,7 +12,7 @@ export type DtmGrid = { product: string; sourceUrl: string; labelUrl: string; la
 export type SuggestedRoute = { waypoints: RouteWaypoint[]; method: 'dtm-grid-astar'; sourceUrl: string; certifying: false; note: string };
 export type RouteAnalysis = { distanceKm: number; riskScore: number; riskNotes: string[]; nearbyPois: POI[]; elevationDeltaM?: number; terrainMethod: TerrainMethod; riskIndex: RiskBreakdown; terrainSamples: TerrainSample[]; dtmCoverage: number; suggestedPath?: RouteWaypoint[] };
 export type Citation = { title: string; url: string; mission?: string; excerpt: string };
-export type AssistantResponse = { answer: string; citations: Citation[]; modelUsed: 'claude' | 'gemini' | 'deepseek' | 'local-evidence'; refused: boolean; traceId?: string; observabilityBackend?: 'langsmith' | 'langfuse'; comparison?: Array<{ model: string; answer: string }>; trace?: Array<{ step: string; detail: string }> };
+export type AssistantResponse = { answer: string; citations: Citation[]; passages?: RagPassage[]; modelUsed: 'claude' | 'gemini' | 'deepseek' | 'local-evidence'; refused: boolean; traceId?: string; observabilityBackend?: 'langsmith' | 'langfuse'; comparison?: Array<{ model: string; answer: string }>; trace?: Array<{ step: string; detail: string }> };
 export type MissionBriefing = { title: string; distanceKm: number; explorationPoints: number; scientificObjectives: string[]; terrainConsiderations: string[]; relevantObservations: string[]; recommendedInvestigationPoints: string[]; citations: Citation[]; markdown: string; riskIndex: RiskBreakdown };
 export type RegionData = { id: string; name: string; center: LatLon; bounds: [[number, number], [number, number]]; demoOverlay: boolean; pois: POI[]; hazards: Array<{ id: string; name: string; coordinates: LatLon[]; severity: 'moderate' | 'high' }>; footprints: Array<{ id: string; name: string; instrument: string; coordinates: LatLon[]; sourceUrl: string }> };
 export type EonetProvenance = { fetchedAt: string; contentHash: string; servedFromCache: boolean; sourceUrl: string; storage: 'upstream' | 'memory' | 'durable' };
@@ -30,3 +30,22 @@ export type EarthEventDetail = {
   sources?: Array<{ id: string; url?: string; title?: string }>;
   geometry?: Array<{ date?: string; type: string; coordinates: number[] | number[][] | number[][][]; magnitudeValue?: number; magnitudeUnit?: string }>;
 };
+
+// RAG: hybrid retrieval (BM25 + Gemini embeddings, RRF + MMR) over the cited NASA corpus.
+export type RagScores = { bm25: number; dense: number | null; fused: number };
+export type RagPassage = { n: number; chunkId: string; docId: string; title: string; url: string; heading: string; text: string; scores: RagScores };
+export type RagDocument = { id: string; title: string; url: string; source: 'curated' | 'user'; retrievedDate?: string; chunks: number; words: number };
+export type RagStatus = { documents: number; chunks: number; embeddedChunks: number; embedModel: string | null; semantic: boolean; builtAt: string | null; generators: { gemini: boolean; claude: boolean }; adminTokenRequired: boolean };
+export type RagMode = 'hybrid' | 'bm25' | 'dense';
+export type RagSearchResult = { query: string; mode: RagMode; semantic: boolean; strong: boolean; passages: RagPassage[]; tookMs: number };
+export type RagModel = 'gemini' | 'claude' | 'local-evidence';
+export type RagAnswer = RagSearchResult & { answer: string; modelUsed: RagModel; refused: boolean; cited: number[] };
+export type RagEvalRow = { mode: RagMode; recallAt3: number; recallAt5: number; mrr: number };
+export type RagEval = { questions: number; semantic: boolean; rows: RagEvalRow[]; misses: Array<{ question: string; expected: string[]; got: string[] }> };
+export type RagProjection = { points: Array<{ chunkId: string; docId: string; title: string; x: number; y: number; z: number }>; query?: { x: number; y: number; z: number }; hits: string[] };
+
+// Agent: tool-calling mission agent (Gemini → Claude → deterministic planner).
+export type AgentLabel = 'RAG' | 'MARS' | 'EARTH / EONET' | 'ORBIT' | 'BRIEFING';
+export type AgentStep = { i: number; kind: 'plan' | 'tool' | 'answer' | 'error'; tool?: string; args?: Record<string, unknown>; summary: string; label?: AgentLabel; ms?: number };
+export type AgentModel = 'gemini' | 'claude' | 'local-planner';
+export type AgentRun = { goal: string; steps: AgentStep[]; answer: string; modelUsed: AgentModel; passages: RagPassage[]; route?: RouteWaypoint[]; tookMs: number; mode: 'fast' | 'deep'; router?: 'jev' | 'rules' };

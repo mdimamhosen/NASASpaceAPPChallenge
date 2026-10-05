@@ -6,6 +6,8 @@ Record at 1440 × 900 with the API awake. Keep cloud models off. The **PLAY STOR
 
 | Time | Screen and action | Spoken track |
 |---|---|---|
+| intro | `/` — title and team. | “Mars Explorer, by team Binary Explorers: Md Imam Hosen (team lead, system architect + full-stack engineer), Md Ahad (researcher + NASA data analyst), and Biswadev Biswas (AI engineer + 3D/UI developer).” |
+| home | `/#ask` — run the mission agent (FAST), then Ask the corpus. | “A System One router picks tools in one pass, tools run in parallel, and the answer streams with passage citations; live retrieval and the 3D embedding space show how evidence is found.” |
 | 0:00–0:25 | `/` — Mars globe, the Jezero 3D terrain showcase, then Earth feed. | “Mars Explorer joins published Mars data with a cited mission briefing. This terrain is real: NASA HiRISE and CTX imagery on the PLACES elevation model, with Perseverance’s published path. The Earth event feed is a separate NASA EONET source.” |
 | 0:25–0:50 | `/survival`, `/jezero` — inspect the 3D studies. | “The scenes introduce the field question. They illustrate terrain and story; the measured route data appear in Explore.” |
 | 0:50–1:15 | `/eonet` — filter a live Earth event. | “EONET publishes Earth events. The page shows the source fetch time, cache status, and a category museum. None of these Earth coordinates enter the Mars map.” |

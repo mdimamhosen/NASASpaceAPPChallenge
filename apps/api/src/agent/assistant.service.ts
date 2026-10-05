@@ -2,19 +2,22 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Annotation, END, START, StateGraph } from '@langchain/langgraph';
 import { CallbackHandler as LangfuseCallbackHandler } from '@langfuse/langchain';
-import type { AssistantResponse, Citation, MissionBriefing, RouteAnalysis, RouteWaypoint } from '@mars-explorer/shared';
+import type { AssistantResponse, Citation, MissionBriefing, RagPassage, RouteAnalysis, RouteWaypoint } from '@mars-explorer/shared';
 import type { AppConfig } from '../config/configuration';
 import { EonetService } from '../eonet/eonet.service';
+import { AnswerService, REFUSAL } from '../rag/answer.service';
+import { LlmService } from '../rag/llm.service';
 import { RetrieverService } from '../rag/retriever.service';
 import { RoutesService } from '../routes/routes.service';
 import { getEarthNaturalEvents } from './tools/earth-events.tool';
 import { TraceStoreService } from './trace-store.service';
-import type { CorpusDoc } from '../rag/corpus-loader.service';
 
 const AgentState = Annotation.Root({
   question: Annotation<string>(),
   intent: Annotation<'ask' | 'briefing'>(),
-  docs: Annotation<CorpusDoc[]>({ reducer: (_, next) => next, default: () => [] }),
+  passages: Annotation<RagPassage[]>({ reducer: (_, next) => next, default: () => [] }),
+  strong: Annotation<boolean>({ reducer: (_, next) => next, default: () => false }),
+  mode: Annotation<string>({ reducer: (_, next) => next, default: () => 'hybrid' }),
   earthContext: Annotation<string>({ reducer: (_, next) => next, default: () => '' }),
   usedEarthTool: Annotation<boolean>({ reducer: (_, next) => next, default: () => false }),
   answer: Annotation<string>({ reducer: (_, next) => next, default: () => '' }),
@@ -34,9 +37,11 @@ export class AssistantService {
     private readonly eonet: EonetService,
     private readonly config: ConfigService,
     private readonly traceStore: TraceStoreService,
+    private readonly answers: AnswerService,
+    private readonly llm: LlmService,
   ) {
     this.graph = new StateGraph(AgentState)
-      .addNode('retrieve', async (state) => ({ docs: await this.retriever.retrieve(state.question) }))
+      .addNode('retrieve', async (state) => { const res = await this.retriever.search(state.question, 6); return { passages: res.passages, strong: res.strong, mode: res.mode }; })
       .addNode('earth_tool', async (state) => {
         if (!this.shouldUseEarthTool(state.question)) return { earthContext: '', usedEarthTool: false };
         const result = await getEarthNaturalEvents(this.eonet, { limit: 6, days: 20 });
@@ -49,11 +54,12 @@ export class AssistantService {
           earthContext: `${result.note}\n${lines || '- No open EONET events returned.'}`,
         };
       })
-      .addNode('grade', (state) => ({ refused: state.docs.length === 0 && !state.usedEarthTool }))
-      .addNode('synthesize', async (state) => this.synthesize(state.question, state.docs, state.earthContext, state.useCloudModels))
-      .addNode('refuse', () => ({
-        answer: 'The local NASA notes do not contain enough evidence to answer that question reliably.',
-      }))
+      .addNode('grade', (state) => ({ refused: !state.strong && !state.usedEarthTool }))
+      .addNode('synthesize', async (state) => {
+        const res = await this.answers.answer(state.question, { query: state.question, mode: state.mode as 'hybrid', semantic: true, strong: state.strong, passages: state.passages, tookMs: 0 }, { useCloud: state.useCloudModels, earthContext: state.earthContext });
+        return { answer: res.answer, refused: res.refused, modelUsed: res.modelUsed };
+      })
+      .addNode('refuse', () => ({ answer: REFUSAL }))
       .addEdge(START, 'retrieve')
       .addEdge('retrieve', 'earth_tool')
       .addEdge('earth_tool', 'grade')
@@ -65,86 +71,6 @@ export class AssistantService {
 
   private shouldUseEarthTool(question: string): boolean {
     return /\b(earth|eonet|wildfire|storm|volcano|landslide|compare|analog|natural event)\b/i.test(question);
-  }
-
-  private async synthesize(
-    question: string,
-    docs: CorpusDoc[],
-    earthContext: string,
-    useCloudModels: boolean,
-  ): Promise<{ answer: string; modelUsed: AssistantResponse['modelUsed'] }> {
-    const evidence = docs
-      .map((doc) => `- ${doc.title}: ${doc.excerpt || doc.body.slice(0, 260)}`)
-      .join('\n');
-    const localAnswer = [
-      `The available mission notes provide this context for your question:`,
-      evidence,
-      earthContext ? `EARTH CONTEXT (EONET — Earth only):\n${earthContext}` : '',
-      'Planning context only. This is not a route safety determination.',
-    ]
-      .filter(Boolean)
-      .join('\n\n');
-    const provider = useCloudModels ? await this.tryProvider(question, docs, earthContext) : undefined;
-    return provider ?? { answer: localAnswer, modelUsed: 'local-evidence' };
-  }
-
-  private async tryProvider(
-    question: string,
-    docs: CorpusDoc[],
-    earthContext: string,
-    selectedProvider?: 'anthropic' | 'gemini' | 'deepseek',
-  ): Promise<{ answer: string; modelUsed: AssistantResponse['modelUsed'] } | undefined> {
-    const context = docs.map((doc) => `${doc.title}: ${doc.body}`).join('\n\n');
-    const prompt = `Answer only from this evidence. If evidence is insufficient, say so. Do not invent locations or safety findings. Cite source titles. If EARTH/EONET context appears, label it clearly as Earth-only comparative context — never as Mars hazards.\n\nEVIDENCE:\n${context}\n\n${earthContext ? `EARTH_EONET:\n${earthContext}\n\n` : ''}QUESTION: ${question}`;
-    const providers: Array<{ key?: string; model: string; endpoint: string; kind: string }> = [
-      { key: process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY, model: 'claude-3-5-haiku-latest', endpoint: 'https://api.anthropic.com/v1/messages', kind: 'anthropic' },
-      { key: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY, model: 'gemini-2.0-flash', endpoint: 'https://generativelanguage.googleapis.com/v1beta/models', kind: 'gemini' },
-      { key: process.env.DEEPSEEK_API_KEY, model: 'deepseek-chat', endpoint: 'https://api.deepseek.com/chat/completions', kind: 'deepseek' },
-    ];
-    const orderedProviders = selectedProvider ? providers.filter((provider) => provider.kind === selectedProvider) : providers;
-    for (const provider of orderedProviders) {
-      if (!provider.key) continue;
-      try {
-        const response =
-          provider.kind === 'anthropic'
-            ? await fetch(provider.endpoint, {
-                method: 'POST',
-                headers: { 'content-type': 'application/json', 'x-api-key': provider.key, 'anthropic-version': '2023-06-01' },
-                body: JSON.stringify({ model: provider.model, max_tokens: 500, messages: [{ role: 'user', content: prompt }] }),
-                signal: AbortSignal.timeout(12000),
-              })
-            : provider.kind === 'gemini'
-              ? await fetch(`${provider.endpoint}/${provider.model}:generateContent?key=${provider.key}`, {
-                  method: 'POST',
-                  headers: { 'content-type': 'application/json' },
-                  body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
-                  signal: AbortSignal.timeout(12000),
-                })
-              : await fetch(provider.endpoint, {
-                  method: 'POST',
-                  headers: { 'content-type': 'application/json', authorization: `Bearer ${provider.key}` },
-                  body: JSON.stringify({ model: provider.model, messages: [{ role: 'user', content: prompt }], max_tokens: 500 }),
-                  signal: AbortSignal.timeout(12000),
-                });
-        if (!response.ok) continue;
-        const data = (await response.json()) as any;
-        const text =
-          provider.kind === 'anthropic'
-            ? data.content?.[0]?.text
-            : provider.kind === 'gemini'
-              ? data.candidates?.[0]?.content?.parts?.[0]?.text
-              : data.choices?.[0]?.message?.content;
-        if (typeof text === 'string' && text.trim()) {
-          return {
-            answer: text.trim(),
-            modelUsed: provider.kind === 'anthropic' ? 'claude' : provider.kind === 'gemini' ? 'gemini' : 'deepseek',
-          };
-        }
-      } catch {
-        /* Provider failures fall through. */
-      }
-    }
-    return undefined;
   }
 
   async ask(question: string, waypoints: RouteWaypoint[] = [], useCloudModels = false, compareModels = false): Promise<AssistantResponse> {
@@ -159,8 +85,9 @@ export class AssistantService {
       useLangfuse ? { callbacks: [new LangfuseCallbackHandler({ tags: ['mars-explorer', 'agentic-rag'] })] } : undefined,
     );
     const analysis = waypoints.length > 1 ? await this.routes.analyze(waypoints) : undefined;
-    const cited = result.docs as CorpusDoc[];
-    const citations: Citation[] = cited.map(({ title, url, mission, excerpt }) => ({ title, url, mission, excerpt }));
+    const passages = result.passages as RagPassage[];
+    const seen = new Set<string>();
+    const citations: Citation[] = passages.filter((p) => !seen.has(p.docId) && seen.add(p.docId)).map((p) => ({ title: p.title, url: p.url, excerpt: p.text.slice(0, 300) }));
     if (analysis) citations.push(...analysis.nearbyPois.filter((poi)=>poi.sourceKind==='NASA_PLACES').map((poi)=>({title:poi.name,url:poi.sourceUrl,mission:'PLACES',excerpt:poi.summary})));
     if (result.usedEarthTool) {
       citations.push({
@@ -180,21 +107,25 @@ export class AssistantService {
         { name: 'Claude', provider: 'anthropic' as const },
         { name: 'Gemini', provider: 'gemini' as const },
       ];
+      const context = passages.map((p) => `[${p.n}] ${p.title}: ${p.text}`).join('\n\n');
+      const prompt = `${context}${result.earthContext ? `\n\nEARTH / EONET (Earth only):\n${result.earthContext}` : ''}\n\nQuestion: ${question}`;
+      const system = 'Answer only from the numbered passages and cite them as [n]. Label any Earth/EONET content as Earth-only. Under 150 words.';
       for (const model of models) {
-        const response = await this.tryProvider(question, cited, result.earthContext ?? '', model.provider);
-        comparison.push({ model: model.name, answer: response?.answer ?? `${model.name} is not configured or is currently unavailable.` });
+        const text = await this.llm.completeWith(model.provider === 'anthropic' ? 'claude' : 'gemini', system, prompt);
+        comparison.push({ model: model.name, answer: text ?? `${model.name} is not configured or is currently unavailable.` });
       }
     }
     this.lastTrace = [
-      { step: 'retrieve', detail: `${cited.length} local source note(s) matched` },
+      { step: 'retrieve', detail: `${passages.length} passages via ${result.mode} retrieval (BM25 + Gemini embeddings, RRF/MMR); evidence ${result.strong ? 'strong' : 'weak'}` },
       { step: 'earth_tool', detail: result.usedEarthTool ? 'EARTH / EONET events consulted' : 'Skipped; no Earth context requested' },
       { step: 'grade', detail: result.refused ? 'Insufficient evidence' : 'Evidence available' },
-      { step: 'synthesize', detail: result.modelUsed === 'local-evidence' ? 'Local template; no model call' : `Explicit cloud model: ${result.modelUsed}` },
+      { step: 'synthesize', detail: result.modelUsed === 'local-evidence' ? 'Extractive cited answer; no model call' : `Grounded generation via ${result.modelUsed} with validated [n] citations` },
     ];
     const traceId = await this.traceStore.save(question, this.lastTrace);
     return {
       answer,
       citations,
+      passages,
       traceId,
       trace: this.lastTrace,
       modelUsed: result.modelUsed,

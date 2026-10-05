@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import EarthEventsFeed from '@/components/landing/EarthEventsFeed';
 import Data3DSection from '@/components/scenes/Data3DSection';
+import HomeResearch from '@/components/landing/HomeResearch';
 import SceneStage from '@/components/scenes/SceneStage';
 import MissionNav from '@/components/MissionNav';
 
@@ -78,6 +79,7 @@ export default function Home() {
           body="NASA HiRISE and CTX orbital images draped over the Mars 2020 PLACES elevation model. The white line is the rover’s published localized path."
           cta={{ href: '/explore?view=3d', label: 'OPEN IN 3D CONSOLE' }}
         />
+        <HomeResearch />
         <EarthEventsFeed />
         <footer className="landing-footer">
           <span>18°26′N&nbsp;&nbsp; 77°27′E</span>

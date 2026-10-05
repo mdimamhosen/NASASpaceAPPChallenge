@@ -8,15 +8,17 @@ export default function DetailModal({ title, eyebrow, summary, facts = [], sourc
   sources?: DetailSource[]; children?: ReactNode; onClose: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
+  // A close triggered by our own effect cleanup (unmount, or StrictMode's dev re-run) is not the user closing.
+  const closingFromCleanup = useRef(false);
   const [sourceIndex, setSourceIndex] = useState(0);
   useEffect(() => {
     const current = dialog.current;
     if (!current) return;
-    current.showModal();
-    return () => current.close();
+    if (!current.open) current.showModal();
+    return () => { if (current.open) { closingFromCleanup.current = true; current.close(); } };
   }, []);
   const source = sources[sourceIndex];
-  return <dialog ref={dialog} className="detail-modal" aria-labelledby="detail-title" onClose={onClose} onClick={(event) => { if (event.target === dialog.current) dialog.current?.close(); }}>
+  return <dialog ref={dialog} className="detail-modal" aria-labelledby="detail-title" onClose={() => { if (closingFromCleanup.current) { closingFromCleanup.current = false; return; } onClose(); }} onClick={(event) => { if (event.target === dialog.current) dialog.current?.close(); }}>
     <div className="detail-modal-frame">
       <header><span className="eyebrow">{eyebrow}</span><button aria-label="Close detail" onClick={() => dialog.current?.close()}><X size={18} /></button></header>
       <div className="detail-modal-scroll">

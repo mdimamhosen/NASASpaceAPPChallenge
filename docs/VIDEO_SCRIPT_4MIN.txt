@@ -1,174 +1,174 @@
 ================================================================================
 MARS EXPLORER — FOUR-MINUTE NARRATED WALKTHROUGH (TELEPROMPTER)
 ================================================================================
+TEAM
+----
+Team name : Binary Explorers
+  - Md Imam Hosen — Team Lead · System Architect + Full-Stack Engineer
+  - Md Ahad — Researcher + NASA Data Analyst
+  - Biswadev Biswas — AI Engineer + 3D/UI Developer
+
 Audience:    NASA Space Apps judges / demo viewers
-Length:      4:00 at 1440 × 900
-Source:      docs/video/script.json (the recorded video, narration.m4a and the
-             .srt subtitles are generated from the same file, so they match)
+Length:      3:57 at 1440 × 900
+Source:      docs/video/script.json (video, narration.m4a and .srt are generated
+             from the same file, so they match)
 Honesty:     Mars claims cite NASA Trek, PLACES, the PDS DEM, JPL, or NSSDCA.
              Earth claims cite NASA EONET only. Never mix geometries.
              Risk Index and A* corridors are NON-CERTIFYING research aids.
-Prep:        pnpm dev (web :3000, API :4000), network on for NASA Trek tiles,
-             open /explore once so tiles and PLACES warm the cache.
+Prep:        pnpm dev (web :3000, API :4000), network on for NASA Trek tiles and
+             Gemini, open /explore and the home page once to warm caches.
 
 ================================================================================
 BEAT CLOCK
 ================================================================================
-  0:00–0:15    INTRO              /
-  0:15–0:29    LANDING-TERRAIN    /
-  0:29–0:41    LANDING-EARTH      /
-  0:41–0:55    SURVIVAL           /survival
-  0:55–1:07    JEZERO             /jezero
-  1:07–1:21    EONET              /eonet
-  1:21–1:33    EXPLORE-LAYERS     /explore
-  1:33–1:45    EXPLORE-ROUTE      /explore
-  1:45–1:58    EXPLORE-PROFILE    /explore
-  1:58–2:09    EXPLORE-3D         /explore
-  2:09–2:20    EXPLORE-ASSISTANT  /explore
-  2:20–2:29    TRACES             /traces
-  2:29–2:39    BRIEFING           /briefing/preview
-  2:39–2:50    TARGETS            /targets
-  2:50–3:02    HAZARDS            /hazards
-  3:02–3:09    MISSION            /mission
-  3:09–3:19    TIMELINE           /timeline
-  3:19–3:28    DATA               /data
-  3:28–3:38    SCIENCE            /science
-  3:38–3:48    ARCHITECTURE       /architecture
-  3:48–3:51    SHARE              /route/share
-  3:51–4:00    CLOSE              /
+  0:00–0:18    INTRO              /
+  0:18–0:44    TEAM               /
+  0:44–0:56    LANDING-TERRAIN    /
+  0:56–1:12    HOME-AGENT         /
+  1:12–1:26    HOME-RAG           /
+  1:26–1:43    HOME-PASSAGES      /
+  1:43–1:54    SURVIVAL           /survival
+  1:54–2:04    JEZERO             /jezero
+  2:04–2:15    EONET              /eonet
+  2:15–2:24    EXPLORE-LAYERS     /explore
+  2:24–2:35    EXPLORE-ROUTE      /explore
+  2:35–2:44    EXPLORE-PROFILE    /explore
+  2:44–2:51    EXPLORE-3D         /explore
+  2:51–2:57    TRACES             /traces
+  2:57–3:04    BRIEFING           /briefing/preview
+  3:04–3:12    TARGETS            /targets
+  3:12–3:20    HAZARDS            /hazards
+  3:20–3:29    TIMELINE           /timeline
+  3:29–3:35    DATA               /data
+  3:35–3:47    ARCHITECTURE       /architecture
+  3:47–3:57    CLOSE              /
 
 ================================================================================
 FULL SPOKEN SCRIPT (read aloud)
 ================================================================================
 
 ────────────────────────────────────────────────────────────────────────────────
-[0:00–0:15]  INTRO  —  /
+[0:00–0:18]  INTRO  —  /
 ON SCREEN: hold
 ────────────────────────────────────────────────────────────────────────────────
-“This is Mars Explorer, a source-grounded research console for planning a Marswalk in Jezero Crater, where NASA's Perseverance rover landed. Every number on screen comes from a published NASA product, and every route is labeled non-certifying.”
+“This is Mars Explorer, built by team Binary Explorers: a source-grounded research console for planning a Marswalk in Jezero Crater, where NASA's Perseverance rover landed. Every number on screen comes from a published NASA product, and every route is labeled non-certifying.”
 
 ────────────────────────────────────────────────────────────────────────────────
-[0:15–0:29]  LANDING-TERRAIN  —  /
-ON SCREEN: scroll to the 3D section
+[0:18–0:44]  TEAM  —  /
+ON SCREEN: hold
 ────────────────────────────────────────────────────────────────────────────────
-“Below the hero is real ground. NASA HiRISE and CTX orbital images from Mars Trek are draped over the Mars 2020 PLACES elevation model, and the white line is Perseverance's published path.”
+“Our team. Md Imam Hosen, team lead, system architect and full-stack engineer, leads the architecture from the NestJS API to the mission console. Md Ahad, researcher and NASA data analyst, sources and verifies the NASA data behind every claim. Biswadev Biswas, AI engineer and 3D UI developer, builds the agents, retrieval, and 3D scenes.”
 
 ────────────────────────────────────────────────────────────────────────────────
-[0:29–0:41]  LANDING-EARTH  —  /
-ON SCREEN: scroll to the 3D section
+[0:44–0:56]  LANDING-TERRAIN  —  /
+ON SCREEN: scroll to the section
 ────────────────────────────────────────────────────────────────────────────────
-“Earth gets its own lane. This live NASA EONET feed lists wildfires, storms, and sea ice events with their sources. Earth coordinates never touch the Mars map.”
+“Below the hero is real ground: NASA HiRISE and CTX orbital images draped over the Mars 2020 PLACES elevation model, with Perseverance's published path in white.”
 
 ────────────────────────────────────────────────────────────────────────────────
-[0:41–0:55]  SURVIVAL  —  /survival
-ON SCREEN: scroll to the 3D section
+[0:56–1:12]  HOME-AGENT  —  /
+ON SCREEN: scroll to the section, click "RUN AGENT"
 ────────────────────────────────────────────────────────────────────────────────
-“The challenge starts with scale. Here are Earth and Mars at true relative size, tilt, and spin, from the NASA Planetary Fact Sheet. Mars is about half as wide, with thirty-eight percent of Earth's gravity.”
+“The home page now hosts the mission agent. A System One router picks every tool in a single pass, using TypeSafe AI's Jev decision model when it is configured. The tools run in parallel, and Gemini streams the answer, with Claude as the fallback.”
 
 ────────────────────────────────────────────────────────────────────────────────
-[0:55–1:07]  JEZERO  —  /jezero
-ON SCREEN: scroll to the 3D section
+[1:12–1:26]  HOME-RAG  —  /
+ON SCREEN: click "ASK THE CORPUS", click "ASK"
 ────────────────────────────────────────────────────────────────────────────────
-“This is Jezero, cell by cell. Each of these four thousand five hundred columns is one sample of the PLACES orbital elevation model, rising from the dark crater floor to the delta and the rim.”
+“Ask the corpus is retrieval-augmented generation over twenty-two NASA documents. Keyword and semantic search are fused, off-topic questions are refused, and every sentence cites the passage it came from.”
 
 ────────────────────────────────────────────────────────────────────────────────
-[1:07–1:21]  EONET  —  /eonet
-ON SCREEN: scroll to the 3D section
+[1:26–1:43]  HOME-PASSAGES  —  /
+ON SCREEN: scroll to the section
 ────────────────────────────────────────────────────────────────────────────────
-“The EONET page goes deeper. Filter live Earth events, open a record's timeline and sources, and check provenance: the upstream fetch time, the content hash, and whether the feed came from cache.”
+“The passage panel previews retrieval live as you type, with keyword, semantic, and fused scores. The 3D embedding space shows the question beside its nearest passages, and hybrid search reaches a mean reciprocal rank of zero point nine six.”
 
 ────────────────────────────────────────────────────────────────────────────────
-[1:21–1:33]  EXPLORE-LAYERS  —  /explore
-ON SCREEN: scrub the sol slider
+[1:43–1:54]  SURVIVAL  —  /survival
+ON SCREEN: scroll to the section
 ────────────────────────────────────────────────────────────────────────────────
-“Now the mission console. NASA Trek layers sit on the left. The PLACES rover track crosses Jezero, and the sol scrubber walks Perseverance through its published positions.”
+“Earth and Mars at true relative size, tilt, and spin, from the NASA Planetary Fact Sheet: about half as wide, with thirty-eight percent of Earth's gravity.”
 
 ────────────────────────────────────────────────────────────────────────────────
-[1:33–1:45]  EXPLORE-ROUTE  —  /explore
+[1:54–2:04]  JEZERO  —  /jezero
+ON SCREEN: scroll to the section
+────────────────────────────────────────────────────────────────────────────────
+“Jezero, cell by cell: four thousand five hundred columns of the PLACES orbital elevation model, rising from the crater floor to the delta.”
+
+────────────────────────────────────────────────────────────────────────────────
+[2:04–2:15]  EONET  —  /eonet
+ON SCREEN: scroll to the section
+────────────────────────────────────────────────────────────────────────────────
+“Earth gets its own lane. The live NASA EONET feed shows wildfires and storms with source provenance and cache status, and Earth coordinates never touch the Mars map.”
+
+────────────────────────────────────────────────────────────────────────────────
+[2:15–2:24]  EXPLORE-LAYERS  —  /explore
+ON SCREEN: drag the Perseverance sol slider
+────────────────────────────────────────────────────────────────────────────────
+“In the mission console, NASA Trek layers sit on the left, and the sol scrubber walks Perseverance through its published positions.”
+
+────────────────────────────────────────────────────────────────────────────────
+[2:24–2:35]  EXPLORE-ROUTE  —  /explore
 ON SCREEN: click "LOAD PUBLISHED ROUTE"
 ────────────────────────────────────────────────────────────────────────────────
-“Load a published route, or draw your own. The API samples the elevation model along it and returns a Traverse Risk Index, with every component and its source listed in the evidence cockpit.”
+“Load a published route or draw your own. The API samples the elevation model and returns a Traverse Risk Index, with every component and source in the evidence cockpit.”
 
 ────────────────────────────────────────────────────────────────────────────────
-[1:45–1:58]  EXPLORE-PROFILE  —  /explore
+[2:35–2:44]  EXPLORE-PROFILE  —  /explore
 ON SCREEN: hold
 ────────────────────────────────────────────────────────────────────────────────
-“Under the map, the elevation and slope profile shows the measured terrain along the route. The cockpit compares the route with where Perseverance actually drove, and names the closest published sol.”
+“The elevation and slope profile shows the measured terrain, and the cockpit compares the route with where Perseverance actually drove.”
 
 ────────────────────────────────────────────────────────────────────────────────
-[1:58–2:09]  EXPLORE-3D  —  /explore
+[2:44–2:51]  EXPLORE-3D  —  /explore
 ON SCREEN: click "3D / DEM", click "FLY ROUTE"
 ────────────────────────────────────────────────────────────────────────────────
-“Switch to 3D, and the same route is draped on HiRISE imagery over the elevation model. Fly route follows it across the delta, with exaggeration you can tune.”
+“Switch to 3D, and the route is draped on HiRISE imagery. Fly route follows it across the delta.”
 
 ────────────────────────────────────────────────────────────────────────────────
-[2:09–2:20]  EXPLORE-ASSISTANT  —  /explore
-ON SCREEN: click "STOP", click "WHY IS THIS ROUTE SCIENTIFICALLY INTERESTING"
-────────────────────────────────────────────────────────────────────────────────
-“The mission assistant answers from a local corpus of cited NASA sources. Cloud models are optional and off by default, and every answer carries its citations.”
-
-────────────────────────────────────────────────────────────────────────────────
-[2:20–2:29]  TRACES  —  /traces
+[2:51–2:57]  TRACES  —  /traces
 ON SCREEN: scroll down
 ────────────────────────────────────────────────────────────────────────────────
-“Traces records each assistant run, retrieve, grade, and assemble, so anyone can inspect exactly what the system did.”
+“Traces records each assistant run, so anyone can inspect what the system did.”
 
 ────────────────────────────────────────────────────────────────────────────────
-[2:29–2:39]  BRIEFING  —  /briefing/preview
-ON SCREEN: scroll to the 3D section
+[2:57–3:04]  BRIEFING  —  /briefing/preview
+ON SCREEN: scroll to the section
 ────────────────────────────────────────────────────────────────────────────────
-“The briefing turns a route into a mission note and a server-rendered PDF. Below, that route is raised into an elevation curtain, colored by sampled slope.”
+“The briefing becomes a server-rendered PDF, and its route rises into an elevation curtain colored by slope.”
 
 ────────────────────────────────────────────────────────────────────────────────
-[2:39–2:50]  TARGETS  —  /targets
-ON SCREEN: scroll to the 3D section
+[3:04–3:12]  TARGETS  —  /targets
+ON SCREEN: scroll to the section
 ────────────────────────────────────────────────────────────────────────────────
-“Targets shows Perseverance's climb. Each pillar rises to a published PLACES elevation, about eight hundred meters of ascent, with NASA-verified locations in orange.”
+“Targets shows Perseverance's climb, about eight hundred meters, with NASA-verified locations in orange.”
 
 ────────────────────────────────────────────────────────────────────────────────
-[2:50–3:02]  HAZARDS  —  /hazards
-ON SCREEN: scroll to the 3D section
+[3:12–3:20]  HAZARDS  —  /hazards
+ON SCREEN: scroll to the section
 ────────────────────────────────────────────────────────────────────────────────
-“Hazards maps measured slope. Orange cells reach fifteen degrees, where the risk index slope term saturates. The grid cannot see rocks, and the page says so.”
+“Hazards maps measured slope. Orange cells reach fifteen degrees, and the page says the grid cannot see rocks.”
 
 ────────────────────────────────────────────────────────────────────────────────
-[3:02–3:09]  MISSION  —  /mission
-ON SCREEN: scroll to the 3D section
+[3:20–3:29]  TIMELINE  —  /timeline
+ON SCREEN: scroll to the section, click "PLAY"
 ────────────────────────────────────────────────────────────────────────────────
-“The mission space-time cube stacks the traverse by sol. Ground position is where the rover was, and height is when.”
+“The timeline computes where Earth and Mars are on any day from NASA JPL orbital elements, with the one-way light delay a command must cross.”
 
 ────────────────────────────────────────────────────────────────────────────────
-[3:09–3:19]  TIMELINE  —  /timeline
-ON SCREEN: scroll to the 3D section, click "PLAY"
+[3:29–3:35]  DATA  —  /data
+ON SCREEN: scroll to the section
 ────────────────────────────────────────────────────────────────────────────────
-“The timeline computes where Earth and Mars are on any day from NASA JPL orbital elements, with the distance and the one-way light delay a command must cross.”
+“The data page tours all nine NASA Mars landings, from Viking to Perseverance.”
 
 ────────────────────────────────────────────────────────────────────────────────
-[3:19–3:28]  DATA  —  /data
-ON SCREEN: scroll to the 3D section
-────────────────────────────────────────────────────────────────────────────────
-“The data page tours all nine NASA Mars landings, from Viking in nineteen seventy-six to Perseverance in twenty twenty-one.”
-
-────────────────────────────────────────────────────────────────────────────────
-[3:28–3:38]  SCIENCE  —  /science
-ON SCREEN: scroll to the 3D section
-────────────────────────────────────────────────────────────────────────────────
-“Science explodes the three source layers, elevation, imagery, and rover positions, and its register lists every product, date, and limit.”
-
-────────────────────────────────────────────────────────────────────────────────
-[3:38–3:48]  ARCHITECTURE  —  /architecture
+[3:35–3:47]  ARCHITECTURE  —  /architecture
 ON SCREEN: scroll down
 ────────────────────────────────────────────────────────────────────────────────
-“Architecture shows the real system. NASA sources flow through NestJS modules into the web console, with Earth data on its own blue lane.”
+“Architecture shows the real system: NASA sources flow through NestJS modules, the retrieval index, and the agent tools into the web console, with Earth data on its own lane.”
 
 ────────────────────────────────────────────────────────────────────────────────
-[3:48–3:51]  SHARE  —  /route/share
-ON SCREEN: scroll to the 3D section
-────────────────────────────────────────────────────────────────────────────────
-“Any route can be shared as a link and a mission card.”
-
-────────────────────────────────────────────────────────────────────────────────
-[3:51–4:00]  CLOSE  —  /
+[3:47–3:57]  CLOSE  —  /
 ON SCREEN: hold
 ────────────────────────────────────────────────────────────────────────────────
-“Mars Explorer. Real NASA data, cited answers, and honest limits, from a surface question to an accountable briefing.”
+“Any route can be shared as a link and a mission card. Mars Explorer, by Binary Explorers: real NASA data, cited answers, and honest limits.”

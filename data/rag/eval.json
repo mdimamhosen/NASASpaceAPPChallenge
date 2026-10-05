@@ -1,0 +1,18 @@
+[
+  { "question": "Why was Jezero picked as the place for Perseverance to land?", "expected": ["01-jezero-overview", "nasa-mars-2020-perseverance-rover-mission-overview", "nasa-perseverance-science"] },
+  { "question": "Which instrument uses a laser to look for organic molecules?", "expected": ["nasa-perseverance-science-instruments", "nasa-perseverance-rover-components"] },
+  { "question": "How did the small helicopter that flew on Mars perform?", "expected": ["nasa-ingenuity-mars-helicopter"] },
+  { "question": "What happens to the rock cores Perseverance collects?", "expected": ["nasa-mars-rock-samples", "03-perseverance-objectives"] },
+  { "question": "Which spacecraft carries the HiRISE camera?", "expected": ["nasa-hirise", "nasa-mars-reconnaissance-orbiter"] },
+  { "question": "How big is Mars compared with Earth?", "expected": ["nasa-mars-facts"] },
+  { "question": "What did the InSight lander measure inside Mars?", "expected": ["nasa-insight-lander"] },
+  { "question": "Where did Curiosity land and what is it studying?", "expected": ["nasa-mars-science-laboratory-curiosity-rover"] },
+  { "question": "When did the first Viking lander touch down?", "expected": ["nasa-viking-1"] },
+  { "question": "What does the PLACES archive provide about rover localization?", "expected": ["nasa-mars-2020-rover-places-bundle", "nasa-pds-geosciences-node-data-and-services-mars-2020-mission"] },
+  { "question": "How can planet positions be approximated with Keplerian elements?", "expected": ["nasa-approximate-positions-of-the-planets"] },
+  { "question": "How do I request open wildfire events from the EONET API?", "expected": ["nasa-eonet-v3-api", "nasa-what-is-eonet"] },
+  { "question": "How are Mars Trek map tiles requested?", "expected": ["nasa-mars-trek-api", "02-mars-trek-imagery"] },
+  { "question": "How is the traverse risk score in this app calculated?", "expected": ["04-mars-explorer-methods"] },
+  { "question": "Can the app's elevation grid detect individual boulders?", "expected": ["04-mars-explorer-methods"] },
+  { "question": "What powers the Perseverance rover?", "expected": ["nasa-perseverance-rover-components", "nasa-mars-2020-perseverance-rover-mission-overview"] }
+]

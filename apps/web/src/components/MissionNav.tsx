@@ -3,7 +3,7 @@ import DemoTour from './DemoTour';
 
 const links = [
   ['SURVIVAL', '/survival'], ['JEZERO', '/jezero'], ['EONET', '/eonet'], ['EXPLORE', '/explore'],
-  ['TARGETS', '/targets'], ['HAZARDS', '/hazards'], ['OPS', '/ops'], ['TRACES', '/traces'],
+  ['TARGETS', '/targets'], ['HAZARDS', '/hazards'], ['OPS', '/ops'], ['TRACES', '/traces'], ['RESEARCH', '/research'],
   ['BRIEFING', '/briefing/preview'], ['PIPELINE', '/pipeline'], ['ARCHITECTURE', '/architecture'],
   ['STORY', '/story'], ['SCIENCE', '/science'],
 ] as const;

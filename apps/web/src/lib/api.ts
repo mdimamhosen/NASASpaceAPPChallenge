@@ -1,17 +1,18 @@
-import type { AssistantResponse, LayerId, MapLayer, MissionBriefing, POI, RegionData, RouteAnalysis, RouteWaypoint, PlacesTrack, SuggestedRoute, EonetProvenance, DtmGrid } from '@mars-explorer/shared';
+import type { AssistantResponse, LayerId, MapLayer, MissionBriefing, POI, RegionData, RouteAnalysis, RouteWaypoint, PlacesTrack, SuggestedRoute, EonetProvenance, DtmGrid, RagStatus, RagDocument, RagSearchResult, RagAnswer, RagEval, RagProjection, RagMode, AgentRun } from '@mars-explorer/shared';
 import type { EarthEventSummary, EarthEventDetail } from './earth-types';
 
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
-async function request<T>(path: string, body?: unknown): Promise<T> {
+async function request<T>(path: string, body?: unknown, init: { method?: string; headers?: Record<string, string> } = {}): Promise<T> {
   const response = await fetch(`${base}${path}`, {
-    method: body ? 'POST' : 'GET',
-    headers: body ? { 'content-type': 'application/json' } : undefined,
+    method: init.method ?? (body ? 'POST' : 'GET'),
+    headers: { ...(body ? { 'content-type': 'application/json' } : {}), ...init.headers },
     body: body ? JSON.stringify(body) : undefined,
     cache: 'no-store',
   });
   if (!response.ok) {
-    throw new Error((await response.json().catch(() => null))?.message || `Request failed (${response.status})`);
+    const message = (await response.json().catch(() => null))?.message;
+    throw new Error((Array.isArray(message) ? message.join('; ') : message) || `Request failed (${response.status})`);
   }
   return response.json() as Promise<T>;
 }
@@ -47,3 +48,19 @@ export async function downloadBriefingPdf(waypoints: RouteWaypoint[]): Promise<v
   link.click();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+// RAG research console + mission agent
+const ragHeaders = (token?: string) => (token ? { 'x-rag-token': token } : undefined);
+export const getRagStatus = () => request<RagStatus>('/rag/status');
+export const getRagDocuments = () => request<RagDocument[]>('/rag/documents');
+export const ragSearch = (query: string, mode: RagMode = 'hybrid', k = 6) => request<RagSearchResult>('/rag/search', { query, mode, k });
+export const ragAsk = (question: string, useCloudModels: boolean) => request<RagAnswer>('/rag/ask', { question, useCloudModels });
+export const ragAddUrl = (url: string, token?: string) => request<RagDocument>('/rag/documents/url', { url }, { headers: ragHeaders(token) });
+export const ragAddText = (title: string, body: string, url?: string, token?: string) => request<RagDocument>('/rag/documents/text', { title, body, ...(url ? { url } : {}) }, { headers: ragHeaders(token) });
+export const ragDelete = (id: string, token?: string) => request<{ removed: string }>(`/rag/documents/${encodeURIComponent(id)}`, undefined, { method: 'DELETE', headers: ragHeaders(token) });
+export const ragReindex = (token?: string) => request<RagStatus>('/rag/reindex', {}, { headers: ragHeaders(token) });
+export const getRagEval = () => request<RagEval>('/rag/eval');
+export const getRagProjection = (q?: string) => request<RagProjection>(`/rag/projection${q ? `?q=${encodeURIComponent(q)}` : ''}`);
+export const agentRun = (goal: string, cloud: boolean) => request<AgentRun>('/agent/run', { goal, cloud });
+export const agentStreamUrl = (goal: string, cloud: boolean, mode: 'fast' | 'deep' = 'fast') => `${base}/agent/stream?goal=${encodeURIComponent(goal)}&cloud=${cloud}&mode=${mode}`;
+export const ragStreamUrl = (question: string, cloud: boolean) => `${base}/rag/ask/stream?question=${encodeURIComponent(question)}&cloud=${cloud}`;

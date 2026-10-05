@@ -8,6 +8,7 @@
     "start": "node dist/main.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
     "@langchain/langgraph": "^0.2.74",
     "@langfuse/langchain": "^5.11.1",
     "@langfuse/otel": "^5.11.1",

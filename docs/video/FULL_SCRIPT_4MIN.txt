@@ -1,8 +1,15 @@
 MARS EXPLORER — FULL 4-MINUTE NARRATION SCRIPT
 ===============================================
 
-Total length : about 4:03 (macOS Samantha voice, 0.93x tempo)
-Word count   : 582 words across 22 beats
+TEAM
+----
+Team name : Binary Explorers
+  - Md Imam Hosen — Team Lead · System Architect + Full-Stack Engineer
+  - Md Ahad — Researcher + NASA Data Analyst
+  - Biswadev Biswas — AI Engineer + 3D/UI Developer
+
+Total length : about 3:57 (macOS Samantha voice, 0.93x tempo)
+Word count   : 551 words across 21 beats
 Recording    : 1440 x 900, web http://localhost:3000, API http://localhost:4000
 
 How to edit:
@@ -10,6 +17,7 @@ How to edit:
     "ADD / VERIFY NOTES".
   - Roughly 2.5 spoken words = 1 second. Adding about 10 words to a beat adds
     about 4 seconds to the video.
+  - Please verify the team member descriptions in BEAT 02.
   - Send the edited file back and the video, narration and subtitles can be
     regenerated from it.
 
@@ -18,245 +26,236 @@ Source rules (from the project):
     NASA JPL orbital elements, NSSDCA, or the NASA Planetary Fact Sheet.
   - Earth facts come from NASA EONET only. Earth data never goes on the Mars map.
   - Routes, the Risk Index and A* corridors are NON-CERTIFYING research aids.
+  - RAG answers cite only the indexed NASA passages; the agent's tools use the
+    same sources. Jev routing runs only when Cloudflare credentials are set.
 
 ------------------------------------------------------------------------------
-BEAT 01  |  0:00–0:15  |  /  |  intro
+BEAT 01  |  0:00–0:18  |  /  |  intro
 ------------------------------------------------------------------------------
 ON SCREEN : hold on the page
 
 NARRATION :
-This is Mars Explorer, a source-grounded research console for planning a Marswalk in Jezero Crater, where NASA's Perseverance rover landed. Every number on screen comes from a published NASA product, and every route is labeled non-certifying.
+This is Mars Explorer, built by team Binary Explorers: a source-grounded research console for planning a Marswalk in Jezero Crater, where NASA's Perseverance rover landed. Every number on screen comes from a published NASA product, and every route is labeled non-certifying.
 
 ADD / VERIFY NOTES :
 
 
 ------------------------------------------------------------------------------
-BEAT 02  |  0:15–0:29  |  /  |  landing-terrain
+BEAT 02  |  0:18–0:44  |  /  |  team
+------------------------------------------------------------------------------
+ON SCREEN : hold on the page
+
+NARRATION :
+Our team. Md Imam Hosen, team lead, system architect and full-stack engineer, leads the architecture from the NestJS API to the mission console. Md Ahad, researcher and NASA data analyst, sources and verifies the NASA data behind every claim. Biswadev Biswas, AI engineer and 3D UI developer, builds the agents, retrieval, and 3D scenes.
+
+ADD / VERIFY NOTES :
+
+
+------------------------------------------------------------------------------
+BEAT 03  |  0:44–0:56  |  /  |  landing-terrain
 ------------------------------------------------------------------------------
 ON SCREEN : scroll to the section
 
 NARRATION :
-Below the hero is real ground. NASA HiRISE and CTX orbital images from Mars Trek are draped over the Mars 2020 PLACES elevation model, and the white line is Perseverance's published path.
+Below the hero is real ground: NASA HiRISE and CTX orbital images draped over the Mars 2020 PLACES elevation model, with Perseverance's published path in white.
 
 ADD / VERIFY NOTES :
 
 
 ------------------------------------------------------------------------------
-BEAT 03  |  0:29–0:41  |  /  |  landing-earth
+BEAT 04  |  0:56–1:12  |  /  |  home-agent
+------------------------------------------------------------------------------
+ON SCREEN : scroll to the section, click "RUN AGENT"
+
+NARRATION :
+The home page now hosts the mission agent. A System One router picks every tool in a single pass, using TypeSafe AI's Jev decision model when it is configured. The tools run in parallel, and Gemini streams the answer, with Claude as the fallback.
+
+ADD / VERIFY NOTES :
+
+
+------------------------------------------------------------------------------
+BEAT 05  |  1:12–1:26  |  /  |  home-rag
+------------------------------------------------------------------------------
+ON SCREEN : click "ASK THE CORPUS", click "ASK"
+
+NARRATION :
+Ask the corpus is retrieval-augmented generation over twenty-two NASA documents. Keyword and semantic search are fused, off-topic questions are refused, and every sentence cites the passage it came from.
+
+ADD / VERIFY NOTES :
+
+
+------------------------------------------------------------------------------
+BEAT 06  |  1:26–1:43  |  /  |  home-passages
 ------------------------------------------------------------------------------
 ON SCREEN : scroll to the section
 
 NARRATION :
-Earth gets its own lane. This live NASA EONET feed lists wildfires, storms, and sea ice events with their sources. Earth coordinates never touch the Mars map.
+The passage panel previews retrieval live as you type, with keyword, semantic, and fused scores. The 3D embedding space shows the question beside its nearest passages, and hybrid search reaches a mean reciprocal rank of zero point nine six.
 
 ADD / VERIFY NOTES :
 
 
 ------------------------------------------------------------------------------
-BEAT 04  |  0:41–0:55  |  /survival  |  survival
+BEAT 07  |  1:43–1:54  |  /survival  |  survival
 ------------------------------------------------------------------------------
 ON SCREEN : scroll to the section
 
 NARRATION :
-The challenge starts with scale. Here are Earth and Mars at true relative size, tilt, and spin, from the NASA Planetary Fact Sheet. Mars is about half as wide, with thirty-eight percent of Earth's gravity.
+Earth and Mars at true relative size, tilt, and spin, from the NASA Planetary Fact Sheet: about half as wide, with thirty-eight percent of Earth's gravity.
 
 ADD / VERIFY NOTES :
 
 
 ------------------------------------------------------------------------------
-BEAT 05  |  0:55–1:07  |  /jezero  |  jezero
+BEAT 08  |  1:54–2:04  |  /jezero  |  jezero
 ------------------------------------------------------------------------------
 ON SCREEN : scroll to the section
 
 NARRATION :
-This is Jezero, cell by cell. Each of these four thousand five hundred columns is one sample of the PLACES orbital elevation model, rising from the dark crater floor to the delta and the rim.
+Jezero, cell by cell: four thousand five hundred columns of the PLACES orbital elevation model, rising from the crater floor to the delta.
 
 ADD / VERIFY NOTES :
 
 
 ------------------------------------------------------------------------------
-BEAT 06  |  1:07–1:21  |  /eonet  |  eonet
+BEAT 09  |  2:04–2:15  |  /eonet  |  eonet
 ------------------------------------------------------------------------------
 ON SCREEN : scroll to the section
 
 NARRATION :
-The EONET page goes deeper. Filter live Earth events, open a record's timeline and sources, and check provenance: the upstream fetch time, the content hash, and whether the feed came from cache.
+Earth gets its own lane. The live NASA EONET feed shows wildfires and storms with source provenance and cache status, and Earth coordinates never touch the Mars map.
 
 ADD / VERIFY NOTES :
 
 
 ------------------------------------------------------------------------------
-BEAT 07  |  1:21–1:33  |  /explore  |  explore-layers
+BEAT 10  |  2:15–2:24  |  /explore  |  explore-layers
 ------------------------------------------------------------------------------
 ON SCREEN : drag the Perseverance sol slider
 
 NARRATION :
-Now the mission console. NASA Trek layers sit on the left. The PLACES rover track crosses Jezero, and the sol scrubber walks Perseverance through its published positions.
+In the mission console, NASA Trek layers sit on the left, and the sol scrubber walks Perseverance through its published positions.
 
 ADD / VERIFY NOTES :
 
 
 ------------------------------------------------------------------------------
-BEAT 08  |  1:33–1:45  |  /explore  |  explore-route
+BEAT 11  |  2:24–2:35  |  /explore  |  explore-route
 ------------------------------------------------------------------------------
 ON SCREEN : click "LOAD PUBLISHED ROUTE"
 
 NARRATION :
-Load a published route, or draw your own. The API samples the elevation model along it and returns a Traverse Risk Index, with every component and its source listed in the evidence cockpit.
+Load a published route or draw your own. The API samples the elevation model and returns a Traverse Risk Index, with every component and source in the evidence cockpit.
 
 ADD / VERIFY NOTES :
 
 
 ------------------------------------------------------------------------------
-BEAT 09  |  1:45–1:58  |  /explore  |  explore-profile
+BEAT 12  |  2:35–2:44  |  /explore  |  explore-profile
 ------------------------------------------------------------------------------
 ON SCREEN : hold on the page
 
 NARRATION :
-Under the map, the elevation and slope profile shows the measured terrain along the route. The cockpit compares the route with where Perseverance actually drove, and names the closest published sol.
+The elevation and slope profile shows the measured terrain, and the cockpit compares the route with where Perseverance actually drove.
 
 ADD / VERIFY NOTES :
 
 
 ------------------------------------------------------------------------------
-BEAT 10  |  1:58–2:09  |  /explore  |  explore-3d
+BEAT 13  |  2:44–2:51  |  /explore  |  explore-3d
 ------------------------------------------------------------------------------
 ON SCREEN : click "3D / DEM", click "FLY ROUTE"
 
 NARRATION :
-Switch to 3D, and the same route is draped on HiRISE imagery over the elevation model. Fly route follows it across the delta, with exaggeration you can tune.
+Switch to 3D, and the route is draped on HiRISE imagery. Fly route follows it across the delta.
 
 ADD / VERIFY NOTES :
 
 
 ------------------------------------------------------------------------------
-BEAT 11  |  2:09–2:20  |  /explore  |  explore-assistant
-------------------------------------------------------------------------------
-ON SCREEN : click "STOP", click "WHY IS THIS ROUTE SCIENTIFICALLY INTERESTING"
-
-NARRATION :
-The mission assistant answers from a local corpus of cited NASA sources. Cloud models are optional and off by default, and every answer carries its citations.
-
-ADD / VERIFY NOTES :
-
-
-------------------------------------------------------------------------------
-BEAT 12  |  2:20–2:29  |  /traces  |  traces
+BEAT 14  |  2:51–2:57  |  /traces  |  traces
 ------------------------------------------------------------------------------
 ON SCREEN : scroll down
 
 NARRATION :
-Traces records each assistant run, retrieve, grade, and assemble, so anyone can inspect exactly what the system did.
+Traces records each assistant run, so anyone can inspect what the system did.
 
 ADD / VERIFY NOTES :
 
 
 ------------------------------------------------------------------------------
-BEAT 13  |  2:29–2:39  |  /briefing/preview  |  briefing
+BEAT 15  |  2:57–3:04  |  /briefing/preview  |  briefing
 ------------------------------------------------------------------------------
 ON SCREEN : scroll to the section
 
 NARRATION :
-The briefing turns a route into a mission note and a server-rendered PDF. Below, that route is raised into an elevation curtain, colored by sampled slope.
+The briefing becomes a server-rendered PDF, and its route rises into an elevation curtain colored by slope.
 
 ADD / VERIFY NOTES :
 
 
 ------------------------------------------------------------------------------
-BEAT 14  |  2:39–2:50  |  /targets  |  targets
+BEAT 16  |  3:04–3:12  |  /targets  |  targets
 ------------------------------------------------------------------------------
 ON SCREEN : scroll to the section
 
 NARRATION :
-Targets shows Perseverance's climb. Each pillar rises to a published PLACES elevation, about eight hundred meters of ascent, with NASA-verified locations in orange.
+Targets shows Perseverance's climb, about eight hundred meters, with NASA-verified locations in orange.
 
 ADD / VERIFY NOTES :
 
 
 ------------------------------------------------------------------------------
-BEAT 15  |  2:50–3:02  |  /hazards  |  hazards
+BEAT 17  |  3:12–3:20  |  /hazards  |  hazards
 ------------------------------------------------------------------------------
 ON SCREEN : scroll to the section
 
 NARRATION :
-Hazards maps measured slope. Orange cells reach fifteen degrees, where the risk index slope term saturates. The grid cannot see rocks, and the page says so.
+Hazards maps measured slope. Orange cells reach fifteen degrees, and the page says the grid cannot see rocks.
 
 ADD / VERIFY NOTES :
 
 
 ------------------------------------------------------------------------------
-BEAT 16  |  3:02–3:09  |  /mission  |  mission
-------------------------------------------------------------------------------
-ON SCREEN : scroll to the section
-
-NARRATION :
-The mission space-time cube stacks the traverse by sol. Ground position is where the rover was, and height is when.
-
-ADD / VERIFY NOTES :
-
-
-------------------------------------------------------------------------------
-BEAT 17  |  3:09–3:19  |  /timeline  |  timeline
+BEAT 18  |  3:20–3:29  |  /timeline  |  timeline
 ------------------------------------------------------------------------------
 ON SCREEN : scroll to the section, click "PLAY"
 
 NARRATION :
-The timeline computes where Earth and Mars are on any day from NASA JPL orbital elements, with the distance and the one-way light delay a command must cross.
+The timeline computes where Earth and Mars are on any day from NASA JPL orbital elements, with the one-way light delay a command must cross.
 
 ADD / VERIFY NOTES :
 
 
 ------------------------------------------------------------------------------
-BEAT 18  |  3:19–3:28  |  /data  |  data
+BEAT 19  |  3:29–3:35  |  /data  |  data
 ------------------------------------------------------------------------------
 ON SCREEN : scroll to the section
 
 NARRATION :
-The data page tours all nine NASA Mars landings, from Viking in nineteen seventy-six to Perseverance in twenty twenty-one.
+The data page tours all nine NASA Mars landings, from Viking to Perseverance.
 
 ADD / VERIFY NOTES :
 
 
 ------------------------------------------------------------------------------
-BEAT 19  |  3:28–3:38  |  /science  |  science
-------------------------------------------------------------------------------
-ON SCREEN : scroll to the section
-
-NARRATION :
-Science explodes the three source layers, elevation, imagery, and rover positions, and its register lists every product, date, and limit.
-
-ADD / VERIFY NOTES :
-
-
-------------------------------------------------------------------------------
-BEAT 20  |  3:38–3:48  |  /architecture  |  architecture
+BEAT 20  |  3:35–3:47  |  /architecture  |  architecture
 ------------------------------------------------------------------------------
 ON SCREEN : scroll down
 
 NARRATION :
-Architecture shows the real system. NASA sources flow through NestJS modules into the web console, with Earth data on its own blue lane.
+Architecture shows the real system: NASA sources flow through NestJS modules, the retrieval index, and the agent tools into the web console, with Earth data on its own lane.
 
 ADD / VERIFY NOTES :
 
 
 ------------------------------------------------------------------------------
-BEAT 21  |  3:48–3:54  |  /route/share  |  share
-------------------------------------------------------------------------------
-ON SCREEN : scroll to the section
-
-NARRATION :
-Any route can be shared as a link and a mission card, shown here in 3D, front and back.
-
-ADD / VERIFY NOTES :
-
-
-------------------------------------------------------------------------------
-BEAT 22  |  3:54–4:03  |  /  |  close
+BEAT 21  |  3:47–3:57  |  /  |  close
 ------------------------------------------------------------------------------
 ON SCREEN : hold on the page
 
 NARRATION :
-Mars Explorer. Real NASA data, cited answers, and honest limits, from a surface question to an accountable briefing.
+Any route can be shared as a link and a mission card. Mars Explorer, by Binary Explorers: real NASA data, cited answers, and honest limits.
 
 ADD / VERIFY NOTES :
 
@@ -264,46 +263,45 @@ ADD / VERIFY NOTES :
 ==============================================================================
 FULL NARRATION AS ONE BLOCK (for reading straight through)
 ==============================================================================
-This is Mars Explorer, a source-grounded research console for planning a Marswalk in Jezero Crater, where NASA's Perseverance rover landed. Every number on screen comes from a published NASA product, and every route is labeled non-certifying.
 
-Below the hero is real ground. NASA HiRISE and CTX orbital images from Mars Trek are draped over the Mars 2020 PLACES elevation model, and the white line is Perseverance's published path.
+This is Mars Explorer, built by team Binary Explorers: a source-grounded research console for planning a Marswalk in Jezero Crater, where NASA's Perseverance rover landed. Every number on screen comes from a published NASA product, and every route is labeled non-certifying.
 
-Earth gets its own lane. This live NASA EONET feed lists wildfires, storms, and sea ice events with their sources. Earth coordinates never touch the Mars map.
+Our team. Md Imam Hosen, team lead, system architect and full-stack engineer, leads the architecture from the NestJS API to the mission console. Md Ahad, researcher and NASA data analyst, sources and verifies the NASA data behind every claim. Biswadev Biswas, AI engineer and 3D UI developer, builds the agents, retrieval, and 3D scenes.
 
-The challenge starts with scale. Here are Earth and Mars at true relative size, tilt, and spin, from the NASA Planetary Fact Sheet. Mars is about half as wide, with thirty-eight percent of Earth's gravity.
+Below the hero is real ground: NASA HiRISE and CTX orbital images draped over the Mars 2020 PLACES elevation model, with Perseverance's published path in white.
 
-This is Jezero, cell by cell. Each of these four thousand five hundred columns is one sample of the PLACES orbital elevation model, rising from the dark crater floor to the delta and the rim.
+The home page now hosts the mission agent. A System One router picks every tool in a single pass, using TypeSafe AI's Jev decision model when it is configured. The tools run in parallel, and Gemini streams the answer, with Claude as the fallback.
 
-The EONET page goes deeper. Filter live Earth events, open a record's timeline and sources, and check provenance: the upstream fetch time, the content hash, and whether the feed came from cache.
+Ask the corpus is retrieval-augmented generation over twenty-two NASA documents. Keyword and semantic search are fused, off-topic questions are refused, and every sentence cites the passage it came from.
 
-Now the mission console. NASA Trek layers sit on the left. The PLACES rover track crosses Jezero, and the sol scrubber walks Perseverance through its published positions.
+The passage panel previews retrieval live as you type, with keyword, semantic, and fused scores. The 3D embedding space shows the question beside its nearest passages, and hybrid search reaches a mean reciprocal rank of zero point nine six.
 
-Load a published route, or draw your own. The API samples the elevation model along it and returns a Traverse Risk Index, with every component and its source listed in the evidence cockpit.
+Earth and Mars at true relative size, tilt, and spin, from the NASA Planetary Fact Sheet: about half as wide, with thirty-eight percent of Earth's gravity.
 
-Under the map, the elevation and slope profile shows the measured terrain along the route. The cockpit compares the route with where Perseverance actually drove, and names the closest published sol.
+Jezero, cell by cell: four thousand five hundred columns of the PLACES orbital elevation model, rising from the crater floor to the delta.
 
-Switch to 3D, and the same route is draped on HiRISE imagery over the elevation model. Fly route follows it across the delta, with exaggeration you can tune.
+Earth gets its own lane. The live NASA EONET feed shows wildfires and storms with source provenance and cache status, and Earth coordinates never touch the Mars map.
 
-The mission assistant answers from a local corpus of cited NASA sources. Cloud models are optional and off by default, and every answer carries its citations.
+In the mission console, NASA Trek layers sit on the left, and the sol scrubber walks Perseverance through its published positions.
 
-Traces records each assistant run, retrieve, grade, and assemble, so anyone can inspect exactly what the system did.
+Load a published route or draw your own. The API samples the elevation model and returns a Traverse Risk Index, with every component and source in the evidence cockpit.
 
-The briefing turns a route into a mission note and a server-rendered PDF. Below, that route is raised into an elevation curtain, colored by sampled slope.
+The elevation and slope profile shows the measured terrain, and the cockpit compares the route with where Perseverance actually drove.
 
-Targets shows Perseverance's climb. Each pillar rises to a published PLACES elevation, about eight hundred meters of ascent, with NASA-verified locations in orange.
+Switch to 3D, and the route is draped on HiRISE imagery. Fly route follows it across the delta.
 
-Hazards maps measured slope. Orange cells reach fifteen degrees, where the risk index slope term saturates. The grid cannot see rocks, and the page says so.
+Traces records each assistant run, so anyone can inspect what the system did.
 
-The mission space-time cube stacks the traverse by sol. Ground position is where the rover was, and height is when.
+The briefing becomes a server-rendered PDF, and its route rises into an elevation curtain colored by slope.
 
-The timeline computes where Earth and Mars are on any day from NASA JPL orbital elements, with the distance and the one-way light delay a command must cross.
+Targets shows Perseverance's climb, about eight hundred meters, with NASA-verified locations in orange.
 
-The data page tours all nine NASA Mars landings, from Viking in nineteen seventy-six to Perseverance in twenty twenty-one.
+Hazards maps measured slope. Orange cells reach fifteen degrees, and the page says the grid cannot see rocks.
 
-Science explodes the three source layers, elevation, imagery, and rover positions, and its register lists every product, date, and limit.
+The timeline computes where Earth and Mars are on any day from NASA JPL orbital elements, with the one-way light delay a command must cross.
 
-Architecture shows the real system. NASA sources flow through NestJS modules into the web console, with Earth data on its own blue lane.
+The data page tours all nine NASA Mars landings, from Viking to Perseverance.
 
-Any route can be shared as a link and a mission card, shown here in 3D, front and back.
+Architecture shows the real system: NASA sources flow through NestJS modules, the retrieval index, and the agent tools into the web console, with Earth data on its own lane.
 
-Mars Explorer. Real NASA data, cited answers, and honest limits, from a surface question to an accountable briefing.
+Any route can be shared as a link and a mission card. Mars Explorer, by Binary Explorers: real NASA data, cited answers, and honest limits.

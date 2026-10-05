@@ -6,7 +6,10 @@
     "dev": "pnpm --filter @mars-explorer/shared build && pnpm --parallel --filter @mars-explorer/web --filter @mars-explorer/api dev",
     "build": "pnpm --filter @mars-explorer/shared build && pnpm --filter @mars-explorer/api build && pnpm --filter @mars-explorer/web build",
     "lint": "pnpm --filter @mars-explorer/web lint && pnpm --filter @mars-explorer/api lint",
-    "refresh:nasa": "python3 scripts/refresh-nasa-archives.py"
+    "refresh:nasa": "python3 scripts/refresh-nasa-archives.py",
+    "ingest:corpus": "node scripts/ingest-nasa-corpus.mjs"
   },
-  "devDependencies": { "typescript": "^5.7.3" }
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
 }

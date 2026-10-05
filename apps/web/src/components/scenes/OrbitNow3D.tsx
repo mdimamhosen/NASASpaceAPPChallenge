@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Line, OrbitControls, Stars, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
-import { earthMarsGeometry, JPL_APPROX_POS_URL, planetPosition } from '@/lib/orbits';
+import { earthMarsGeometry, JPL_APPROX_POS_URL, planetPosition } from '@mars-explorer/shared';
 import { LabelLayer, LabelProjector, type ScreenLabel } from './TerrainView3D';
 
 const S = 3; // scene units per AU
