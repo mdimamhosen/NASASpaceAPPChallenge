@@ -3,10 +3,11 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Activity, ArrowUpRight, Bot, Database, FileText, Globe2, Link2, MapPin, MessageSquarePlus, Orbit, RefreshCw, Route, Search, Trash2, Upload, Zap } from 'lucide-react';
-import type { AgentRun, AgentStep, RagAnswer, RagDocument, RagEval, RagMode, RagPassage, RagProjection, RagSearchResult, RagStatus } from '@mars-explorer/shared';
-import { agentStreamUrl, getRagDocuments, getRagEval, getRagProjection, getRagStatus, ragAddText, ragAddUrl, ragDelete, ragReindex, ragSearch, ragStreamUrl } from '@/lib/api';
+import { Activity, ArrowUpRight, Bot, Database, FileText, Globe2, Link2, MapPin, MessageSquarePlus, Orbit, RefreshCw, Route, Search, ShieldCheck, Trash2, Upload, Zap } from 'lucide-react';
+import type { AgentRun, AgentStep, AnswerLang, Provenance, RagAnswer, RagDocument, RagEval, RagMode, RagPassage, RagProjection, RagSearchResult, RagStatus } from '@mars-explorer/shared';
+import { agentStreamUrl, getHealthReady, getRagDocuments, getRagEval, getRagProjection, getRagStatus, ragAddText, ragAddUrl, ragDelete, ragReindex, ragSearch, ragStreamUrl } from '@/lib/api';
 import MissionNav from './MissionNav';
+import SourceBadge from './ui/SourceBadge';
 
 const EmbeddingSpace3D = dynamic(() => import('./scenes/EmbeddingSpace3D'), { ssr: false, loading: () => <div className="map-loading">LOADING EMBEDDING SPACE…</div> });
 
@@ -24,7 +25,7 @@ const SUGGESTIONS = {
     'What happens to the rock samples Perseverance collects?',
   ],
 };
-const TOOL_ICON: Record<string, typeof Search> = { search_knowledge: Search, verified_locations: MapPin, rover_position: MapPin, suggest_corridor: Route, analyze_route: Activity, earth_events: Globe2, orbit_geometry: Orbit, create_briefing: FileText };
+const TOOL_ICON: Record<string, typeof Search> = { search_knowledge: Search, verified_locations: MapPin, rover_position: MapPin, suggest_corridor: Route, analyze_route: Activity, earth_events: Globe2, orbit_geometry: Orbit, create_briefing: FileText, nasa_open_data: Database, named_features: MapPin, mars_hardware: Bot };
 const STOP = new Set(['what', 'which', 'where', 'when', 'does', 'from', 'this', 'that', 'with', 'about', 'there', 'their', 'have', 'into']);
 
 /** Splits text on query terms and wraps them in <mark>, as React nodes (never HTML strings). */
@@ -55,6 +56,8 @@ export default function ResearchConsole({ variant = 'page' }: { variant?: 'page'
   const [mode, setMode] = useState<'agent' | 'rag'>('agent');
   const [agentMode, setAgentMode] = useState<'fast' | 'deep'>('fast');
   const [cloud, setCloud] = useState(true);
+  const [lang, setLangState] = useState<AnswerLang>('en');
+  const [offline, setOffline] = useState<boolean | null>(null);
   const [query, setQuery] = useState(SUGGESTIONS.agent[0]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -83,7 +86,8 @@ export default function ResearchConsole({ variant = 'page' }: { variant?: 'page'
   }, []);
 
   useEffect(() => {
-    try { setToken(localStorage.getItem('rag_token') ?? ''); } catch { /* storage unavailable */ }
+    try { setToken(localStorage.getItem('rag_token') ?? ''); setLangState(localStorage.getItem('answer_lang') === 'bn' ? 'bn' : 'en'); } catch { /* storage unavailable */ }
+    getHealthReady().then((h) => setOffline(h.offline)).catch(() => setOffline(null));
     refresh().catch((e: Error) => setError(e.message));
     getRagProjection().then(setProjection).catch(() => setProjection({ points: [], hits: [] }));
     getRagEval().then(setEvalData).catch(() => setEvalData(null));
@@ -131,7 +135,7 @@ export default function ResearchConsole({ variant = 'page' }: { variant?: 'page'
     const onReset = () => setStreamed('');
     if (as === 'rag') {
       setRag(null); setRagPassages([]);
-      stream(ragStreamUrl(q, cloud), {
+      stream(ragStreamUrl(q, cloud, lang), {
         passages: (d) => { setRagPassages((JSON.parse(d) as RagSearchResult).passages); setPanel('answer'); getRagProjection(q).then(setProjection).catch(() => undefined); },
         token: onToken, reset: onReset,
         done: (d) => { const r = JSON.parse(d) as RagAnswer; setRag(r); setStreamed(r.answer); },
@@ -139,7 +143,7 @@ export default function ResearchConsole({ variant = 'page' }: { variant?: 'page'
       return;
     }
     setSteps([]); setRun(null);
-    stream(agentStreamUrl(q, cloud, agentMode), {
+    stream(agentStreamUrl(q, cloud, agentMode, lang), {
       step: (d) => setSteps((s) => [...s, JSON.parse(d) as AgentStep]),
       token: onToken, reset: onReset,
       done: (d) => {
@@ -159,6 +163,7 @@ export default function ResearchConsole({ variant = 'page' }: { variant?: 'page'
       setNotice(`${label} · done`);
     } catch (e) { setNotice(''); setError((e as Error).message); }
   };
+  const setLang = (v: AnswerLang) => { setLangState(v); try { localStorage.setItem('answer_lang', v); } catch { /* ignore */ } };
   const saveToken = (v: string) => { setToken(v); try { localStorage.setItem('rag_token', v); } catch { /* ignore */ } };
   const onFile = (file?: File) => {
     if (!file) return;
@@ -185,6 +190,7 @@ export default function ResearchConsole({ variant = 'page' }: { variant?: 'page'
           <span className={status?.semantic ? 'ok' : ''}>{status?.semantic ? `SEMANTIC · ${status.embedModel}` : 'BM25 ONLY'}</span>
           <span className={status?.generators.gemini ? 'ok' : ''}>GEMINI {status?.generators.gemini ? 'READY' : 'OFF'}</span>
           <span className={status?.generators.claude ? 'ok' : ''}>CLAUDE {status?.generators.claude ? 'FALLBACK READY' : 'OFF'}</span>
+          {offline !== null && <span><SourceBadge source={offline ? 'offline' : 'live'} /> {offline ? 'WIFI OFF · LOCAL EVIDENCE' : 'NETWORK'}</span>}
           {embedded && <Link href="/research">FULL CONSOLE ↗</Link>}
         </div>
       </header>
@@ -227,6 +233,7 @@ export default function ResearchConsole({ variant = 'page' }: { variant?: 'page'
                 <button className={agentMode === 'deep' ? 'active' : ''} onClick={() => setAgentMode('deep')} title="The LLM plans tool calls turn by turn">DEEP</button>
               </span>
             )}
+            <span className="rm-lang" role="group" aria-label="Answer language"><button className={lang === 'en' ? 'active' : ''} onClick={() => setLang('en')}>EN</button><button className={lang === 'bn' ? 'active' : ''} onClick={() => setLang('bn')} title="Bangla answers need a cloud model; numbers and citations stay unchanged">বাংলা</button></span>
             <label className="rm-cloud"><input type="checkbox" checked={cloud} onChange={(e) => setCloud(e.target.checked)} /> GEMINI → CLAUDE {cloud ? '' : '(OFF · LOCAL ONLY)'}</label>
           </div>
           <form className="rm-ask" onSubmit={(e) => { e.preventDefault(); submit(); }}>
@@ -268,6 +275,8 @@ export default function ResearchConsole({ variant = 'page' }: { variant?: 'page'
               {mode === 'agent' && run?.route && run.route.length > 1 && (
                 <Link className="rm-route" href={`/explore?wp=${encodeURIComponent(JSON.stringify(run.route.map(({ lat, lon }) => ({ lat, lon }))))}`}>OPEN THIS ROUTE IN EXPLORE <ArrowUpRight size={12} /></Link>
               )}
+              {lang === 'bn' && final && (model === 'local-evidence' || model === 'local-planner') && <p className="rm-lang-note">BANGLA NEEDS A CLOUD MODEL · THIS ANSWER IS THE LOCAL ENGLISH EVIDENCE</p>}
+              {mode === 'agent' && run?.provenance && <ProvenanceDrawer provenance={run.provenance} />}
               <small>Answers come only from the indexed sources and tools shown. Routes and risk scores are non-certifying research aids.</small>
             </article>
           )}
@@ -326,4 +335,14 @@ export default function ResearchConsole({ variant = 'page' }: { variant?: 'page'
       </section>
     </main>
   );
+}
+
+/** Every number in the agent answer, the tool that produced it, its source, and the raw tool JSON behind it. */
+function ProvenanceDrawer({ provenance }: { provenance: Provenance }) {
+  const sourced = provenance.claims.length - provenance.unmatched;
+  return <details className={`provenance-drawer ${provenance.complete ? 'ok' : 'warn'}`}>
+    <summary><ShieldCheck size={12} /> {provenance.complete ? `PROVENANCE · ${sourced}/${provenance.claims.length} NUMBERS SOURCED` : `PROVENANCE INCOMPLETE · ${provenance.unmatched} UNMATCHED`} <span>OPEN DRAWER</span></summary>
+    <ol className="pv-claims">{provenance.claims.map((c, i) => <li key={i} className={c.unmatched ? 'unmatched' : ''}><b>{c.value}</b><span>“…{c.text}…”</span><em>{c.unmatched ? 'NOT FOUND IN ANY TOOL RESULT' : `${c.tool} · ${c.sourceUrl ?? ''}`}</em></li>)}{!provenance.claims.length && <li><span>No numeric claims in this answer.</span></li>}</ol>
+    <div className="pv-raw">{provenance.evidence.map((e, i) => <section key={i}><strong>{e.tool}</strong><small>{e.source}</small><pre>{e.output}</pre></section>)}</div>
+  </details>;
 }

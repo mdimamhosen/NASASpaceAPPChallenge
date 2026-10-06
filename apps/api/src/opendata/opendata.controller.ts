@@ -62,6 +62,9 @@ export class OpenDataController {
   @Get('landings')
   landings() { return this.openData.landings(); }
 
+  @Get('hardware')
+  hardware() { return this.openData.hardware(); }
+
   @Get('products')
   products() { return this.openData.products(); }
 }

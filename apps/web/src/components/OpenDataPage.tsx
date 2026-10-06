@@ -1,5 +1,6 @@
 'use client';
 
+import SourceBadge from './ui/SourceBadge';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import type { MissionLanding, OpenCatalogResult, OpenDataProduct } from '@mars-explorer/shared';
@@ -83,7 +84,7 @@ export default function OpenDataPage() {
         <button className={!mission ? 'active' : ''} onClick={() => setMission('')}>ALL</button>
         {result?.missions.slice(0, 16).map((m) => <button key={m.mission} className={mission === m.mission ? 'active' : ''} onClick={() => { setSource('snapshot'); setMission(mission === m.mission ? '' : m.mission); }}>{m.mission} <small>{m.count}</small></button>)}
       </div>
-      {result && <p className="open-provenance">{result.provenance.source === 'live' ? 'LIVE · DATA.NASA.GOV CKAN API' : 'SNAPSHOT'} · {fmtDate(result.provenance.fetchedAt)}{result.provenance.note ? ` · ${result.provenance.note}` : ''}{mission ? ' · MISSION TAGS ARE INFERRED FROM TITLES AND DESCRIPTIONS' : ''}</p>}
+      {result && <p className="open-provenance"><SourceBadge source={result.provenance.source} at={result.provenance.fetchedAt} /> {result.provenance.source === 'live' ? 'DATA.NASA.GOV CKAN API' : 'COMMITTED SNAPSHOT'} · {fmtDate(result.provenance.fetchedAt)}{result.provenance.note ? ` · ${result.provenance.note}` : ''}{mission ? ' · MISSION TAGS ARE INFERRED FROM TITLES AND DESCRIPTIONS' : ''}</p>}
       <div className="theater-records">{items.map((d, i) => <article key={d.id}>
         <span className="record-index">{String(i + 1).padStart(3, '0')}</span>
         <div><small>{d.missions.join(' · ') || 'UNTAGGED'}{d.publisher ? ` · ${d.publisher.toUpperCase()}` : ''}{d.modified ? ` · ${d.modified}` : ''}{used.has(d.id) ? ' · USED ON THE MARS MAP' : ''}</small>

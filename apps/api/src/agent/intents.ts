@@ -1,5 +1,5 @@
 /** Deterministic intent rules for the no-LLM planner. Pure so they can be checked in isolation. */
-export type Intents = { sols: number[]; route: boolean; earth: boolean; orbit: boolean; knowledge: boolean; briefing: boolean; opendata: boolean; names: boolean; date?: string };
+export type Intents = { sols: number[]; route: boolean; earth: boolean; orbit: boolean; knowledge: boolean; briefing: boolean; opendata: boolean; names: boolean; hardware: boolean; date?: string };
 
 export function detectIntents(goal: string): Intents {
   const g = goal.toLowerCase();
@@ -14,6 +14,7 @@ export function detectIntents(goal: string): Intents {
     earth: /\b(eonet|wildfires?|storms?|volcano(es)?|floods?|sea ice|earth (natural )?events?|natural events?)\b/.test(g),
     orbit: /\b(distance to mars|light time|delay|orbit\w*|communicat\w*|signal|how far|latency|command|reach mars|travel time)\b/.test(g),
     opendata: /\b(datasets?|data\.nasa\.gov|open data|archives?|catalog\w*|pds|data bundles?|raw data)\b/.test(g),
+    hardware: /\b(left (behind|on mars)|went (silent|quiet)|last contact|abandoned|retired|landers?|rovers? (on|left)|spacecraft on mars|hardware|silent)\b/.test(g),
     names: /\b(named|names?|called|nomenclature|iau|gazetteer|features? near|nearby features?|what is near|crater named)\b/.test(g),
     date: /\b\d{4}-\d{2}-\d{2}\b/.exec(goal)?.[0],
   };

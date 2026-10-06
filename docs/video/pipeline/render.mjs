@@ -17,7 +17,7 @@ const voSum = S.reduce((a, s) => a + vo[s.id], 0);
 const leads = S.reduce((a, s, i) => a + leadOf(s, i), 0);
 const tail = (TOTAL - voSum - leads - CLOSE_TAIL) / (n - 1);
 if (tail < 0.15) throw new Error(`voice too long: tail ${tail.toFixed(2)} s`);
-const clips = Object.fromEntries((existsSync(`${dir}clips`) ? readdirSync(`${dir}clips`) : []).filter((id) => existsSync(`${dir}clips/${id}/f_00000.jpg`)).map((id) => [id, { frames: readdirSync(`${dir}clips/${id}`).filter((f) => f.startsWith('f_')).length }]));
+const clips = Object.fromEntries((existsSync(`${dir}clips`) ? readdirSync(`${dir}clips`) : []).filter((id) => existsSync(`${dir}clips/${id}/f_00000.jpg`)).map((id) => [id, { frames: readdirSync(`${dir}clips/${id}`).filter((f) => f.startsWith('f_')).length, clicks: existsSync(`${dir}clips/${id}/clicks.json`) ? JSON.parse(readFileSync(`${dir}clips/${id}/clicks.json`, 'utf8')) : [] }]));
 const frac = (text, needle) => { const i = text.indexOf(needle); if (i < 0) throw new Error(`cue "${needle}" not in VO`); return i / text.length; };
 let t = 0;
 const scenes = S.map((s, index) => {
@@ -27,7 +27,8 @@ const scenes = S.map((s, index) => {
   const voStart = start + lead, voDur = vo[s.id], end = start + dur;
   const out = { ...s, index, start, dur, end, voStart, voDur, cues: {}, clips: s.clips ?? [] };
   // Each clip plays in an equal slot; speed fits the recorded length to the slot (slow-mo or fast-forward, bounded).
-  const seg = dur / Math.max(1, out.clips.length);
+  // Grid scenes show cols*rows clips at once, so each clip's slot is a page, not dur / clips.
+  const seg = s.kind === 'grid' ? dur / Math.ceil(out.clips.length / (s.cols * s.rows)) : dur / Math.max(1, out.clips.length);
   out.speeds = out.clips.map((c) => (clips[c] ? clamp(clips[c].frames / FPS / seg, 0.45, 2.2) : 1));
   out.cues.keywords = (s.keywords ?? []).map((_, i) => voStart + voDur * (0.08 + (0.72 * i) / Math.max(1, s.keywords.length)));
   if (s.kind === 'title') out.cues.title = voStart + voDur * frac(s.vo, 'Now imagine') - 0.3;

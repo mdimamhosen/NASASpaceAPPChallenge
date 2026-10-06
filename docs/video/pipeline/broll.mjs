@@ -25,63 +25,87 @@ const MID = track.points[Math.floor(track.points.length / 2)];
 const DEMO_TITLE = 'Perseverance sample caching notes';
 const DEMO_BODY = 'Perseverance seals rock and regolith cores in titanium sample tubes after drilling them from carefully chosen outcrops. The mission deposited a set of these tubes on the surface at the Three Forks depot in Jezero Crater, as part of the Mars Sample Return campaign. Each tube is documented with close-up images and precise location data, so that a future mission could find and retrieve it. Other tubes remain stored inside the rover as a second, independent cache.';
 
+const research2 = "document.querySelectorAll('.research-passages article').length >= 3";
+const visible = (sel) => `(() => { const e = document.querySelector(${JSON.stringify(sel)}); if (!e) return false; const r = e.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth && r.width > 0; })()`;
+const setVal = (sel, v) => `(() => { const el = document.querySelector(${JSON.stringify(sel)}); if (!el) return false; const set = Object.getOwnPropertyDescriptor(el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype, 'value').set; set.call(el, ${JSON.stringify(v)}); el.dispatchEvent(new Event('input', { bubbles: true })); return true; })()`;
 const SHOTS = [
+  // WHO / WHY
   { id: 'hero', url: '/', ready: "!!document.querySelector('.landing canvas')", settle: 2000, dur: 14 },
   { id: 'landing-terrain', url: '/', setup: [{ scroll: '.data3d' }], ready: `${has3d} && !/LOADING TILES/.test(document.querySelector('.data3d')?.innerText||'')`, settle: 2500, dur: 12 },
-  { id: 'home-ask', url: '/', setup: [{ scroll: '.home-research' }, { waitFor: research }, { scroll: '.research-grid', block: 'start' }], settle: 1200, dur: 12, actions: [{ t: 0.6, click: 'RUN AGENT' }], post: answered },
   { id: 'opendata-scroll', url: '/opendata', ready: `${page} && document.querySelectorAll('.open-products article').length === 3`, settle: 1200, dur: 11, actions: [{ t: 2.5, scrollBy: 640 }, { t: 6.5, scrollBy: 520 }] },
   { id: 'research-wide', url: '/research', ready: research, settle: 1500, dur: 13, actions: [{ t: 1.0, click: 'RUN AGENT' }], post: answered },
   { id: 'orbit', url: '/timeline', setup: [{ scroll: '.data3d' }], ready: has3d, settle: 2200, dur: 12, actions: [{ t: 0.4, click: 'PLAY' }] },
+  // WHAT · Mars map deep dive
   { id: 'explore-layers', url: '/explore', ready: tiles, settle: 1200, dur: 8, actions: [{ t: 0.8, clickSel: '.layer-row', index: 1 }, { t: 3.2, clickSel: '.layer-row', index: 2 }, { t: 5.6, clickSel: '.layer-row', index: 0 }] },
   { id: 'explore-sol', keep: true, ready: tiles, settle: 600, dur: 7, actions: [{ t: 0.3, scrub: "input[aria-label='Perseverance sol']", dur: 6 }] },
   { id: 'explore-names', url: '/explore', ready: `${tiles} && !!document.querySelector('.iau-label')`, settle: 1200, dur: 7, actions: [{ t: 0.5, js: zoom(3) }] },
   { id: 'explore-dtm', keep: true, settle: 600, dur: 7, actions: [{ t: 0.3, click: 'HIRISE DTM FOOTPRINTS' }, { t: 3.0, js: focus(18.47, 77.4) }], post: "document.querySelectorAll(\"path[stroke-dasharray='3 3']\").length > 3" },
-  { id: 'explore-landings', keep: true, settle: 600, dur: 8, actions: [{ t: 0.3, click: 'MISSION LANDING SITES' }, { t: 0.9, click: 'GLOBAL' }, { t: 4.2, js: clickPath("path[stroke='#C45C26']") }], post: "!!document.querySelector('.detail-modal')" },
+  { id: 'explore-hardware', url: '/explore', ready: tiles, settle: 1000, dur: 10, actions: [{ t: 0.3, click: 'LEFT ON MARS' }, { t: 0.9, click: 'GLOBAL' }, { t: 2.2, scroll: '.hardware-timeline', block: 'center' }, { t: 2.8, scrub: "input[aria-label='Last-contact year']", dur: 6 }], post: `document.querySelectorAll('.hw-marker').length >= 8 && ${visible('.hardware-timeline')}` },
+  { id: 'explore-landings', keep: true, settle: 600, dur: 8, actions: [{ t: 0.3, click: 'MISSION LANDING SITES' }, { t: 3.6, js: clickPath("path[stroke='#C45C26']") }], post: "!!document.querySelector('.detail-modal')" },
+  { id: 'explore-draw', url: '/explore', ready: tiles, settle: 1000, dur: 8, actions: [{ t: 0.4, js: focus(18.45, 77.42) }, { t: 2.4, key: 'r' }, { t: 3.2, mapClick: [0.42, 0.55] }, { t: 4.4, mapClick: [0.55, 0.45] }, { t: 5.6, mapClick: [0.66, 0.52] }], post: risk },
   { id: 'explore-route', url: '/explore', ready: tiles, settle: 1000, dur: 7, actions: [{ t: 0.5, click: 'LOAD PUBLISHED ROUTE' }, { t: 1.6, js: focus(MID.lat, MID.lon) }], post: `${risk} && !!document.querySelector('.terrain-profile svg')` },
   { id: 'explore-profile', keep: true, ready: "!!document.querySelector('.terrain-profile svg')", settle: 500, dur: 6, actions: [{ t: 0.4, hover: '.terrain-profile svg', dur: 5 }] },
-  { id: 'explore-context', url: `/explore?wp=${DELTA}`, ready: `${tiles} && !!document.querySelector('.open-data-context')`, settle: 1200, dur: 7, actions: [{ t: 0.8, scroll: '.open-data-context', block: 'center' }, { t: 3.5, clickSel: '.open-data-context button', index: 0 }] },
+  { id: 'explore-riskhelp', keep: true, settle: 400, dur: 5, actions: [{ t: 0.4, clickSel: '.risk-metric', index: 0 }, { t: 4.2, key: 'Escape' }], post: "!document.querySelector('#risk-title')" },
+  { id: 'explore-context', url: `/explore?wp=${DELTA}`, ready: `${tiles} && !!document.querySelector('.open-data-context')`, settle: 1200, dur: 7, actions: [{ t: 0.8, scroll: '.open-data-context', block: 'center' }, { t: 3.5, clickSel: '.open-data-context button', index: 0 }], post: visible('.open-data-context') },
   { id: 'explore-corridor', url: `/explore?wp=${WP2}`, ready: `${tiles} && ${risk}`, settle: 1200, dur: 7, actions: [{ t: 0.3, js: focus(18.4533, 77.4435) }, { t: 2.6, click: 'SUGGEST DTM CORRIDOR' }], post: "[...document.querySelectorAll('button')].some((b) => /USE SUGGESTION/.test(b.innerText))" },
   { id: 'fly', url: `/explore?view=3d&wp=${WP}`, ready: "!!document.querySelector('.terrain-3d canvas') && !/LOADING TILES/.test(document.querySelector('.terrain-credit')?.innerText||'')", settle: 2500, dur: 10, actions: [{ t: 0.4, click: 'FLY ROUTE' }] },
   { id: 'fly-wide', url: `/explore?view=3d&wp=${DELTA}`, ready: "!!document.querySelector('.terrain-3d canvas') && !/LOADING TILES/.test(document.querySelector('.terrain-credit')?.innerText||'')", settle: 2500, dur: 11, actions: [{ t: 0.4, click: 'FLY ROUTE' }] },
+  { id: 'explore-presets', url: '/explore', ready: tiles, settle: 1000, dur: 6, actions: [{ t: 0.4, click: 'CRATER RIM' }, { t: 2.2, click: 'SHORT EVA' }, { t: 4.0, click: 'DELTA TRAVERSE' }], post: risk },
+  { id: 'explore-classroom', url: '/explore', ready: tiles, settle: 1000, dur: 6, actions: [{ t: 0.5, click: 'CLASSROOM MODE' }], post: "/MISSION NOTE|TRAVERSE RISK INDEX/.test(document.querySelector('.right-rail')?.innerText||'')" },
+  { id: 'explore-focus', url: `/explore?wp=${WP}`, ready: tiles, settle: 1000, dur: 6, actions: [{ t: 0.4, key: 'f' }, { t: 2.4, key: '?' }, { t: 4.6, key: 'Escape' }] },
+  { id: 'explore-share', url: `/explore?wp=${WP}`, ready: `${tiles} && ${risk}`, settle: 1000, dur: 6, actions: [{ t: 0.4, click: 'SAVE ROUTE' }, { t: 2.2, click: 'COPY SHARE LINK' }, { t: 4.0, click: 'RESTORE LAST SAVE' }] },
   { id: 'explore-assistant', url: `/explore?wp=${WP}`, ready: `${tiles} && ${risk}`, settle: 1200, dur: 7, actions: [{ t: 0.5, click: 'WHY IS THIS ROUTE SCIENTIFICALLY INTERESTING' }, { t: 3.2, scroll: '.assistant-response', block: 'start' }], post: "(document.querySelector('.assistant-response')?.innerText||'').length > 120" },
-  { id: 'explore-palette', keep: true, settle: 400, dur: 5, actions: [{ t: 0.3, clickSel: "[aria-label='Open command palette']", index: 0 }, { t: 1.2, type: "input[placeholder='Search mission actions']", text: 'brief', dur: 1.0 }, { t: 4.2, key: 'Escape' }] },
+  { id: 'explore-palette', keep: true, settle: 400, dur: 5, actions: [{ t: 0.3, clickSel: "[aria-label='Open command palette']", index: 0 }, { t: 1.2, type: "input[placeholder='Search mission actions']", text: 'left on mars', dur: 1.0 }, { t: 4.2, key: 'Escape' }] },
   { id: 'explore-briefing', keep: true, settle: 400, dur: 6, actions: [{ t: 0.4, click: 'GENERATE BRIEFING' }], post: "/TRAVERSE RISK INDEX/.test(document.querySelector('.right-rail')?.innerText||'')" },
-  { id: 'research-agent', url: '/research', ready: research, settle: 1500, dur: 13, actions: [{ t: 0.6, click: 'RUN AGENT' }], post: answered },
-  { id: 'research-rag', keep: true, settle: 600, dur: 10, actions: [{ t: 0.3, click: 'ASK THE CORPUS' }, { t: 1.0, click: 'ASK' }], post: `${answered} && document.querySelectorAll('.rm-answer .cite-marker').length > 0` },
+  // WHAT · research
+  { id: 'research-agent', url: '/research', ready: research, settle: 1500, dur: 13, actions: [{ t: 0.4, js: setVal('.rm-ask textarea', 'Which NASA landers went silent on Mars, and where was Perseverance on sol 400?') }, { t: 1.0, click: 'RUN AGENT' }], post: answered },
+  { id: 'research-provenance', keep: true, settle: 600, dur: 8, actions: [{ t: 0.3, js: "(() => { const d = document.querySelector('.provenance-drawer'); if (!d) return false; d.open = true; d.scrollIntoView({ behavior: 'smooth', block: 'start' }); return true; })()" }, { t: 4.5, scrollBy: 420 }], post: visible('.provenance-drawer') },
+  { id: 'research-rag', url: '/research', ready: research, settle: 1000, dur: 10, actions: [{ t: 0.3, click: 'ASK THE CORPUS' }, { t: 1.0, click: 'ASK' }], post: `${answered} && document.querySelectorAll('.rm-answer .cite-marker').length > 0` },
   { id: 'research-embed', keep: true, setup: [{ scroll: '.research-space', block: 'center' }], ready: "/QUERY →/.test(document.querySelector('.embedding-3d')?.innerText||'') && !!document.querySelector('.embedding-3d canvas')", settle: 1200, dur: 6 },
-  { id: 'research-live', keep: true, setup: [{ scrollTop: true }, { scroll: '.research-grid', block: 'start' }], settle: 500, dur: 8, actions: [{ t: 0.3, click: 'LIVE RETRIEVAL' }, { t: 0.8, type: '.rm-ask textarea', text: 'How does Perseverance store its rock samples?', dur: 2.2 }, { t: 4.2, select: '.rp-head select', value: 'bm25' }, { t: 6.2, select: '.rp-head select', value: 'dense' }], post: "document.querySelectorAll('.research-passages article').length >= 3" },
+  { id: 'research-live', keep: true, setup: [{ scrollTop: true }, { scroll: '.research-grid', block: 'start' }], settle: 500, dur: 8, actions: [{ t: 0.3, click: 'LIVE RETRIEVAL' }, { t: 0.8, type: '.rm-ask textarea', text: 'How does Perseverance store its rock samples?', dur: 2.2 }, { t: 4.2, select: '.rp-head select', value: 'bm25' }, { t: 6.2, select: '.rp-head select', value: 'dense' }], post: research2 },
   { id: 'research-corpus', keep: true, setup: [{ scroll: '.research-corpus', block: 'start' }], settle: 800, dur: 11, actions: [{ t: 0.5, type: ".rc-form input[placeholder='Title']", text: DEMO_TITLE, dur: 1.0 }, { t: 1.8, type: '.rc-form textarea', text: DEMO_BODY, dur: 1.8 }, { t: 4.2, click: 'INDEX TEXT', clickWhen: "[...document.querySelectorAll('.rc-form button')].some((b) => /INDEX TEXT/.test(b.innerText) && !b.disabled)" }], post: `[...document.querySelectorAll('.rc-docs a')].some((a) => a.innerText.includes(${JSON.stringify(DEMO_TITLE)}))` },
+  { id: 'research-bangla', url: '/research', ready: research, settle: 1000, dur: 11, actions: [{ t: 0.3, click: 'ASK THE CORPUS' }, { t: 0.9, click: 'বাংলা' }, { t: 1.4, js: setVal('.rm-ask textarea', 'When did the Opportunity rover last contact Earth?') }, { t: 2.0, click: 'ASK' }], post: "/[\\u0980-\\u09FF]/.test(document.querySelector('.rm-answer p')?.innerText||'')", after: [{ click: 'EN' }] },
+  // WHAT · open data, Earth
   { id: 'opendata-search', url: '/opendata', setup: [{ scroll: '#catalog', block: 'start', instant: true }], ready: "document.querySelectorAll('.theater-records article').length >= 10", settle: 1000, dur: 8, actions: [{ t: 0.5, type: '.open-search input', text: 'hirise dtm', dur: 1.2 }, { t: 4.2, type: '.open-search input', text: '', dur: 0.2 }, { t: 4.8, clickSel: '.open-facets button', index: 4 }], post: "document.querySelectorAll('.theater-records article').length >= 3" },
   { id: 'opendata-shelves', keep: true, setup: [{ scroll: '.open-landings', block: 'center' }], settle: 800, dur: 7, actions: [{ t: 1.5, clickSel: '.open-landings button', index: 7 }] },
-  { id: 'opendata-dtm-detail', url: '/explore', ready: tiles, settle: 1000, dur: 10, actions: [{ t: 0.3, click: 'HIRISE DTM FOOTPRINTS' }, { t: 0.8, js: focus(18.47, 77.42) }, { t: 4.5, js: clickPath("path[stroke-dasharray='3 3']") }], post: "/HIRISE DIGITAL TERRAIN MODEL/.test(document.querySelector('.detail-modal')?.innerText||'')" },
-  { id: 'eonet-feed', url: '/eonet', setup: [{ scroll: '.earth-explorer-head', block: 'start' }], ready: "document.querySelectorAll('.earth-explorer-row').length >= 5 && document.querySelectorAll('.earth-explorer-map .leaflet-tile-loaded, .earth-explorer-map .gm-style').length >= 1", settle: 1500, dur: 7, actions: [{ t: 2.0, select: '.earth-filters select', index: 1 }, { t: 5.0, select: '.earth-filters select', index: 0 }] },
+  { id: 'eonet-gibs', url: '/eonet', setup: [{ scroll: '.earth-explorer-head', block: 'start' }], ready: "document.querySelectorAll('.earth-explorer-row').length >= 5 && document.querySelectorAll('.earth-explorer-map .leaflet-tile-loaded').length >= 4", settle: 1500, dur: 7, actions: [{ t: 2.0, select: '.earth-filters select', index: 1 }, { t: 5.0, select: '.earth-filters select', index: 0 }] },
   { id: 'eonet-detail', keep: true, settle: 600, dur: 6, actions: [{ t: 0.4, clickSel: '.earth-explorer-row', index: 0 }], post: "!!document.querySelector('.detail-modal')" },
+  // 3D data stories
   { id: 'planets', url: '/survival', setup: [{ scroll: '.data3d' }], ready: has3d, settle: 2200, dur: 5 },
   { id: 'columns', url: '/jezero', setup: [{ scroll: '.data3d' }], ready: "!!document.querySelector('.data3d canvas')", settle: 300, dur: 5 },
   { id: 'cube', url: '/mission', setup: [{ scroll: '.data3d' }], ready: has3d, settle: 2500, dur: 5 },
   { id: 'globe', url: '/data', setup: [{ scroll: '.data3d' }], ready: has3d, settle: 2200, dur: 5, actions: [{ t: 0.8, clickSel: '.sites-strip button', index: 6 }] },
   { id: 'slope', url: '/hazards', setup: [{ scroll: '.data3d' }], ready: has3d, settle: 2200, dur: 5 },
   { id: 'curtain', url: '/briefing/preview', setup: [{ scroll: '.data3d' }], ready: `${has3d} && /CURTAIN/.test(document.querySelector('.data3d')?.innerText||'')`, settle: 2500, dur: 5 },
-  { id: 'traces', url: '/traces', ready: page, settle: 1200, dur: 3, actions: [{ t: 1.0, scrollBy: 320 }] },
-  { id: 'architecture', url: '/architecture', setup: [{ scroll: '.dossier-scene', instant: true }], ready: "!!document.querySelector('.dossier-scene canvas')", settle: 2500, dur: 3 },
-  { id: 'science', url: '/science', setup: [{ scroll: '.data3d' }], ready: has3d, settle: 2200, dur: 3 },
-  { id: 'gallery', url: '/gallery', setup: [{ scrollBy: 820, instant: true }], ready: page, settle: 1500, dur: 3, actions: [{ t: 0.8, scrollBy: 300 }] },
-  { id: 'compare', url: '/compare', ready: page, settle: 1200, dur: 3, actions: [{ t: 0.8, scrollBy: 300 }] },
-  { id: 'analog', url: '/analog', ready: `${page} && !!document.querySelector('.scene-stage canvas')`, settle: 2000, dur: 3 },
-  { id: 'story', url: '/story', ready: `${page} && !!document.querySelector('.scene-stage canvas')`, settle: 2000, dur: 3 },
-  { id: 'card', url: `/route/share?wp=${WP}`, setup: [{ scroll: '.data3d' }], ready: has3d, settle: 2200, dur: 3 },
+  // Page wall
+  { id: 'home-widgets', url: '/', setup: [{ scroll: '.earth-explorer-head', block: 'start' }], ready: "document.querySelectorAll('.earth-explorer-row').length >= 3 && document.querySelectorAll('.leaflet-tile-loaded').length >= 2", settle: 1500, dur: 4, actions: [{ t: 1.5, scrollBy: 260 }] },
+  { id: 'science', url: '/science', setup: [{ scroll: '.data3d' }], ready: has3d, settle: 2200, dur: 4 },
+  { id: 'targets-page', url: '/targets', ready: page, settle: 1200, dur: 4, actions: [{ t: 0.3, scroll: '.demo-catalog-toggle', block: 'center' }, { t: 1.4, clickSel: '.demo-catalog-toggle input', index: 0 }] },
+  { id: 'story', url: '/story', ready: `${page} && !!document.querySelector('.scene-stage canvas')`, settle: 2000, dur: 4 },
+  { id: 'traces', url: '/traces', ready: page, settle: 1200, dur: 4, actions: [{ t: 1.0, scrollBy: 320 }] },
+  { id: 'architecture', url: '/architecture', setup: [{ scroll: '.dossier-scene', instant: true }], ready: "!!document.querySelector('.dossier-scene canvas')", settle: 2500, dur: 4 },
+  { id: 'pipeline', url: '/pipeline', ready: page, settle: 1500, dur: 4, actions: [{ t: 1.0, scrollBy: 360 }] },
+  { id: 'gallery', url: '/gallery', setup: [{ scrollBy: 820, instant: true }], ready: page, settle: 1500, dur: 4, actions: [{ t: 0.8, scrollBy: 300 }] },
+  { id: 'compare', url: '/compare', ready: page, settle: 1200, dur: 4, actions: [{ t: 0.8, scrollBy: 300 }] },
+  { id: 'analog', url: '/analog', ready: `${page} && !!document.querySelector('.scene-stage canvas')`, settle: 2000, dur: 4 },
+  { id: 'card', url: `/route/share?wp=${WP}`, setup: [{ scroll: '.data3d' }], ready: has3d, settle: 2200, dur: 4 },
+  { id: 'ops', url: '/ops', ready: page, settle: 2000, dur: 4, actions: [{ t: 1.2, scrollBy: 300 }] },
+  // Offline pass (run with the API on OFFLINE=1): node broll.mjs --offline
+  { id: 'research-offline', offline: true, url: '/research', ready: `${research} && /WIFI OFF/.test(document.querySelector('.research-status')?.innerText||'')`, settle: 1200, dur: 9, actions: [{ t: 0.8, click: 'RUN AGENT' }], post: answered },
+  { id: 'opendata-offline', offline: true, url: '/opendata', setup: [{ scroll: '#catalog', block: 'start', instant: true }], ready: "document.querySelectorAll('.theater-records article').length >= 10", settle: 800, dur: 6, actions: [{ t: 0.5, click: 'LIVE DATA.NASA.GOV' }, { t: 1.2, type: '.open-search input', text: 'hirise', dur: 1.0 }], post: "/OFFLINE=1/.test(document.querySelector('.open-provenance')?.innerText||'')" },
 ];
-const wanted = process.argv.slice(2);
+const offlinePass = process.argv.includes('--offline');
+const wanted = process.argv.slice(2).filter((a) => !a.startsWith('--'));
 // A "keep" shot continues its predecessor's page state, so asking for it re-records the chain from its owner.
 const pick = new Set();
 for (const w of wanted) { let i = SHOTS.findIndex((s) => s.id === w); if (i < 0) throw new Error(`unknown shot ${w}`); pick.add(i); while (SHOTS[i].keep) pick.add(--i); }
-const shots = wanted.length ? SHOTS.filter((_, i) => pick.has(i)) : SHOTS;
+const shots = wanted.length ? SHOTS.filter((_, i) => pick.has(i)) : SHOTS.filter((x) => Boolean(x.offline) === offlinePass);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ---- Preflight ----
 const check = async (url, test, label) => { const r = await fetch(url).catch(() => null); if (!r?.ok) throw new Error(`preflight: ${label} HTTP ${r?.status}`); const body = await r.json().catch(() => null); if (test && !test(body)) throw new Error(`preflight: ${label} not ready`); };
 await check(`${BASE}/`, null, 'web');
-await check(`${API}/health/ready`, (b) => b.ok && !b.degraded.length, 'api ready');
+await check(`${API}/health/ready`, (b) => b.ok && !b.degraded.length && b.offline === offlinePass, `api ready (offline=${offlinePass})`);
 await check(`${API}/rag/status`, (b) => b.semantic && b.chunks > 100, 'rag');
 await check(`${API}/opendata/landings`, (b) => b.length === 9, 'opendata');
 await check(`${API}/eonet/events-summary?limit=8`, (b) => Array.isArray(b) && b.length > 0, 'eonet');
@@ -103,6 +127,8 @@ try {
     const m = JSON.parse(e.data);
     if (m.id && pending.has(m.id)) { pending.get(m.id)(m.result); pending.delete(m.id); }
     if (m.method === 'Page.loadEventFired') loaded?.();
+    // A prompt/alert would block every later evaluate; dismiss it (accepting) so the shot keeps running.
+    if (m.method === 'Page.javascriptDialogOpening') send('Page.handleJavaScriptDialog', { accept: true });
     if (m.method === 'Runtime.exceptionThrown') pageErrors.push(m.params.exceptionDetails.exception?.description?.slice(0, 160) ?? 'exception');
     if (m.method === 'Runtime.consoleAPICalled' && m.params.type === 'error') pageErrors.push(m.params.args.map((a) => a.value ?? a.description).join(' ').slice(0, 160));
     if (m.method === 'Page.screencastFrame') {
@@ -112,6 +138,7 @@ try {
   });
   await send('Page.enable'); await send('Runtime.enable');
   await send('Page.setDownloadBehavior', { behavior: 'deny' });
+  await send('Browser.grantPermissions', { origin: BASE, permissions: ['clipboardReadWrite', 'clipboardSanitizedWrite'] });
   await send('Emulation.setDeviceMetricsOverride', { width: 1920, height: 1080, deviceScaleFactor: 1, mobile: false });
   await send('Page.addScriptToEvaluateOnNewDocument', { source: "document.addEventListener('DOMContentLoaded',()=>{const s=document.createElement('style');s.textContent='nextjs-portal{display:none!important}';document.documentElement.appendChild(s)})" });
   const evaluate = async (expression) => (await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true }))?.result?.value;
@@ -120,14 +147,21 @@ try {
   const runInPage = (a) => evaluate(
     a.js ? a.js
     : a.scrollTop ? `(window.scrollTo({top:0,behavior:'instant'}), true)`
-    : a.clickSel ? `(() => { const el = document.querySelectorAll(${JSON.stringify(a.clickSel)})[${a.index ?? 0}]; el?.click(); return !!el; })()`
+    : a.clickSel ? `(() => { const el = document.querySelectorAll(${JSON.stringify(a.clickSel)})[${a.index ?? 0}]; if (!el) return false; const r = el.getBoundingClientRect(); el.click(); return [r.left, r.top, r.width, r.height]; })()`
     : a.type ? `(() => { const el = document.querySelector(${JSON.stringify(a.type)}); if (!el) return false; const proto = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype; const set = Object.getOwnPropertyDescriptor(proto, 'value').set; const text = ${JSON.stringify(a.text ?? '')}; el.focus(); let i = 0; const step = Math.max(1, Math.ceil(text.length / (${a.dur ?? 1} * 30))); const tick = () => { i = Math.min(text.length, i + step); set.call(el, text.slice(0, i)); el.dispatchEvent(new Event('input', { bubbles: true })); if (i < text.length) setTimeout(tick, 33); }; set.call(el, ''); el.dispatchEvent(new Event('input', { bubbles: true })); if (text) tick(); return true; })()`
     : a.select ? `(() => { const el = document.querySelector(${JSON.stringify(a.select)}); if (!el) return false; const v = ${a.value != null ? JSON.stringify(a.value) : `el.options[${a.index ?? 0}]?.value`}; Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(el, v); el.dispatchEvent(new Event('change', { bubbles: true })); return true; })()`
     : a.scroll ? `(() => { const el = document.querySelector(${JSON.stringify(a.scroll)}); el?.scrollIntoView({behavior:${a.instant ? "'instant'" : "'smooth'"},block:${JSON.stringify(a.block ?? 'center')}}); return !!el; })()`
     : a.scrollBy ? `(window.scrollBy({top:${a.scrollBy},behavior:${a.instant ? "'instant'" : "'smooth'"}}), true)`
-    : a.click ? `(() => { const w=${JSON.stringify(a.click)}; const els=[...document.querySelectorAll('button,a')].filter(e=>e.offsetParent!==null); const n=(e)=>e.innerText.replace(/[“”↗▶]/g,'').trim().toUpperCase(); const hit=(els.find(e=>n(e)===w)||els.find(e=>n(e).includes(w))); hit?.click(); return !!hit; })()`
-    : `(() => { const el=document.querySelector(${JSON.stringify(a.scrub)}); if(!el) return false; const set=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set; const to=Number(el.max), t0=performance.now(), d=${(a.dur ?? 5) * 1000}; const step=(now)=>{const f=Math.min(1,(now-t0)/d); set.call(el,String(Math.round(to*f))); el.dispatchEvent(new Event('input',{bubbles:true})); if(f<1) requestAnimationFrame(step);}; requestAnimationFrame(step); return true; })()`);
+    : a.click ? `(() => { const w=${JSON.stringify(a.click)}; const els=[...document.querySelectorAll('button,a')].filter(e=>e.offsetParent!==null); const n=(e)=>e.innerText.replace(/[“”↗▶]/g,'').trim().toUpperCase(); const hit=(els.find(e=>n(e)===w)||els.find(e=>n(e).includes(w))); if(!hit) return false; const r=hit.getBoundingClientRect(); hit.click(); return [r.left,r.top,r.width,r.height]; })()`
+    : `(() => { const el=document.querySelector(${JSON.stringify(a.scrub)}); if(!el) return false; const set=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set; const from=Number(el.min||0), to=Number(el.max), t0=performance.now(), d=${(a.dur ?? 5) * 1000}; const step=(now)=>{const f=Math.min(1,(now-t0)/d); set.call(el,String(Math.round(from+(to-from)*f))); el.dispatchEvent(new Event('input',{bubbles:true})); if(f<1) requestAnimationFrame(step);}; requestAnimationFrame(step); return true; })()`);
   const run = async (a) => {
+    if (a.mapClick) {
+      const r = await evaluate("(() => { const b = document.querySelector('.leaflet-container')?.getBoundingClientRect(); return b ? [b.left, b.top, b.width, b.height] : null; })()");
+      if (!r) return false;
+      const x = r[0] + r[2] * a.mapClick[0], y = r[1] + r[3] * a.mapClick[1];
+      for (const type of ['mousePressed', 'mouseReleased']) await send('Input.dispatchMouseEvent', { type, x, y, button: 'left', clickCount: 1 });
+      return [x - 12, y - 12, 24, 24];
+    }
     if (a.clickWhen) { if (!(await waitFor(a.clickWhen, 6000))) return false; return runInPage({ click: a.click }); }
     if (a.key) { for (const type of ['keyDown', 'keyUp']) await send('Input.dispatchKeyEvent', { type, key: a.key, code: a.key, windowsVirtualKeyCode: a.key === 'Escape' ? 27 : 0 }); return true; }
     if (a.hover) {
@@ -162,12 +196,15 @@ try {
     mkdirSync(`${out}/raw`, { recursive: true });
     rec = { dir: `${out}/raw`, n: 0, frames: [] };
     const t0 = Date.now() / 1000;
-    const results = await Promise.all([sleep(s.dur * 1000), ...(s.actions ?? []).map((a) => sleep(a.t * 1000).then(() => run(a)))]);
+    const clicks = [];
+    const results = await Promise.all([sleep(s.dur * 1000), ...(s.actions ?? []).map((a) => sleep(a.t * 1000).then(async () => { const at = Date.now() / 1000 - t0; const r = await run(a); if (Array.isArray(r)) clicks.push({ t: Number(at.toFixed(3)), x: r[0], y: r[1], w: r[2], h: r[3] }); return r; }))]);
     const { frames } = rec; rec = null;
     if (results.slice(1).some((r) => r === false)) return `an action target was missing (${(s.actions ?? []).filter((_, i) => results[i + 1] === false).map((a) => a.click ?? a.clickSel ?? a.type ?? a.js?.slice(0, 40)).join(', ')})`;
     if (s.post && !(await waitFor(s.post, 5000))) return 'post-condition failed (feature did not complete on camera)';
     if (pageErrors.length) return `console error: ${pageErrors[0]}`;
     if (frames.length < 2) return 'no frames captured';
+    writeFileSync(`${out}/clicks.json`, JSON.stringify(clicks));
+    for (const a of s.after ?? []) { await run(a); await sleep(300); }
     let j = 0;
     const n = Math.round(s.dur * 30);
     for (let k = 0; k < n; k++) {

@@ -1,4 +1,4 @@
-import type { AssistantResponse, LayerId, MapLayer, MissionBriefing, POI, RegionData, RouteAnalysis, RouteWaypoint, PlacesTrack, SuggestedRoute, EonetProvenance, DtmGrid, RagStatus, RagDocument, RagSearchResult, RagAnswer, RagEval, RagProjection, RagMode, AgentRun, OpenCatalogResult, MarsFeature, HiriseDtm, MissionLanding, OpenDataProduct } from '@mars-explorer/shared';
+import type { AssistantResponse, LayerId, MapLayer, MissionBriefing, POI, RegionData, RouteAnalysis, RouteWaypoint, PlacesTrack, SuggestedRoute, EonetProvenance, DtmGrid, RagStatus, RagDocument, RagSearchResult, RagAnswer, RagEval, RagProjection, RagMode, AgentRun, OpenCatalogResult, MarsFeature, HiriseDtm, MissionLanding, OpenDataProduct, MarsHardware, AnswerLang } from '@mars-explorer/shared';
 import type { EarthEventSummary, EarthEventDetail } from './earth-types';
 
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
@@ -42,6 +42,8 @@ export const getOpenCatalog = (q = '', mission = '', offset = 0, source: 'snapsh
 export const getMarsFeatures = (box: MapBox, zoom: number) => request<MarsFeature[]>(`/opendata/features?${boxQuery(box)}&zoom=${zoom}`);
 export const getHiriseDtms = (box: MapBox) => request<HiriseDtm[]>(`/opendata/hirise-dtm?${boxQuery(box)}`);
 export const getLandings = () => request<MissionLanding[]>('/opendata/landings');
+export const getHardware = () => request<MarsHardware[]>('/opendata/hardware');
+export const getHealthReady = () => request<{ ok: boolean; offline: boolean }>('/health/ready');
 export const getOpenDataProducts = () => request<OpenDataProduct[]>('/opendata/products');
 export type { POI, RouteWaypoint, EarthEventSummary };
 
@@ -72,5 +74,5 @@ export const ragReindex = (token?: string) => request<RagStatus>('/rag/reindex',
 export const getRagEval = () => request<RagEval>('/rag/eval');
 export const getRagProjection = (q?: string) => request<RagProjection>(`/rag/projection${q ? `?q=${encodeURIComponent(q)}` : ''}`);
 export const agentRun = (goal: string, cloud: boolean) => request<AgentRun>('/agent/run', { goal, cloud });
-export const agentStreamUrl = (goal: string, cloud: boolean, mode: 'fast' | 'deep' = 'fast') => `${base}/agent/stream?goal=${encodeURIComponent(goal)}&cloud=${cloud}&mode=${mode}`;
-export const ragStreamUrl = (question: string, cloud: boolean) => `${base}/rag/ask/stream?question=${encodeURIComponent(question)}&cloud=${cloud}`;
+export const agentStreamUrl = (goal: string, cloud: boolean, mode: 'fast' | 'deep' = 'fast', lang: AnswerLang = 'en') => `${base}/agent/stream?goal=${encodeURIComponent(goal)}&cloud=${cloud}&mode=${mode}&lang=${lang}`;
+export const ragStreamUrl = (question: string, cloud: boolean, lang: AnswerLang = 'en') => `${base}/rag/ask/stream?question=${encodeURIComponent(question)}&cloud=${cloud}&lang=${lang}`;

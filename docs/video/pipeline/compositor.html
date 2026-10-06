@@ -57,6 +57,16 @@
   .chapter .n { font-size: 18px; color: var(--mars); margin-bottom: 18px; }
   .chapter .w { font-size: 190px; font-weight: 700; letter-spacing: -.04em; line-height: .9; }
   .chapter .s { margin-top: 26px; font-size: 18px; color: #c9c6be; }
+  .slot { position: absolute; inset: 0; overflow: hidden; }
+  .slot img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .ring { position: absolute; border: 3px solid var(--mars); box-shadow: 0 0 0 6px rgba(196,92,38,.25), 0 0 30px rgba(196,92,38,.45); pointer-events: none; display: none; }
+  .tile { position: absolute; overflow: hidden; border: 1px solid rgba(242,240,234,.16); background: #000; box-shadow: 0 30px 70px rgba(0,0,0,.6); }
+  .tile.on { border-color: var(--mars); }
+  .tlabel { position: absolute; font-size: 14px; color: #c9c6be; }
+  .tlabel b { color: var(--mars); font-weight: 500; margin-right: 10px; }
+  .pcard { position: absolute; width: 380px; padding: 30px 28px; border: 1px solid rgba(242,240,234,.18); background: rgba(18,22,31,.86); }
+  .pcard .k { font-size: 15px; color: var(--mars); margin-bottom: 18px; }
+  .pcard .v { font-size: 34px; font-weight: 600; letter-spacing: -.02em; line-height: 1.12; }
   .grain { position: absolute; inset: -64px; pointer-events: none; opacity: .06; mix-blend-mode: overlay; z-index: 90; }
   .black { position: absolute; inset: 0; background: #000; pointer-events: none; z-index: 99; }
 </style>
@@ -75,6 +85,15 @@ let TL, stage, scenes = [], grain, black, pending = [], chip, chipText, bars = [
 
 function maskLine(parent, cls, text, styles = {}) { const wrap = el('div', `mask ${cls}`, parent); Object.assign(wrap.style, styles); return { wrap, inner: el('span', '', wrap, text) }; }
 function chars(parent, text, styles) { const t = el('div', 'title', parent); Object.assign(t.style, styles || {}); return [...text].map((c) => el('span', 'ch', t, c === ' ' ? '&nbsp;' : c)); }
+/** A clip slot: wrapper (transformed) + image (frames) + click ring that rides the same transform. */
+function slot(parent, cls) { const w = el('div', `slot ${cls || ''}`, parent); return { w, img: el('img', '', w), ring: el('div', 'ring', w) }; }
+/** Pulses a ring where broll.mjs recorded a click, for 0.9 s of clip time after it. */
+function drawRing(sl, clip, frameT) {
+  const c = (TL.clips[clip]?.clicks ?? []).find((k) => frameT >= k.t - 0.05 && frameT <= k.t + 0.9);
+  if (!c) { sl.ring.style.display = 'none'; return; }
+  const p = clamp((frameT - c.t) / 0.9), pad = 10 + 10 * eout(p);
+  Object.assign(sl.ring.style, { display: 'block', left: `${((c.x - pad) / 1920) * 100}%`, top: `${((c.y - pad) / 1080) * 100}%`, width: `${((c.w + 2 * pad) / 1920) * 100}%`, height: `${((c.h + 2 * pad) / 1080) * 100}%`, opacity: String(1 - p * 0.85) });
+}
 function setFrame(img, clip, localT) {
   const meta = TL.clips[clip]; if (!meta) return;
   const k = clamp(Math.floor(localT * 30), 0, meta.frames - 1);
@@ -85,11 +104,12 @@ function setFrame(img, clip, localT) {
 function playClips(imgs, s, t, kb) {
   const seg = s.dur / s.clips.length;
   s.clips.forEach((clip, j) => {
-    const a = s.start + j * seg, local = t - a, img = imgs[j];
+    const a = s.start + j * seg, local = t - a, sl = imgs[j], img = sl.w;
     const vis = j === 0 ? 1 : eio(prog(t, a - 0.35, a + 0.35));
     img.style.display = t >= a - 0.4 && t <= a + seg + 0.4 ? 'block' : 'none';
     img.style.opacity = String(vis);
-    setFrame(img, clip, Math.max(0, local + 0.35) * (s.speeds[j] ?? 1));
+    const ft = Math.max(0, local + 0.35) * (s.speeds[j] ?? 1);
+    setFrame(sl.img, clip, ft); drawRing(sl, clip, ft);
     const x = clamp(local / seg);
     // Landing-page footage carries its own MARS EXPLORER heading; zoom toward the planet so titles never double up.
     const hero = clip === 'hero';
@@ -116,13 +136,28 @@ function animKeywords(list, t, cues, end) {
 function buildScene(s) {
   const root = el('div', 'scene', stage); const R = { root, s };
   if (s.kind === 'title' || s.kind === 'full' || s.kind === 'end') {
-    const L = el('div', 'layer', root); R.imgs = s.clips.map(() => el('img', 'fill', L));
+    const L = el('div', 'layer', root); R.imgs = s.clips.map(() => slot(L));
     el('div', s.kind === 'full' ? 'shade-l' : 'shade-solid', root); el('div', 'shade-b', root);
   }
-  if (s.kind === 'framed' || s.kind === 'team') { const b = el('div', 'layer backdrop', root); R.grid = el('div', 'grid', b); }
+  if (s.kind === 'framed' || s.kind === 'team' || s.kind === 'grid' || s.kind === 'cards') { const b = el('div', 'layer backdrop', root); R.grid = el('div', 'grid', b); }
   if (s.kind === 'framed') {
     const p = el('div', 'persp', root); R.card = el('div', 'card', p);
-    R.imgs = s.clips.map(() => el('img', '', R.card));
+    R.imgs = s.clips.map(() => slot(R.card));
+  }
+  if (s.kind === 'grid') {
+    // Tiles on a cols×rows layout below the chapter chip; each page shows cols*rows clips.
+    const gw = 1680, gh = 820, gap = 26, x0 = 120, y0 = 150, cols = s.cols, rows = s.rows;
+    const tw = (gw - gap * (cols - 1)) / cols, th = (gh - gap * (rows - 1)) / rows - 40;
+    R.tiles = s.clips.map((clip, j) => {
+      const k = j % (cols * rows), cx = k % cols, cy = Math.floor(k / cols);
+      const tile = el('div', 'tile', root); Object.assign(tile.style, { left: `${x0 + cx * (tw + gap)}px`, top: `${y0 + cy * (th + 40 + gap)}px`, width: `${tw}px`, height: `${th}px` });
+      const label = el('div', 'tlabel mono', root, `<b>${String(j + 1).padStart(2, '0')}</b>${s.labels?.[j] ?? clip}`); Object.assign(label.style, { left: `${x0 + cx * (tw + gap)}px`, top: `${y0 + cy * (th + 40 + gap) + th + 12}px` });
+      return { tile, label, sl: slot(tile) };
+    });
+  }
+  if (s.kind === 'cards') {
+    if (s.clips.length) { const p = el('div', 'persp', root); R.card = el('div', 'card', p); Object.assign(R.card.style, { left: '1010px', top: '230px', width: '800px', height: '560px' }); R.imgs = s.clips.map(() => slot(R.card)); }
+    R.cards = s.cards.map(([k, v], j) => { const c = el('div', 'pcard', root); Object.assign(c.style, { left: `${120 + (j % 2) * 430}px`, top: `${300 + Math.floor(j / 2) * 230}px` }); el('div', 'k mono', c, k); el('div', 'v', c, v); return c; });
   }
   if (s.kind === 'title') {
     R.kick = maskLine(root, 'kicker mono', `<b>●</b>&nbsp; ${s.kicker}`, { left: '120px', top: '420px' });
@@ -178,7 +213,7 @@ function render(R, t) {
   const s = R.s, lt = t - s.start, x = clamp(lt / s.dur);
   if (s.kind === 'full' || s.kind === 'title' || s.kind === 'end') playClips(R.imgs, s, t, true);
   if (s.kind === 'title') {
-    R.imgs[0].style.opacity = String(eio(prog(t, 0.2, 2.2)));
+    R.imgs[0].w.style.opacity = String(eio(prog(t, 0.2, 2.2)));
     const c = s.cues.title;
     rise(R.kick.inner, t, c - 0.8, 0.8);
     [...R.t1, ...R.t2].forEach((ch, j) => { const p = eout(prog(t, c + j * 0.05, c + j * 0.05 + 0.9)); ch.style.transform = `translateY(${(1 - p) * 60}px)`; ch.style.opacity = String(p); });
@@ -186,7 +221,7 @@ function render(R, t) {
     rise(R.sub.inner, t, c + 1.1);
   }
   if (s.kind === 'end') {
-    R.imgs.forEach((im) => { im.style.opacity = String(0.3 * Number(im.style.opacity || 1)); });
+    R.imgs.forEach((im) => { im.w.style.opacity = String(0.3 * Number(im.w.style.opacity || 1)); });
     R.title.forEach((ch, j) => { const p = eout(prog(lt, 0.3 + j * 0.04, 1.2 + j * 0.04)); ch.style.transform = `translateY(${(1 - p) * 60}px)`; ch.style.opacity = String(p); });
     R.rule.style.transform = `scaleX(${eout(prog(lt, 1.1, 2.1))})`;
     rise(R.by.inner, lt, 1.4);
@@ -198,6 +233,32 @@ function render(R, t) {
     const p = eout(prog(lt, 0, 1.4));
     R.card.style.transform = `rotateY(${lerp(13, 4, eio(x))}deg) rotateX(${lerp(4, 1.5, eio(x))}deg) translateZ(${lerp(-120, 0, p)}px) scale(${lerp(0.98, 1.03, eio(x))})`;
     playClips(R.imgs, s, t, false);
+  }
+  if (s.kind === 'grid') {
+    R.grid.style.transform = `translate(${-lt * 6}px, ${-lt * 3}px)`;
+    const per = s.cols * s.rows, pages = Math.ceil(s.clips.length / per), pageDur = s.dur / pages;
+    const page = clamp(Math.floor(lt / pageDur), 0, pages - 1), pt = lt - page * pageDur;
+    const onPage = Math.min(per, s.clips.length - page * per), active = page * per + clamp(Math.floor(pt / (pageDur / onPage)), 0, onPage - 1);
+    R.tiles.forEach((T, j) => {
+      const mine = Math.floor(j / per) === page;
+      T.tile.style.display = T.label.style.display = mine ? 'block' : 'none';
+      if (!mine) return;
+      const k = j % per, enter = eout(prog(pt, k * 0.08, k * 0.08 + 0.7));
+      const on = j === active;
+      T.tile.classList.toggle('on', on);
+      T.tile.style.opacity = String(enter * (on ? 1 : 0.62));
+      T.tile.style.transform = `translateY(${(1 - enter) * 30}px) scale(${on ? 1.03 : 1})`;
+      T.label.style.opacity = String(enter * (on ? 1 : 0.55));
+      const ft = Math.max(0, pt + 0.35) * (s.speeds[j] ?? 1);
+      // Tiles are small; zoom toward the centre so the component reads, easing in while it is active.
+      T.sl.w.style.transformOrigin = '50% 45%'; T.sl.w.style.transform = `scale(${on ? lerp(1.22, 1.3, eio(clamp((pt % (pageDur / onPage)) / (pageDur / onPage)))) : 1.22})`;
+      setFrame(T.sl.img, s.clips[j], ft); drawRing(T.sl, s.clips[j], ft);
+    });
+  }
+  if (s.kind === 'cards') {
+    R.grid.style.transform = `translate(${-lt * 6}px, 0)`;
+    if (R.card) { R.card.style.transform = `rotateY(${lerp(-12, -5, eio(x))}deg) scale(${lerp(0.97, 1.02, eio(x))})`; playClips(R.imgs, s, t, false); }
+    R.cards.forEach((c, j) => { const a = s.voStart + (s.voDur * j) / R.cards.length - 0.2; const p = eout(prog(t, a, a + 0.8)); c.style.opacity = String(p); c.style.transform = `translateY(${(1 - p) * 40}px)`; });
   }
   if (s.kind === 'team') {
     R.grid.style.transform = `translate(${-lt * 5}px, 0)`;

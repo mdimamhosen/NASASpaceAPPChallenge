@@ -5,11 +5,13 @@ import type { EarthEventSummary } from '@/lib/earth-types';
 import { eonetColor } from '@/lib/eonet-colors';
 import 'leaflet/dist/leaflet.css';
 
+import { gibsTileUrl } from '@/lib/gibs';
+
 export default function EarthMiniMap({ events, onSelect }: { events: EarthEventSummary[]; onSelect?: (id: string) => void }) {
   const points = events.filter((event) => typeof event.lat === 'number' && typeof event.lon === 'number');
   return (
     <MapContainer center={[20, 0]} zoom={1} minZoom={1} maxZoom={6} scrollWheelZoom={false} className="earth-mini-map" attributionControl>
-      <TileLayer url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap contributors" />
+      <TileLayer url={gibsTileUrl()} maxNativeZoom={8} attribution="Imagery: NASA GIBS / VIIRS NOAA-20" />
       {points.map((event) => (
         <CircleMarker
           key={event.id}

@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { isOffline } from '../common/offline';
 import { normalize } from './ranking';
 
 type Task = 'RETRIEVAL_DOCUMENT' | 'RETRIEVAL_QUERY';
@@ -12,7 +13,7 @@ export class EmbedderService {
   private readonly queryCache = new Map<string, Float32Array>();
 
   private get key() { return process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY; }
-  get available() { return Boolean(this.key); }
+  get available() { return !isOffline() && Boolean(this.key); }
 
   async embed(texts: string[], task: Task): Promise<Float32Array[]> {
     if (!this.key) throw new Error('GEMINI_API_KEY is not configured.');

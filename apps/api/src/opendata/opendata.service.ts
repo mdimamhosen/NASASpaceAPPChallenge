@@ -1,8 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { isOffline } from '../common/offline';
 import { readFile, stat } from 'node:fs/promises';
-import type { HiriseDtm, LatLon, MarsFeature, MissionLanding, OpenCatalogResult, OpenDataProduct, OpenDataset, RouteOpenData } from '@mars-explorer/shared';
+import type { HiriseDtm, LatLon, MarsFeature, MarsHardware, MissionLanding, OpenCatalogResult, OpenDataProduct, OpenDataset, RouteOpenData } from '@mars-explorer/shared';
 import { DATA_NASA_MARS_URL, NASA_MARS_LANDINGS } from '@mars-explorer/shared';
 import { DataPathService } from '../common/data-path';
+import { PlacesService } from '../places/places.service';
 import { haversineKm, pointInPolygon, pointSegmentDistanceKm } from '../routes/geo/haversine';
 import { type Box, detectMission, dtmsInView, featuresInView, routeContext, searchCatalog } from './opendata.logic';
 
@@ -23,7 +25,7 @@ export class OpenDataService {
   private readonly files = new Map<string, { mtimeMs: number; value: unknown }>();
   private readonly live = new Map<string, { at: number; value: OpenCatalogResult }>();
 
-  constructor(private readonly dataPath: DataPathService) {}
+  constructor(private readonly dataPath: DataPathService, private readonly places: PlacesService) {}
 
   /** Reads a snapshot and re-reads it only when the file changes (refresh script rewrites them in place). */
   private async load<T>(relative: string): Promise<T> {
@@ -43,6 +45,10 @@ export class OpenDataService {
   async catalog(q = '', mission?: string, limit = 24, offset = 0, source: 'snapshot' | 'live' = 'snapshot'): Promise<OpenCatalogResult> {
     const snap = await this.catalogSnapshot();
     // Mission tags are inferred locally, so a mission filter always uses the snapshot.
+    if (source === 'live' && isOffline()) {
+      const offline = this.fromSnapshot(snap, q, mission, limit, offset);
+      return { ...offline, provenance: { ...offline.provenance, note: 'OFFLINE=1: showing the committed snapshot.' } };
+    }
     if (source === 'live' && !mission) {
       try { return await this.liveCatalog(q, limit, offset, snap); }
       catch (error) {
@@ -118,6 +124,21 @@ export class OpenDataService {
     return NASA_MARS_LANDINGS.map((site) => {
       const datasets = snap.items.filter((item) => item.missions.includes(site.mission));
       return { ...site, datasetCount: datasets.length, datasets: datasets.slice(0, 6).map(({ id, title, url }) => ({ id, title, url })), catalogUrl: `/opendata?mission=${encodeURIComponent(site.mission)}` };
+    });
+  }
+
+  /** NASA hardware on Mars. Positions are never invented: landing sites from NSSDCA, or Perseverance's latest PLACES fix. */
+  async hardware(): Promise<MarsHardware[]> {
+    type Raw = Omit<MarsHardware, 'lat' | 'lon' | 'positionBasis' | 'positionNote'> & { landing: string; positionFrom?: 'places-latest' };
+    const raw = JSON.parse(await readFile(this.dataPath.resolve('mars-hardware.json'), 'utf8')) as { items: Raw[] };
+    const track = await this.places.perseverance().catch(() => null);
+    const latest = track?.points.at(-1);
+    return raw.items.map(({ landing, positionFrom, ...item }) => {
+      if (positionFrom === 'places-latest' && latest) return { ...item, lat: latest.lat, lon: latest.lon, positionBasis: 'places-latest' as const, positionNote: `Latest published PDS PLACES localization (sol ${latest.sol}); not live telemetry.` };
+      const site = NASA_MARS_LANDINGS.find((s) => s.name === landing);
+      if (!site) throw new Error(`hardware ${item.id}: unknown landing ${landing}`);
+      const moved = item.kind !== 'lander';
+      return { ...item, lat: site.lat, lon: site.lon, positionBasis: 'landing-site' as const, positionNote: moved ? 'Landing site shown (rounded NSSDCA coordinates); final position not mapped.' : 'Landing site (rounded NSSDCA coordinates).' };
     });
   }
 

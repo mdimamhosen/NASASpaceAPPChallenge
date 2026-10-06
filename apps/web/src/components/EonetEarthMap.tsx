@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { EarthEventSummary } from '@/lib/earth-types';
 import { hasGoogleMapsKey, loadGoogleMaps } from '@/lib/load-google-maps';
 import { eonetColor } from '@/lib/eonet-colors';
+import { gibsDate } from '@/lib/gibs';
 
 const EarthMiniMap = dynamic(() => import('./landing/EarthMiniMap'), {
   ssr: false,
@@ -12,11 +13,13 @@ const EarthMiniMap = dynamic(() => import('./landing/EarthMiniMap'), {
 
 export default function EonetEarthMap({ events, onSelect }: { events: EarthEventSummary[]; onSelect?: (id: string) => void }) {
   const node = useRef<HTMLDivElement>(null);
-  const [engine, setEngine] = useState<'idle' | 'google' | 'leaflet'>('idle');
-  const [status, setStatus] = useState(hasGoogleMapsKey ? 'Loading Google Maps…' : 'Using OpenStreetMap fallback. Add NEXT_PUBLIC_GOOGLE_MAP_API_KEY for Google Earth tiles.');
+  // NASA GIBS imagery is the default; the Google shell is opt-in when a browser key exists.
+  const [wantGoogle, setWantGoogle] = useState(false);
+  const [engine, setEngine] = useState<'idle' | 'google' | 'leaflet'>('leaflet');
+  const [status, setStatus] = useState('');
 
   useEffect(() => {
-    if (!hasGoogleMapsKey) {
+    if (!hasGoogleMapsKey || !wantGoogle) {
       setEngine('leaflet');
       setStatus('');
       return;
@@ -56,7 +59,7 @@ export default function EonetEarthMap({ events, onSelect }: { events: EarthEvent
           if (!active || !node.current) return;
           if (node.current.querySelector('.gm-err-container')) {
             setEngine('leaflet');
-            setStatus('Google Maps unavailable for this key — showing OpenStreetMap fallback.');
+            setStatus('Google Maps is unavailable for this key; showing NASA GIBS imagery.');
           }
         }, 2500);
 
@@ -66,7 +69,7 @@ export default function EonetEarthMap({ events, onSelect }: { events: EarthEvent
       .catch((reason: Error) => {
         if (!active) return;
         setEngine('leaflet');
-        setStatus(`${reason.message} Showing OpenStreetMap fallback.`);
+        setStatus(`${reason.message} Showing NASA GIBS imagery.`);
       });
 
     return () => {
@@ -74,7 +77,7 @@ export default function EonetEarthMap({ events, onSelect }: { events: EarthEvent
       if (authTimer !== undefined) window.clearTimeout(authTimer);
       markers.forEach((marker) => marker.setMap(null));
     };
-  }, [events, onSelect]);
+  }, [events, onSelect, wantGoogle]);
 
   return (
     <div className="earth-map-frame">
@@ -82,9 +85,10 @@ export default function EonetEarthMap({ events, onSelect }: { events: EarthEvent
       {engine === 'leaflet' && (
         <div className="earth-leaflet-fallback">
           <EarthMiniMap events={events} onSelect={onSelect} />
-          <span className="earth-map-fallback-label">EARTH / OPENSTREETMAP FALLBACK · EONET POINTS</span>
+          <span className="earth-map-fallback-label">EARTH / NASA GIBS · VIIRS NOAA-20 · {gibsDate()} · EONET POINTS</span>
         </div>
       )}
+      {hasGoogleMapsKey && <button className="earth-engine-toggle" onClick={() => { setStatus(wantGoogle ? '' : 'Loading Google Maps…'); setEngine(wantGoogle ? 'leaflet' : 'idle'); setWantGoogle(!wantGoogle); }}>{wantGoogle ? 'NASA GIBS IMAGERY' : 'GOOGLE MAP'}</button>}
       {status && <p className="earth-map-status">{status}</p>}
     </div>
   );

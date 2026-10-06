@@ -1,4 +1,5 @@
 import { Injectable, Logger, OnModuleInit, ServiceUnavailableException } from '@nestjs/common';
+import { isOffline } from '../common/offline';
 import { ConfigService } from '@nestjs/config';
 import type { AppConfig } from '../config/configuration';
 import type { EonetQueryDto } from './dto/eonet-query.dto';
@@ -164,7 +165,8 @@ export class EonetService implements OnModuleInit {
     }
 
     const timeoutMs = this.eonet().timeoutMs;
-    const retries = this.retries();
+    // OFFLINE=1: never touch upstream; serve memory → durable cache → committed fixture.
+    const retries = isOffline() ? -1 : this.retries();
     let lastError: unknown;
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
@@ -198,7 +200,7 @@ export class EonetService implements OnModuleInit {
 
     const disk = await this.durable.read(durableKey);
     if (disk) {
-      const provenance: EonetProvenance = { fetchedAt: disk.fetchedAt, contentHash: disk.contentHash, sourceUrl: url, servedFromCache:true, storage:'durable' };
+      const provenance: EonetProvenance = { fetchedAt: disk.fetchedAt, contentHash: disk.contentHash, sourceUrl: url, servedFromCache:true, storage: disk.fixture ? 'fixture' : 'durable', offline: isOffline() };
       this.provenance.set(url, provenance);
       this.cache.set(url, { provenance,
         expires: now + this.eonet().cacheTtlSec * 1000,
@@ -207,6 +209,17 @@ export class EonetService implements OnModuleInit {
       });
       this.log.warn(`EONET upstream failed; serving durable snapshot from ${disk.fetchedAt} for ${path}`);
       return disk.body;
+    }
+
+    // No snapshot for this exact query (e.g. a different limit): serve the largest snapshot of the same endpoint, trimmed.
+    const wide = await this.durable.read(this.durableKey(this.buildUrl(path, { ...query, limit: '500' })));
+    if (wide) {
+      const limit = Number(query.limit) || Infinity;
+      const body = wide.body as { events?: unknown[]; features?: unknown[] };
+      const trimmed = body.events ? { ...body, events: body.events.slice(0, limit) } : body.features ? { ...body, features: body.features.slice(0, limit) } : body;
+      this.provenance.set(url, { fetchedAt: wide.fetchedAt, contentHash: wide.contentHash, sourceUrl: url, servedFromCache: true, storage: wide.fixture ? 'fixture' : 'durable', offline: isOffline() });
+      this.log.warn(`EONET: no snapshot for ${path} with these filters; serving the widest snapshot (${wide.fetchedAt}) trimmed`);
+      return trimmed;
     }
 
     throw new ServiceUnavailableException({

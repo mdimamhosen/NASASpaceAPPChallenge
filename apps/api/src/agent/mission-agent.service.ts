@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import type { AgentLabel, AgentModel, AgentRun, AgentStep, LatLon, RagPassage, RouteWaypoint } from '@mars-explorer/shared';
+import type { AgentLabel, AgentModel, AgentRun, AnswerLang, AgentStep, LatLon, RagPassage, RouteWaypoint } from '@mars-explorer/shared';
 import { earthMarsGeometry, NASA_MARS_LANDINGS } from '@mars-explorer/shared';
 import { EonetService } from '../eonet/eonet.service';
 import { PlacesService } from '../places/places.service';
-import { AnswerService } from '../rag/answer.service';
+import { AnswerService, langInstruction } from '../rag/answer.service';
 import { LlmService, type LlmProvider, type ToolCall, type ToolSpec } from '../rag/llm.service';
 import { RetrieverService } from '../rag/retriever.service';
 import { RegionsService } from '../regions/regions.service';
@@ -13,12 +13,21 @@ import { JevRouterService } from './jev-router.service';
 import { getEarthNaturalEvents } from './tools/earth-events.tool';
 import { OpenDataService } from '../opendata/opendata.service';
 import { detectMission } from '../opendata/opendata.logic';
+import { isOffline } from '../common/offline';
+import { checkProvenance } from './provenance';
 
 type ToolResult = { output: unknown; summary: string; label: AgentLabel };
 export type AgentEvent = { type: 'step'; data: AgentStep } | { type: 'token'; data: string } | { type: 'reset' };
-type Ctx = { passages: RagPassage[]; route?: RouteWaypoint[]; steps: AgentStep[]; outputs: Array<{ tool: string; output: unknown }>; emit: (e: AgentEvent) => void; started: number };
+type Ctx = { lang: AnswerLang; passages: RagPassage[]; route?: RouteWaypoint[]; steps: AgentStep[]; outputs: Array<{ tool: string; output: unknown }>; emit: (e: AgentEvent) => void; started: number };
 
 const MAX_TURNS = 8;
+// Source shown for each tool's numbers when its output does not name one itself.
+const TOOL_SOURCE: Record<string, string> = {
+  search_knowledge: 'NASA corpus passages (cited [n])', verified_locations: 'NASA PDS PLACES best_interp.csv', rover_position: 'NASA PDS PLACES best_interp.csv',
+  suggest_corridor: 'NASA PDS PLACES orbital DEM (A* corridor, non-certifying)', analyze_route: 'NASA PDS PLACES orbital DEM (Risk Index, non-certifying)',
+  earth_events: 'NASA EONET v3 (EARTH)', orbit_geometry: 'NASA JPL approximate Keplerian elements', create_briefing: 'Mars Explorer briefing (PLACES DEM + NASA corpus)',
+  nasa_open_data: 'data.nasa.gov catalog snapshot', mars_hardware: 'NASA mission pages (science.nasa.gov)', named_features: 'IAU/USGS Gazetteer of Planetary Nomenclature (data.nasa.gov)',
+};
 const JEZERO_LANDING = NASA_MARS_LANDINGS.find((s) => s.mission === 'PERSEVERANCE')!;
 const point = { type: 'object', properties: { lat: { type: 'number' }, lon: { type: 'number', description: 'East-positive longitude' } }, required: ['lat', 'lon'] };
 
@@ -32,6 +41,7 @@ const TOOLS: ToolSpec[] = [
   { name: 'orbit_geometry', description: 'Earth–Mars distance and one-way light time on a date, from NASA JPL approximate Keplerian elements.', parameters: { type: 'object', properties: { date: { type: 'string', description: 'YYYY-MM-DD; defaults to today' } } } },
   { name: 'nasa_open_data', description: 'Search the NASA Open Data portal (data.nasa.gov, tag mars; 1,300+ catalog records, mostly PDS archives) for datasets about a Mars mission, instrument, or topic. Returns titles and data.nasa.gov links.', parameters: { type: 'object', properties: { query: { type: 'string' }, mission: { type: 'string', description: 'Optional mission tag, e.g. CURIOSITY, INSIGHT, PHOENIX, OPPORTUNITY, SPIRIT, MRO, MAVEN, MARS EXPRESS' } }, required: ['query'] } },
   { name: 'named_features', description: 'IAU-approved Mars feature names (craters, valles, montes…) nearest a point, or the record for one named feature, from the IAU/USGS Gazetteer of Planetary Nomenclature listed on data.nasa.gov.', parameters: { type: 'object', properties: { lat: { type: 'number' }, lon: { type: 'number', description: 'East-positive longitude' }, name: { type: 'string', description: 'Exact feature name, e.g. Jezero, Neretva Vallis' } } } },
+  { name: 'mars_hardware', description: 'NASA landers, rovers and the Ingenuity helicopter on Mars: status (active or silent), landing and last-contact dates, why each went silent, position basis, and the NASA mission page for each.', parameters: { type: 'object', properties: { status: { type: 'string', enum: ['active', 'silent', 'all'] } } } },
   { name: 'create_briefing', description: 'Deterministic mission briefing for a route (objectives, terrain considerations, Risk Index components, sources).', parameters: { type: 'object', properties: { waypoints: { type: 'array', items: point } }, required: ['waypoints'] } },
 ];
 
@@ -148,6 +158,11 @@ export class MissionAgentService {
         const near = await this.openData.nearestFeatures(p, 8);
         return { label: 'MARS', summary: `Nearest IAU names: ${near.slice(0, 4).map((f) => `${f.name} (${f.distanceKm} km)`).join(', ')}`, output: { source: 'IAU/USGS Gazetteer of Planetary Nomenclature (data.nasa.gov)', point: p, features: near.map(({ name, type, diameterKm, distanceKm, lat, lon, link }) => ({ name, type, diameterKm, distanceKm, lat, lon, link })) } };
       }
+      case 'mars_hardware': {
+        const status = args.status === 'active' || args.status === 'silent' ? args.status : undefined;
+        const items = (await this.openData.hardware()).filter((h) => !status || h.status === status);
+        return { label: 'MARS', summary: `${items.length} NASA spacecraft on Mars: ${items.filter((h) => h.status === 'active').map((h) => h.name).join(', ') || 'none'} active`, output: { source: 'NASA mission pages (science.nasa.gov); NSSDCA landing coordinates', hardware: items.map(({ name, status: st, landed, lastContact, whySilent, positionNote, sourceUrl }) => ({ name, status: st, landed, lastContact, whySilent, positionNote, sourceUrl })) } };
+      }
       case 'create_briefing': {
         const pts = this.toPoints(args.waypoints);
         if (pts.length < 2) throw new Error('at least two waypoints are required');
@@ -175,13 +190,16 @@ export class MissionAgentService {
 
   private finish(goal: string, ctx: Ctx, answer: string, modelUsed: AgentModel, extra: Pick<AgentRun, 'mode' | 'router'>): AgentRun {
     const checked = this.answers.validateCitations(answer, ctx.passages.length);
+    // Deterministic gate: every number must trace to a sourced tool output (or the user's own goal), or it is flagged.
+    const provenance = checkProvenance(checked.text, goal, ctx.outputs.map((o) => ({ tool: o.tool, output: o.output, source: (o.output as { source?: string })?.source ?? TOOL_SOURCE[o.tool] })));
+    if (!provenance.complete) this.step(ctx, { kind: 'error', summary: `Provenance incomplete: ${provenance.unmatched} number(s) not found in any tool result` });
     this.step(ctx, { kind: 'answer', summary: `Final answer via ${modelUsed} · ${Date.now() - ctx.started} ms total`, ms: Date.now() - ctx.started });
-    return { goal, steps: ctx.steps, answer: checked.text, modelUsed, passages: ctx.passages, route: ctx.route, tookMs: Date.now() - ctx.started, ...extra };
+    return { goal, steps: ctx.steps, answer: checked.text, modelUsed, passages: ctx.passages, route: ctx.route, tookMs: Date.now() - ctx.started, provenance, lang: modelUsed === 'local-planner' ? 'en' : ctx.lang, offline: isOffline(), ...extra };
   }
 
   /** Deep mode: the LLM chooses tools turn by turn until it answers or hits the turn cap. */
   private async llmLoop(goal: string, provider: LlmProvider, ctx: Ctx): Promise<AgentRun> {
-    const conv = this.llm.startConversation(provider, SYSTEM, goal);
+    const conv = this.llm.startConversation(provider, SYSTEM + langInstruction(ctx.lang), goal);
     this.step(ctx, { kind: 'plan', summary: `Deep mode · ${provider === 'gemini' ? `Gemini (${this.llm.geminiModel})` : `Claude (${this.llm.claudeModel})`} plans turn by turn with ${TOOLS.length} tools` });
     for (let turn = 0; turn < MAX_TURNS; turn++) {
       const t = await this.llm.turn(conv, TOOLS);
@@ -204,7 +222,7 @@ export class MissionAgentService {
       const evidence = ctx.outputs.map((o) => `${o.tool}: ${JSON.stringify(o.output).slice(0, 1500)}`).join('\n');
       const passages = ctx.passages.map((p) => `[${p.n}] ${p.title}${p.heading ? ` — ${p.heading}` : ''}: ${p.text.slice(0, 700)}`).join('\n');
       try {
-        const done = await this.llm.stream(SYSTEM, `Tool results:\n${evidence || '(none)'}\n\nPassages:\n${passages || '(none)'}\n\nGoal: ${goal}\nWrite the final answer now from this evidence only.`, (d) => ctx.emit({ type: 'token', data: d }));
+        const done = await this.llm.stream(SYSTEM, `Tool results:\n${evidence || '(none)'}\n\nPassages:\n${passages || '(none)'}\n\nGoal: ${goal}\nWrite the final answer now from this evidence only.${langInstruction(ctx.lang)}`, (d) => ctx.emit({ type: 'token', data: d }));
         if (done) return { text: done.text, model: done.provider };
       } catch (error) {
         this.log.warn(`compose stream failed: ${(error as Error).message}`);
@@ -227,7 +245,7 @@ export class MissionAgentService {
   private async fastPlan(goal: string, ctx: Ctx, cloud: boolean): Promise<AgentRun> {
     const r = await this.router.route(goal);
     const needsStart = r.route && (/landing/i.test(goal) || r.sols.length < 2);
-    const plan = [...(r.knowledge ? ['search_knowledge'] : []), ...(r.sols.length || needsStart ? ['rover_position'] : []), ...(r.route ? ['suggest_corridor', 'analyze_route'] : []), ...(r.briefing ? ['create_briefing'] : []), ...(r.earth ? ['earth_events'] : []), ...(r.orbit ? ['orbit_geometry'] : []), ...(r.opendata ? ['nasa_open_data'] : []), ...(r.names ? ['named_features'] : [])];
+    const plan = [...(r.knowledge ? ['search_knowledge'] : []), ...(r.sols.length || needsStart ? ['rover_position'] : []), ...(r.route ? ['suggest_corridor', 'analyze_route'] : []), ...(r.briefing ? ['create_briefing'] : []), ...(r.earth ? ['earth_events'] : []), ...(r.orbit ? ['orbit_geometry'] : []), ...(r.opendata ? ['nasa_open_data'] : []), ...(r.names ? ['named_features'] : []), ...(r.hardware ? ['mars_hardware'] : [])];
     const conf = r.confidence ? ` · p(route)=${r.confidence.route} p(earth)=${r.confidence.earth} p(orbit)=${r.confidence.orbit}` : '';
     this.step(ctx, { kind: 'plan', summary: `System One router · ${r.engine === 'jev' ? `Jev (${this.router.model})` : 'deterministic rules'} · ${r.ms} ms → ${plan.join(' + ') || 'search_knowledge'}${conf}`, ms: r.ms });
 
@@ -243,6 +261,7 @@ export class MissionAgentService {
       ...(r.earth ? [call('earth_events', { limit: 5 })] : []),
       ...(r.orbit ? [call('orbit_geometry', r.date ? { date: r.date } : {})] : []),
       ...(r.opendata ? [call('nasa_open_data', { query: goal })] : []),
+      ...(r.hardware ? [call('mars_hardware', {})] : []),
     ]);
     // Named features need a point: a rover position asked for, else the landing site of a mission the goal names, else Perseverance's.
     if (r.names) {
@@ -271,8 +290,8 @@ export class MissionAgentService {
     };
   }
 
-  async run(goal: string, opts: { cloud: boolean; mode: 'fast' | 'deep' }, emit: (e: AgentEvent) => void = () => {}): Promise<AgentRun> {
-    const ctx: Ctx = { passages: [], steps: [], outputs: [], emit, started: Date.now() };
+  async run(goal: string, opts: { cloud: boolean; mode: 'fast' | 'deep'; lang?: AnswerLang }, emit: (e: AgentEvent) => void = () => {}): Promise<AgentRun> {
+    const ctx: Ctx = { lang: opts.lang ?? 'en', passages: [], steps: [], outputs: [], emit, started: Date.now() };
     if (opts.mode === 'deep' && opts.cloud) {
       for (const provider of this.llm.providers) {
         try {

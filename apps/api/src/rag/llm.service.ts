@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { isOffline } from '../common/offline';
 import Anthropic from '@anthropic-ai/sdk';
 
 export type LlmProvider = 'gemini' | 'claude';
@@ -25,8 +26,8 @@ export class LlmService {
 
   private get geminiKey() { return process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY; }
   private get claudeKey() { return process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY; }
-  get providers(): LlmProvider[] { return [...(this.geminiKey ? ['gemini' as const] : []), ...(this.claudeKey ? ['claude' as const] : [])]; }
-  get status() { return { gemini: Boolean(this.geminiKey), claude: Boolean(this.claudeKey) }; }
+  get providers(): LlmProvider[] { if (isOffline()) return []; return [...(this.geminiKey ? ['gemini' as const] : []), ...(this.claudeKey ? ['claude' as const] : [])]; }
+  get status() { const p = this.providers; return { gemini: p.includes('gemini'), claude: p.includes('claude') }; }
 
   private get claude() { return (this.claudeClient ??= new Anthropic({ apiKey: this.claudeKey, maxRetries: 2, timeout: 90_000 })); }
 

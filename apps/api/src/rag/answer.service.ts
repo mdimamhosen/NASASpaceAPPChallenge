@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { RagAnswer, RagModel, RagPassage, RagSearchResult } from '@mars-explorer/shared';
+import type { AnswerLang, RagAnswer, RagModel, RagPassage, RagSearchResult } from '@mars-explorer/shared';
 import { LlmService } from './llm.service';
 import { splitSentences, tokenize } from './text';
 
@@ -7,6 +7,9 @@ export type StreamEvent = { type: 'token'; data: string } | { type: 'reset' };
 
 const INSUFFICIENT = 'INSUFFICIENT_EVIDENCE';
 export const REFUSAL = 'The indexed NASA sources do not contain enough evidence to answer that reliably. Try rephrasing, or add a source in the corpus manager.';
+
+/** Bangla is written by a cloud model only; digits, units, names and [n] stay as-is so citation and provenance checks still hold. */
+export const langInstruction = (lang: AnswerLang = 'en') => (lang === 'bn' ? '\nWrite the final answer in Bangla (বাংলা). Keep every number, unit, dataset or mission name, and [n] citation exactly as in the evidence.' : '');
 
 const SYSTEM = [
   "You answer questions for Mars Explorer, a research console about NASA's Mars 2020 Perseverance mission, Jezero Crater, and the app's NASA data sources.",
@@ -51,18 +54,18 @@ export class AnswerService {
   cached(key: string) { const hit = this.cache.get(key); if (hit) { this.cache.delete(key); this.cache.set(key, hit); } return hit; }
   remember(key: string, value: RagAnswer) { if (this.cache.size >= 200) this.cache.delete(this.cache.keys().next().value!); this.cache.set(key, value); }
 
-  answer(question: string, search: RagSearchResult, opts: { useCloud: boolean; earthContext?: string }): Promise<RagAnswer> {
+  answer(question: string, search: RagSearchResult, opts: { useCloud: boolean; earthContext?: string; lang?: AnswerLang }): Promise<RagAnswer> {
     return this.answerStream(question, search, opts, () => undefined);
   }
 
   /** Streams tokens via `emit`; resolves with the validated final answer. `reset` tells the client to discard streamed text. */
-  async answerStream(question: string, search: RagSearchResult, opts: { useCloud: boolean; earthContext?: string }, emit: (e: StreamEvent) => void): Promise<RagAnswer> {
+  async answerStream(question: string, search: RagSearchResult, opts: { useCloud: boolean; earthContext?: string; lang?: AnswerLang }, emit: (e: StreamEvent) => void): Promise<RagAnswer> {
     const { passages } = search;
     if (!search.strong && !opts.earthContext) return { ...search, answer: REFUSAL, modelUsed: 'local-evidence', refused: true, cited: [] };
 
     if (opts.useCloud && this.llm.providers.length) {
       const context = passages.map((p) => `[${p.n}] ${p.title}${p.heading ? ` — ${p.heading}` : ''}\n${p.text}`).join('\n\n');
-      const user = `${context}${opts.earthContext ? `\n\nEARTH / EONET (Earth only, not Mars):\n${opts.earthContext}` : ''}\n\nQuestion: ${question}`;
+      const user = `${context}${opts.earthContext ? `\n\nEARTH / EONET (Earth only, not Mars):\n${opts.earthContext}` : ''}\n\nQuestion: ${question}${langInstruction(opts.lang)}`;
       // Hold the first characters so an INSUFFICIENT_EVIDENCE reply never flashes on screen.
       let held = '', released = false;
       const onDelta = (d: string) => {

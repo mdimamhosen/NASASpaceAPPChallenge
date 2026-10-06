@@ -1,4 +1,5 @@
 import { Controller, Get, ServiceUnavailableException } from '@nestjs/common';
+import { isOffline } from '../common/offline';
 import { SkipThrottle } from '@nestjs/throttler';
 import { stat } from 'node:fs/promises';
 import { DataPathService } from '../common/data-path';
@@ -32,7 +33,7 @@ export class HealthController {
       return { key: p.key, path: `data/${p.path}`, required: p.required, present: Boolean(info), bytes: info?.size ?? 0, modifiedAt: info?.mtime.toISOString() ?? null, refresh: p.refresh };
     }));
     const missing = products.filter((p) => p.required && !p.present).map((p) => p.key);
-    const body = { ok: !missing.length, service: 'mars-explorer-api', uptimeSec: Math.round(process.uptime()), missing, degraded: products.filter((p) => !p.required && !p.present).map((p) => p.key), products };
+    const body = { ok: !missing.length, service: 'mars-explorer-api', offline: isOffline(), uptimeSec: Math.round(process.uptime()), missing, degraded: products.filter((p) => !p.required && !p.present).map((p) => p.key), products };
     if (missing.length) throw new ServiceUnavailableException(body);
     return body;
   }

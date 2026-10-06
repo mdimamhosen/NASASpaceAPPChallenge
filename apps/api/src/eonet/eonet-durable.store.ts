@@ -9,6 +9,8 @@ export type DurableEntry = {
   contentHash: string;
   fetchedAt: string;
   sourceUrl: string;
+  /** Served from data/fixtures rather than a cache this machine wrote. */
+  fixture?: boolean;
 };
 
 const BOOTSTRAP_SQL = `
@@ -37,7 +39,7 @@ export class EonetDurableStore implements OnModuleDestroy {
   async read(cacheKey: string): Promise<DurableEntry | null> {
     const fromDb = await this.readDb(cacheKey);
     if (fromDb) return fromDb;
-    return this.readFile(cacheKey);
+    return (await this.readFile(cacheKey)) ?? this.readFixture(cacheKey);
   }
 
   async write(cacheKey: string, body: unknown, sourceUrl: string): Promise<DurableEntry> {
@@ -58,6 +60,15 @@ export class EonetDurableStore implements OnModuleDestroy {
 
   async onModuleDestroy() {
     await this.pool?.end();
+  }
+
+  /** Last tier: committed demo fixtures (data/fixtures/eonet), so a fresh clone still answers offline. */
+  private async readFixture(cacheKey: string): Promise<DurableEntry | null> {
+    const safe = cacheKey.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 180);
+    try {
+      const entry = JSON.parse(await readFile(this.dataPath.resolve('fixtures', 'eonet', `${safe || 'snapshot'}.json`), 'utf8')) as DurableEntry;
+      return entry?.body === undefined ? null : { ...entry, fixture: true };
+    } catch { return null; }
   }
 
   private filePath(cacheKey: string): string {

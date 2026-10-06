@@ -81,64 +81,56 @@
       "vo": "Signals take up to twenty-two minutes between Earth and Mars, so crews must plan on their own. The opportunity: NASA's evidence, and its limits, in one place you can trace."
     },
     {
-      "id": "idea",
-      "chapter": "what",
-      "kind": "framed",
-      "clips": [
-        "landing-terrain",
-        "home-ask"
-      ],
-      "keywords": [
-        "EVERY NUMBER HAS A SOURCE",
-        "HIRISE ON NASA DEM"
-      ],
-      "vo": "Our big idea: Mars Explorer, a mission console where every number is tied to a NASA source, starting with real HiRISE ground on NASA's elevation model."
-    },
-    {
-      "id": "console",
+      "id": "map",
       "chapter": "what",
       "kind": "framed",
       "clips": [
         "explore-layers",
-        "explore-sol"
+        "explore-sol",
+        "explore-names",
+        "explore-dtm"
       ],
-      "keywords": [
+      "labels": [
         "MARS TREK LAYERS",
-        "SOL BY SOL"
+        "SOL BY SOL · PDS PLACES",
+        "IAU FEATURE NAMES",
+        "HIRISE DTM FOOTPRINTS"
       ],
-      "vo": "In the console, switch NASA Mars Trek layers, and scrub sol by sol along Perseverance's published path."
+      "vo": "Our big idea: a Martian map built only on NASA evidence. Switch Trek layers, scrub Perseverance sol by sol, and add official feature names and HiRISE terrain models from data dot NASA dot gov."
     },
     {
-      "id": "opendata-map",
+      "id": "hardware",
       "chapter": "what",
       "kind": "framed",
       "clips": [
-        "explore-names",
-        "explore-dtm",
+        "explore-hardware",
         "explore-landings"
       ],
       "keywords": [
-        "IAU FEATURE NAMES",
-        "HIRISE DTM FOOTPRINTS",
-        "LANDING SITES"
+        "LEFT ON MARS",
+        "LAST-CONTACT TIMELINE"
       ],
-      "vo": "Official feature names, HiRISE terrain-model footprints, and every NASA landing site come straight from data dot NASA dot gov."
+      "vo": "The Left on Mars layer shows every lander and rover NASA has operated on Mars. Drag the timeline from 1976 to today, and watch each one fall silent."
     },
     {
       "id": "route",
       "chapter": "what",
       "kind": "framed",
       "clips": [
+        "explore-draw",
         "explore-route",
         "explore-profile",
+        "explore-riskhelp",
         "explore-context"
       ],
-      "keywords": [
-        "TRAVERSE RISK INDEX",
+      "labels": [
+        "DRAW A MARSWALK",
+        "PUBLISHED ROUTE",
         "ELEVATION + SLOPE",
+        "RISK INDEX · SOURCED",
         "NAMED FEATURES + DTM"
       ],
-      "vo": "Load a route, and the system samples the terrain: a Traverse Risk Index with every source, an elevation and slope profile, and the named features and terrain models along the way."
+      "vo": "Draw a Marswalk, or load Perseverance's real route. The terrain is sampled from NASA's elevation model, every Risk Index component cites its source, and the cockpit names the craters and terrain models along the way."
     },
     {
       "id": "corridor",
@@ -155,80 +147,91 @@
       "vo": "Pick two points for a slope-aware A-star corridor, always non-certifying, then fly it in 3D over HiRISE imagery."
     },
     {
-      "id": "assist",
+      "id": "tools",
       "chapter": "what",
-      "kind": "framed",
+      "kind": "grid",
+      "cols": 3,
+      "rows": 2,
       "clips": [
-        "explore-assistant",
+        "explore-presets",
+        "explore-classroom",
         "explore-palette",
+        "explore-focus",
+        "explore-share",
         "explore-briefing"
       ],
-      "keywords": [
-        "CITED ASSISTANT",
+      "labels": [
+        "TRAVERSE PRESETS",
+        "CLASSROOM MODE",
         "⌘K PALETTE",
-        "ONE-CLICK BRIEFING"
+        "FOCUS MODE + HELP",
+        "SAVE + SHARE LINK",
+        "BRIEFING · MD + PDF"
       ],
-      "vo": "The assistant cites its passages, a command palette puts every action one keystroke away, and one click makes a mission briefing."
+      "vo": "Presets, Classroom Mode, a command palette, focus mode and share links are one click away, and briefings export to Markdown or PDF."
     },
     {
       "id": "agent",
       "chapter": "what",
       "kind": "framed",
       "clips": [
-        "research-agent"
+        "research-agent",
+        "research-provenance"
       ],
       "keywords": [
         "MISSION AGENT",
-        "TOOLS IN PARALLEL",
-        "STREAMED ANSWER"
+        "PROVENANCE DRAWER",
+        "EVERY NUMBER SOURCED"
       ],
-      "vo": "The mission agent routes each goal to the right tools, runs them in parallel, and streams a grounded answer, step by step."
+      "vo": "The mission agent picks its tools, runs them in parallel, and streams an answer. Every number it states is checked against a tool result, and the provenance drawer shows where each one came from."
     },
     {
       "id": "rag",
       "chapter": "what",
       "kind": "framed",
       "clips": [
-        "research-rag",
+        "research-bangla",
         "research-live",
         "research-corpus",
         "research-embed"
       ],
-      "keywords": [
-        "CITED ANSWERS",
+      "labels": [
+        "CITED ANSWERS · বাংলা",
         "LIVE RETRIEVAL",
         "INDEXED IN SECONDS",
         "EMBEDDING SPACE"
       ],
-      "vo": "Ask the corpus, and every sentence carries a clickable citation. Retrieval previews live, new documents index in seconds, and the embedding space shows how evidence is found."
+      "vo": "Ask the corpus, and every sentence carries a citation, in English or in Bangla. Retrieval previews live, and new documents are indexed in seconds."
     },
     {
-      "id": "opendata-page",
+      "id": "offline",
       "chapter": "what",
       "kind": "framed",
       "clips": [
-        "opendata-search",
+        "research-offline",
+        "opendata-offline",
         "opendata-shelves"
       ],
-      "keywords": [
-        "NASA OPEN DATA",
+      "labels": [
+        "OFFLINE=1 · WIFI OFF",
+        "OPEN DATA · SNAPSHOT",
         "MISSION DATA SHELVES"
       ],
-      "vo": "The Open Data page searches every Mars dataset NASA lists, live or offline, with a data shelf for each mission."
+      "vo": "Pull the wifi, and it still works: every source falls back to a verified cache, and Open Data still searches every Mars dataset."
     },
     {
       "id": "eonet",
       "chapter": "what",
       "kind": "framed",
       "clips": [
-        "eonet-feed",
+        "eonet-gibs",
         "eonet-detail"
       ],
       "keywords": [
         "EARTH / EONET",
-        "FULL PROVENANCE"
+        "NASA GIBS · VIIRS NOAA-20"
       ],
-      "vo": "Earth gets its own lane: live EONET wildfires and storms, with full provenance, never mixed into a Mars decision."
+      "vo": "Earth gets its own lane: live EONET wildfires and storms on NASA's own satellite imagery, never mixed into a Mars decision."
     },
     {
       "id": "stories",
@@ -253,58 +256,67 @@
       "vo": "Every page tells a 3D data story: Earth and Mars at true scale, Jezero cell by cell, the traverse by sol, every NASA landing, slopes in relief, and a route raised into an elevation curtain."
     },
     {
-      "id": "system",
+      "id": "wall",
       "chapter": "what",
-      "kind": "framed",
+      "kind": "grid",
+      "cols": 3,
+      "rows": 2,
       "clips": [
+        "home-widgets",
+        "science",
+        "targets-page",
+        "story",
         "traces",
         "architecture",
-        "science",
+        "pipeline",
         "gallery",
         "compare",
         "analog",
-        "story",
-        "card"
+        "card",
+        "ops"
       ],
       "labels": [
-        "TRACES",
-        "ARCHITECTURE",
+        "EARTH WIDGETS",
         "SOURCE REGISTER",
-        "GALLERY",
-        "COMPARE",
-        "ANALOGS",
+        "TARGETS + DEMO SEEDS",
         "GUIDED STORY",
-        "MISSION CARD"
+        "RUN TRACES",
+        "ARCHITECTURE",
+        "PIPELINE",
+        "NASA GALLERY",
+        "MODEL COMPARE",
+        "EARTH ANALOGS",
+        "MISSION CARD",
+        "OPS · SIMULATED"
       ],
-      "vo": "Behind it: run traces, a live architecture view, a source register, a gallery, model comparisons, Earth analogs, a guided story, and a shareable mission card."
-    },
-    {
-      "id": "impact",
-      "chapter": "how",
-      "kind": "full",
-      "clips": [
-        "fly-wide"
-      ],
-      "keywords": [
-        "TRACEABLE PLANNING",
-        "REAL MISSIONS IN CLASS",
-        "FASTER TO THE ARCHIVE"
-      ],
-      "vo": "What changes? Planning on Mars becomes something you can check, classrooms get a real mission, and researchers reach the right archive faster."
+      "vo": "Every page adds to the story: Earth widgets, the source register, targets, a guided tour, run traces, the architecture, a gallery, model comparisons, Earth analogs and a mission card."
     },
     {
       "id": "needs",
       "chapter": "how",
-      "kind": "framed",
+      "kind": "cards",
+      "cards": [
+        [
+          "LICENSE",
+          "Apache-2.0 · open source"
+        ],
+        [
+          "docs/AI_USE.md",
+          "Every AI tool disclosed"
+        ],
+        [
+          "CHALLENGE 11",
+          "Interplanetary Survival Guide: Martian Map"
+        ],
+        [
+          "NEXT",
+          "Science mentors · classroom pilots"
+        ]
+      ],
+      "vo": "It's open source under Apache 2.0, with all AI use disclosed, built for challenge eleven. Next, we need science mentors and classroom pilots.",
       "clips": [
-        "opendata-dtm-detail"
-      ],
-      "keywords": [
-        "SCIENCE MENTORS",
-        "HIRISE DTM SAMPLING",
-        "CLASSROOM PILOTS"
-      ],
-      "vo": "Next, we need planetary-science mentors, support to sample HiRISE terrain models directly, and educators to pilot it with students."
+        "fly-wide"
+      ]
     },
     {
       "id": "close",

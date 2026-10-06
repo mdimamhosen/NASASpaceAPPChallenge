@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { isOffline } from '../common/offline';
 import { detectIntents, type Intents } from './intents';
 
 export type RoutedIntents = Intents & { engine: 'jev' | 'rules'; ms: number; confidence?: Record<string, number> };
@@ -13,6 +14,7 @@ const QUESTIONS = {
   orbit: 'Does the goal ask about Earth–Mars distance, signal or command delay, or orbital geometry?',
   briefing: 'Does the goal ask for a mission briefing or written report about a route?',
   opendata: 'Does the goal ask which NASA datasets, archives, or data.nasa.gov catalog records exist for a Mars mission or instrument?',
+  hardware: 'Does the goal ask which NASA landers, rovers or helicopters are on Mars, which went silent, or when contact was lost?',
   names: 'Does the goal ask for the official names of Mars surface features such as craters, valleys, or mountains near a place?',
 } as const;
 
@@ -26,7 +28,7 @@ export class JevRouterService {
   private readonly log = new Logger(JevRouterService.name);
   readonly model = process.env.JEV_MODEL || 'typesafe/jev';
 
-  get available() { return Boolean(process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN); }
+  get available() { return !isOffline() && Boolean(process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN); }
 
   async route(goal: string): Promise<RoutedIntents> {
     const started = Date.now();
@@ -51,7 +53,7 @@ export class JevRouterService {
       if (!answers) throw new Error('Jev response had no answers.');
       const p = (k: keyof typeof QUESTIONS) => (typeof answers[k]?.noul === 'number' ? answers[k]!.noul! : 0);
       const hasEndpoints = rules.sols.length > 0 || /landing/i.test(goal);
-      const decided = { route: p('route') >= 0.5 && hasEndpoints, earth: p('earth') >= 0.5, orbit: p('orbit') >= 0.5, briefing: p('briefing') >= 0.5 && hasEndpoints, opendata: p('opendata') >= 0.5, names: p('names') >= 0.5 };
+      const decided = { route: p('route') >= 0.5 && hasEndpoints, earth: p('earth') >= 0.5, orbit: p('orbit') >= 0.5, briefing: p('briefing') >= 0.5 && hasEndpoints, opendata: p('opendata') >= 0.5, names: p('names') >= 0.5, hardware: p('hardware') >= 0.5 };
       return {
         ...rules, ...decided,
         // Always retrieve unless Jev is confident the goal is purely operational (another tool covers it).

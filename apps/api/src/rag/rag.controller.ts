@@ -22,10 +22,12 @@ class SearchDto {
 class AskDto {
   @IsString() @MinLength(3) @MaxLength(500) question!: string;
   @IsOptional() @IsBoolean() useCloudModels = false;
+  @IsOptional() @IsIn(['en', 'bn']) lang: 'en' | 'bn' = 'en';
 }
 class AskStreamDto {
   @IsString() @MinLength(3) @MaxLength(500) question!: string;
   @IsOptional() @Transform(({ value }) => value === true || value === 'true' || value === '1') @IsBoolean() cloud = true;
+  @IsOptional() @IsIn(['en', 'bn']) lang: 'en' | 'bn' = 'en';
 }
 class UrlDto {
   @IsUrl({ protocols: ['http', 'https'], require_protocol: true }) url!: string;
@@ -73,20 +75,20 @@ export class RagController {
 
   private evalCache?: { signature: string; result: RagEval };
 
-  private async cacheKey(question: string, cloud: boolean) {
+  private async cacheKey(question: string, cloud: boolean, lang = 'en') {
     const st = await this.index.ensure();
-    return `${st.signature.length}:${st.builtAt}|${cloud ? 'cloud' : 'local'}|${question.toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim()}`;
+    return `${st.signature.length}:${st.builtAt}|${cloud ? 'cloud' : 'local'}|${lang}|${question.toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim()}`;
   }
 
   @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Post('ask')
   async ask(@Body() body: AskDto) {
-    const key = await this.cacheKey(body.question, body.useCloudModels);
+    const key = await this.cacheKey(body.question, body.useCloudModels, body.lang);
     const hit = this.answers.cached(key);
     if (hit) return { ...hit, tookMs: 0 };
     const started = Date.now();
     const search = await this.retriever.search(body.question, 6);
-    const result = await this.answers.answer(body.question, search, { useCloud: body.useCloudModels });
+    const result = await this.answers.answer(body.question, search, { useCloud: body.useCloudModels, lang: body.lang });
     const final = { ...result, tookMs: Date.now() - started };
     if (!final.refused) this.answers.remember(key, final);
     return final;
@@ -99,7 +101,7 @@ export class RagController {
     return new Observable<MessageEvent>((subscriber) => {
       const started = Date.now();
       (async () => {
-        const key = await this.cacheKey(query.question, query.cloud);
+        const key = await this.cacheKey(query.question, query.cloud, query.lang);
         const hit = this.answers.cached(key);
         if (hit) {
           subscriber.next({ type: 'passages', data: { ...hit, cached: true } });
@@ -109,7 +111,7 @@ export class RagController {
         }
         const search = await this.retriever.search(query.question, 6);
         subscriber.next({ type: 'passages', data: search });
-        const result = await this.answers.answerStream(query.question, search, { useCloud: query.cloud }, (e) => subscriber.next(e.type === 'token' ? { type: 'token', data: e.data } : { type: 'reset', data: '' }));
+        const result = await this.answers.answerStream(query.question, search, { useCloud: query.cloud, lang: query.lang }, (e) => subscriber.next(e.type === 'token' ? { type: 'token', data: e.data } : { type: 'reset', data: '' }));
         const final = { ...result, tookMs: Date.now() - started };
         if (!final.refused) this.answers.remember(key, final);
         subscriber.next({ type: 'done', data: final });

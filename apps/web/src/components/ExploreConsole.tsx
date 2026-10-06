@@ -4,8 +4,8 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowDownToLine, ArrowUpRight, Crosshair, HelpCircle, Layers3, LocateFixed, MapPin, Minus, Plus, Route, Send, Sparkles, Undo2, X, Search, Maximize2, Minimize2, Printer } from 'lucide-react';
-import type { AssistantResponse, Citation, DtmGrid, LayerId, MapLayer, MissionBriefing, POI, RegionData, RouteAnalysis, RouteWaypoint, PlacesTrack, SuggestedRoute } from '@mars-explorer/shared';
-import { analyzeRoute, askAssistant, createBriefing, downloadBriefingPdf, getDtmGrid, getLayers, getPlaces, getRegion, suggestRoute } from '@/lib/api';
+import type { AssistantResponse, Citation, DtmGrid, LayerId, MapLayer, MarsHardware, MissionBriefing, POI, RegionData, RouteAnalysis, RouteWaypoint, PlacesTrack, SuggestedRoute } from '@mars-explorer/shared';
+import { analyzeRoute, askAssistant, createBriefing, downloadBriefingPdf, getDtmGrid, getHardware, getLayers, getPlaces, getRegion, suggestRoute } from '@/lib/api';
 import { compareWithTrack } from '@/lib/geo';
 import RouteProfile from './RouteProfile';
 import SolClock from './SolClock';
@@ -14,6 +14,7 @@ import { hasGoogleMapsKey } from '@/lib/load-google-maps';
 import DetailModal from './ui/DetailModal';
 
 import type { OpenDataSelection } from './MarsMap';
+import { hardwareState } from '@/lib/hardware';
 
 const MarsMap = dynamic(() => import('./MarsMap'), { ssr: false, loading: () => <div className="map-loading">CONNECTING TO MARS TREK WMTS…</div> });
 const GoogleMarsMap = dynamic(() => import('./GoogleMarsMap'), { ssr: false, loading: () => <div className="map-loading">CONNECTING GOOGLE SHELL TO NASA TREK…</div> });
@@ -57,6 +58,8 @@ export default function ExploreConsole() {
   const [showTrack, setShowTrack] = useState(true);
   const [suggestion, setSuggestion] = useState<SuggestedRoute | null>(null);
   const [openSel, setOpenSel] = useState<OpenDataSelection | null>(null);
+  const [hardware, setHardware] = useState<MarsHardware[]>([]);
+  const [hwYear, setHwYear] = useState(new Date().getUTCFullYear());
 
   useEffect(() => {
     Promise.all([getRegion(), getLayers(), getPlaces()]).then(([data, layerData, track]) => { setRegion(data); setCatalog(layerData); setPlaces(track); setSelectedSol(track.latestSol); const poiId = new URLSearchParams(window.location.search).get('poi'); const poi = data.pois.find((item) => item.id === poiId); if (poi) { setSelectedPoi(poi); setTab('point'); } }).catch((reason: Error) => setError(`${reason.message}. Start the API with pnpm dev.`));
@@ -82,6 +85,9 @@ export default function ExploreConsole() {
   }, [waypoints]);
 
   useEffect(() => { getRegion(demoSeeds).then((data)=>{setRegion(data); const poiId=new URLSearchParams(window.location.search).get('poi'); const poi=data.pois.find((item)=>item.id===poiId); if(poi){setSelectedPoi(poi);setTab('point');}}).catch((reason: Error) => setError(reason.message)); }, [demoSeeds]);
+  useEffect(() => { if (layers.has('hardware') && !hardware.length) getHardware().then(setHardware).catch((reason: Error) => setRouteNotice(`LEFT ON MARS UNAVAILABLE · ${reason.message}`)); }, [layers, hardware.length]);
+  const thisYear = new Date().getUTCFullYear();
+  const hwDate = hwYear >= thisYear ? new Date().toISOString().slice(0, 10) : `${hwYear}-12-31`;
   useEffect(() => { if (mapEngine === '3d' && !dtmGrid) getDtmGrid().then(setDtmGrid).catch((reason: Error) => setError(reason.message)); }, [mapEngine, dtmGrid]);
   const trackComparison = useMemo(() => (waypoints.length > 1 && places ? compareWithTrack(waypoints, places.points) : null), [waypoints, places]);
   const selectedTrackPoint = useMemo(() => places?.points.filter((p) => p.sol <= selectedSol).at(-1), [places, selectedSol]);
@@ -182,6 +188,7 @@ export default function ExploreConsole() {
     { label: 'Show NASA landing sites (data.nasa.gov)', run: () => { setLayers((current) => new Set([...current, 'landings'])); setMapMode('global'); } },
     { label: 'Show HiRISE DTM footprints', run: () => setLayers((current) => new Set([...current, 'hirise'])) },
     { label: 'Toggle IAU feature names', run: () => toggleLayer('names') },
+    { label: 'Show Left on Mars timeline', run: () => { setLayers((current) => new Set([...current, 'hardware'])); setMapMode('global'); setHwYear(1976); } },
     { label: 'Open NASA Open Data catalog', run: () => { window.location.href = '/opendata'; } },
   ];
 
@@ -204,10 +211,16 @@ export default function ExploreConsole() {
         <section className="rail-section"><div className="section-title"><span>DATA LAYERS</span><Layers3 size={13} /></div>
           <div className="layer-list">{catalog.map((layer) => <button key={layer.id} className="layer-row" onClick={() => toggleLayer(layer.id as LayerId)} aria-pressed={layers.has(layer.id as LayerId)}>
             <span className={`checkbox ${layers.has(layer.id as LayerId) ? 'checked' : ''}`} />
-            <span className={`layer-swatch swatch-${layer.id}`} /><span className="layer-copy"><strong>{layer.id === 'pois' ? 'Science points' : layer.id === 'hazards' ? 'Terrain watch zones' : layer.name}</strong><small>{layer.id === 'imagery' ? 'MGS MOLA / GLOBAL' : layer.id === 'viking' ? 'VIKING / GLOBAL COLOR' : layer.id === 'hazards' ? 'ILLUSTRATIVE ONLY' : layer.id === 'hirise' ? 'DATA.NASA.GOV / MRO HIRISE DTM' : layer.id === 'names' ? 'DATA.NASA.GOV / IAU GAZETTEER' : layer.id === 'landings' ? 'DATA.NASA.GOV / MISSION CATALOG' : 'MARS 2020 / JEZERO'}</small><small className="layer-why">{layer.description}</small>{['hirise', 'names', 'landings'].includes(layer.id) && <small className="layer-source">NASA OPEN DATA · DATA.NASA.GOV</small>}</span>
+            <span className={`layer-swatch swatch-${layer.id}`} /><span className="layer-copy"><strong>{layer.id === 'pois' ? 'Science points' : layer.id === 'hazards' ? 'Terrain watch zones' : layer.name}</strong><small>{layer.id === 'imagery' ? 'MGS MOLA / GLOBAL' : layer.id === 'viking' ? 'VIKING / GLOBAL COLOR' : layer.id === 'hazards' ? 'ILLUSTRATIVE ONLY' : layer.id === 'hirise' ? 'DATA.NASA.GOV / MRO HIRISE DTM' : layer.id === 'names' ? 'DATA.NASA.GOV / IAU GAZETTEER' : layer.id === 'landings' ? 'DATA.NASA.GOV / MISSION CATALOG' : layer.id === 'hardware' ? 'NASA MISSION PAGES / NSSDCA' : 'MARS 2020 / JEZERO'}</small><small className="layer-why">{layer.description}</small>{['hirise', 'names', 'landings'].includes(layer.id) && <small className="layer-source">NASA OPEN DATA · DATA.NASA.GOV</small>}</span>
           </button>)}</div>
           {!catalog.length && <p className="quiet-note">LOADING DATA CATALOG…</p>}
         </section>
+        {layers.has('hardware') && <section className="rail-section hardware-timeline" aria-label="Left on Mars last-contact timeline"><div className="section-title"><span>LEFT ON MARS · LAST CONTACT</span><span className="row-count">{hwYear}</span></div>
+          <input type="range" aria-label="Last-contact year" min={1976} max={thisYear} value={hwYear} onChange={(e) => setHwYear(Number(e.target.value))} />
+          <p>{hardware.filter((h) => hardwareState(h, hwDate) === 'active').length} ACTIVE · {hardware.filter((h) => hardwareState(h, hwDate) === 'silent').length} SILENT · {hardware.filter((h) => hardwareState(h, hwDate) === 'future').length} NOT YET LANDED</p>
+          <ul>{hardware.filter((h) => hardwareState(h, hwDate) !== 'future').map((h) => { const st = hardwareState(h, hwDate); return <li key={h.id}><button onClick={() => setOpenSel({ kind: 'hardware', hardware: h })}><i className={`hw-dot hw-${st}`} />{h.name}<small>{st === 'active' ? 'ACTIVE' : `SILENT · ${h.lastContact}`}</small></button></li>; })}</ul>
+          <small>NASA mission pages · rovers shown at their landing site</small>
+        </section>}
         <section className="rail-section places-controls"><div className="section-title"><span>NASA PLACES · ROVER TRACK</span></div><label><input type="checkbox" checked={showTrack} onChange={(e) => setShowTrack(e.target.checked)} /> SHOW PUBLISHED TRACK</label><input type="range" aria-label="Perseverance sol" min={0} max={places?.latestSol ?? 1} value={selectedSol} onChange={(e) => setSelectedSol(Number(e.target.value))} /><p>SOL {selectedTrackPoint?.sol ?? '—'} · {selectedTrackPoint ? `${selectedTrackPoint.lat.toFixed(5)}° N, ${selectedTrackPoint.lon.toFixed(5)}° E` : 'NO LOCALIZATION'}</p><small>PLACES CSV provides sol and spacecraft clock, not UTC observation date.</small><a href={places?.sourceUrl ?? 'https://pds-geosciences.wustl.edu/missions/mars2020/places.htm'} target="_blank" rel="noreferrer">NASA PLACES SOURCE ↗</a>{selectedTrackPoint && <button onClick={() => window.dispatchEvent(new CustomEvent("mars-focus",{detail:selectedTrackPoint}))}>FOCUS SELECTED SOL ON MAP</button>}</section>
         <section className="rail-section"><div className="section-title"><span>TRAVERSE PRESETS</span><Route size={13} /></div><div className="preset-list"><button onClick={() => presetRoute('delta')}>Delta traverse</button><button onClick={() => presetRoute('rim')}>Crater rim</button><button onClick={() => presetRoute('short')}>Short EVA</button></div></section>
         <section className="rail-section"><label className="demo-toggle"><input type="checkbox" checked={demoSeeds} onChange={(e) => setDemoSeeds(e.target.checked)} /> SHOW DEMO SEEDS</label>{demoSeeds && <strong>DEMO · NOT NASA PRODUCT</strong>}</section>
@@ -237,7 +250,7 @@ export default function ExploreConsole() {
           <button className={solLighting ? 'tool-button active' : 'tool-button'} onClick={() => setSolLighting(!solLighting)} title="Toggle illustrative Sol lighting">SOL</button>
         </div></div>
         <div className={`map-frame ${solLighting ? 'sol-lit' : ''}`}>
-          {mapEngine === '3d' ? (dtmGrid ? <TerrainView3D grid={dtmGrid} waypoints={waypoints} suggestedPath={suggestion?.waypoints ?? []} track={showTrack ? visibleTrack : []} trackPoint={showTrack ? selectedTrackPoint : undefined} pois={region?.pois ?? []} /> : <div className="map-loading">LOADING NASA PLACES DEM GRID…</div>) : mapEngine === 'leaflet' ? <MarsMap mode={mapMode} layers={layers} pois={region?.pois ?? []} hazards={region?.hazards ?? []} footprints={region?.footprints ?? []} waypoints={waypoints} track={visibleTrack} trackPoint={showTrack ? selectedTrackPoint : undefined} suggestedPath={suggestion?.waypoints ?? []} drawing={drawing} onAdd={addWaypoint} onSelectPoi={selectPoi} onSelectHazard={setSelectedHazard} onViewChange={setMapView} onSelectOpenData={setOpenSel} onOverlayStatus={setRouteNotice} /> : <GoogleMarsMap mode={mapMode} layers={layers} pois={region?.pois ?? []} hazards={region?.hazards ?? []} footprints={region?.footprints ?? []} waypoints={waypoints} track={visibleTrack} trackPoint={showTrack ? selectedTrackPoint : undefined} suggestedPath={suggestion?.waypoints ?? []} drawing={drawing} onAdd={addWaypoint} onSelectPoi={selectPoi} onSelectHazard={setSelectedHazard} onViewChange={setMapView} />}
+          {mapEngine === '3d' ? (dtmGrid ? <TerrainView3D grid={dtmGrid} waypoints={waypoints} suggestedPath={suggestion?.waypoints ?? []} track={showTrack ? visibleTrack : []} trackPoint={showTrack ? selectedTrackPoint : undefined} pois={region?.pois ?? []} /> : <div className="map-loading">LOADING NASA PLACES DEM GRID…</div>) : mapEngine === 'leaflet' ? <MarsMap mode={mapMode} layers={layers} pois={region?.pois ?? []} hazards={region?.hazards ?? []} footprints={region?.footprints ?? []} waypoints={waypoints} track={visibleTrack} trackPoint={showTrack ? selectedTrackPoint : undefined} suggestedPath={suggestion?.waypoints ?? []} drawing={drawing} onAdd={addWaypoint} onSelectPoi={selectPoi} onSelectHazard={setSelectedHazard} onViewChange={setMapView} onSelectOpenData={setOpenSel} onOverlayStatus={setRouteNotice} hardware={hardware} hardwareDate={hwDate} /> : <GoogleMarsMap mode={mapMode} layers={layers} pois={region?.pois ?? []} hazards={region?.hazards ?? []} footprints={region?.footprints ?? []} waypoints={waypoints} track={visibleTrack} trackPoint={showTrack ? selectedTrackPoint : undefined} suggestedPath={suggestion?.waypoints ?? []} drawing={drawing} onAdd={addWaypoint} onSelectPoi={selectPoi} onSelectHazard={setSelectedHazard} onViewChange={setMapView} />}
           {mapEngine !== '3d' && visibleTrack.length > 2 && mapMode === 'jezero' && <TrackInset points={visibleTrack} selected={selectedTrackPoint} />}
           {mapEngine !== '3d' && mapMode === 'global' && <div className="global-callout"><span>REGIONAL FOCUS</span><strong>Jezero Crater</strong><button onClick={() => setMapMode('jezero')}>FLY TO SITE <ArrowUpRight size={13} /></button></div>}
           {drawing && mapEngine !== '3d' && <div className="drawing-hint"><Crosshair size={13} /> SELECT SURFACE TO PLACE WAYPOINT <span>ESC TO EXIT</span></div>}
@@ -335,6 +348,10 @@ function OpenDataDetail({ selection, onClose }: { selection: OpenDataSelection; 
   if (selection.kind === 'dtm') {
     const d = selection.dtm;
     return <DetailModal title={d.id} eyebrow="MARS · MRO HIRISE DIGITAL TERRAIN MODEL" summary={d.rationale} facts={[['POST SPACING', `${d.scaleM.toFixed(2)} M`], ['STEREO PAIR', `${d.leftObservation} / ${d.rightObservation}`], ['PROJECTION', d.projection], ['CORNER 1', fmt(d.corners[0][0], d.corners[0][1])]]} sources={[{ title: 'PDS product directory (DTM + orthoimages)', url: d.pdsUrl }, { title: 'MRO HiRISE DTM V1.0 (data.nasa.gov)', url: 'https://data.nasa.gov/dataset/mro-mars-high-resolution-imaging-science-experiment-dtm-v1-0', note: 'Footprint from the PDS DTM cumulative index. Mars Explorer does not sample these elevations.' }]} onClose={onClose} />;
+  }
+  if (selection.kind === 'hardware') {
+    const h = selection.hardware;
+    return <DetailModal title={h.name} eyebrow={`MARS · LEFT ON MARS · ${h.kind.toUpperCase()} · ${h.status === 'active' ? 'ACTIVE' : 'SILENT'}`} summary={h.whySilent ?? `${h.mission} is still operating on Mars.`} facts={[['MISSION', h.mission], ['LANDED', h.landed], ['LAST CONTACT', h.lastContact ?? 'ACTIVE'], ['POSITION', `${fmt(h.lat, h.lon)}`], ['POSITION BASIS', h.positionNote]]} sources={[{ title: `${h.mission} · NASA mission page`, url: h.sourceUrl, note: 'Dates and status from the cited NASA page.' }, { title: 'NASA NSSDCA Mars missions', url: 'https://nssdc.gsfc.nasa.gov/planetary/planets/marspage.html', note: 'Rounded landing coordinates.' }]} onClose={onClose} />;
   }
   const l = selection.landing;
   return <DetailModal title={l.name} eyebrow={`MARS · ${l.year} LANDING · ${l.place.toUpperCase()}`} summary={l.datasetCount ? `${l.datasetCount} datasets in the data.nasa.gov Mars catalog are tagged ${l.mission}.` : `No data.nasa.gov Mars catalog record is tagged ${l.mission}. Its rover localizations come from NASA PDS PLACES.`} facts={[['LANDING', fmt(l.lat, l.lon)], ['MISSION TAG', l.mission], ['DATASETS', String(l.datasetCount)]]} sources={[...l.datasets.map((d) => ({ title: d.title, url: d.url })), { title: `Open the ${l.mission} data shelf`, url: l.catalogUrl, note: 'Searchable data.nasa.gov catalog inside Mars Explorer.' }, { title: 'NASA NSSDCA Mars missions', url: 'https://nssdc.gsfc.nasa.gov/planetary/planets/marspage.html', note: 'Landing coordinates are rounded published values.' }]} onClose={onClose} />;

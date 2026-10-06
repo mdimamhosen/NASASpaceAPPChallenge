@@ -32,3 +32,5 @@ docs/video/pipeline/photos/
 docs/video/pipeline/chrome-*/
 docs/video/pipeline/timeline.json
 docs/video/pipeline/*.mp4
+docs/video/team/previous/*.mp4
+docs/video/team/*.tiff

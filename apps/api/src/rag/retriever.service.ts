@@ -24,7 +24,8 @@ export class RetrieverService {
     const bmRanked = bmScores.map((s, i) => ({ s, i })).filter((r) => r.s > 0).sort((a, b) => b.s - a.s).slice(0, CANDIDATES);
 
     let dense: Array<{ s: number; i: number }> = [];
-    if (mode !== 'bm25' && st.semantic) {
+    // Offline or keyless: skip the query embedding instead of waiting on a network timeout.
+    if (mode !== 'bm25' && st.semantic && this.embedder.available) {
       try {
         const qv = await this.embedder.embedQuery(query);
         dense = st.chunks.map((c, i) => ({ s: c.vec ? dot(qv, c.vec) : -1, i })).sort((a, b) => b.s - a.s).slice(0, CANDIDATES);

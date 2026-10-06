@@ -25,4 +25,6 @@ assert.equal(d.opendata, true);
 assert.equal(d.route, false);
 assert.equal(detectIntents('What craters are named near the landing site?').names, true);
 assert.equal(detectIntents('Where was Perseverance on sol 1000?').opendata, false);
+assert.equal(detectIntents('Which NASA landers went silent on Mars, and when was the last contact?').hardware, true);
+assert.equal(detectIntents('Where was Perseverance on sol 1000?').hardware, false);
 console.log('intent checks passed');

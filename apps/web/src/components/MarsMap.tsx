@@ -1,14 +1,28 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { CircleMarker, MapContainer, Polygon, Polyline, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet';
+import { CircleMarker, MapContainer, Marker, Polygon, Polyline, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import type { HiriseDtm, LayerId, MarsFeature, MissionLanding, POI, RegionData, RouteWaypoint, PlacesPoint } from '@mars-explorer/shared';
+import type { HiriseDtm, LayerId, MarsFeature, MarsHardware, MissionLanding, POI, RegionData, RouteWaypoint, PlacesPoint } from '@mars-explorer/shared';
 import { JEZERO_CENTER, TREK_BASE_URL } from '@mars-explorer/shared';
 import { getHiriseDtms, getLandings, getMarsFeatures } from '@/lib/api';
+import { hardwareState } from '@/lib/hardware';
 
-export type OpenDataSelection = { kind: 'feature'; feature: MarsFeature } | { kind: 'dtm'; dtm: HiriseDtm } | { kind: 'landing'; landing: MissionLanding };
+export type OpenDataSelection = { kind: 'feature'; feature: MarsFeature } | { kind: 'dtm'; dtm: HiriseDtm } | { kind: 'landing'; landing: MissionLanding } | { kind: 'hardware'; hardware: MarsHardware };
+
+const hardwareIcon = (state: string, kind: string) => L.divIcon({ className: `hw-marker hw-${state} hw-${kind}`, iconSize: [14, 14], iconAnchor: [7, 7] });
+
+function HardwareLayer({ items, date, drawing, onSelect }: { items: MarsHardware[]; date: string; drawing: boolean; onSelect: (s: OpenDataSelection) => void }) {
+  return <>{items.map((h, i) => {
+    const state = hardwareState(h, date);
+    if (state === 'future') return null;
+    // Spacecraft that share a landing site (Pathfinder + Sojourner, Perseverance + Ingenuity) are nudged apart so both stay clickable.
+    const twin = items.findIndex((o) => o !== h && o.lat === h.lat && o.lon === h.lon);
+    const nudge = twin >= 0 && twin < i ? 0.6 : 0;
+    return <Marker key={`${h.id}-${state}-${drawing}`} position={[h.lat - nudge, h.lon + nudge]} icon={hardwareIcon(state, h.kind)} interactive={!drawing} eventHandlers={{ click: () => onSelect({ kind: 'hardware', hardware: h }) }}><Tooltip direction="top">{h.name} · {state === 'active' ? 'ACTIVE' : `SILENT SINCE ${h.lastContact}`}</Tooltip></Marker>;
+  })}</>;
+}
 
 /** data.nasa.gov overlays: IAU names and HiRISE DTM footprints are fetched for the current view; landings once. */
 function OpenDataOverlays({ names, dtm, landings, drawing, onSelect, onStatus }: { names: boolean; dtm: boolean; landings: boolean; drawing: boolean; onSelect: (s: OpenDataSelection) => void; onStatus?: (text: string) => void }) {
@@ -50,6 +64,8 @@ function MapMotion({ mode, onAdd, drawing, onViewChange }: { mode: 'global' | 'j
   }, [map]);
   useEffect(() => { const focus = (event: Event) => { const p = (event as CustomEvent<{lat:number;lon:number}>).detail; map.flyTo([p.lat,p.lon], 9); }; window.addEventListener('mars-focus', focus); return () => window.removeEventListener('mars-focus', focus); }, [map]);
   useEffect(() => { const center = map.getCenter(); onViewChange({lat:center.lat,lon:center.lng,zoom:map.getZoom()}); }, [map,onViewChange]);
+  // Focus mode and panel toggles resize the container; Leaflet must re-measure or new space stays untiled.
+  useEffect(() => { const ro = new ResizeObserver(() => map.invalidateSize()); ro.observe(map.getContainer()); return () => ro.disconnect(); }, [map]);
   useMapEvents({
     click(event) { if (drawing) onAdd({ id: crypto.randomUUID(), lat: Number(event.latlng.lat.toFixed(4)), lon: Number(event.latlng.lng.toFixed(4)) }); },
     moveend(event) { const current = event.target as L.Map; const center = current.getCenter(); onViewChange({lat:center.lat,lon:center.lng,zoom:current.getZoom()}); },
@@ -58,16 +74,17 @@ function MapMotion({ mode, onAdd, drawing, onViewChange }: { mode: 'global' | 'j
   return null;
 }
 
-export default function MarsMap({ mode, layers, pois, hazards, waypoints, track, trackPoint, suggestedPath, drawing, onAdd, onSelectPoi, onSelectHazard, onViewChange, onSelectOpenData = () => {}, onOverlayStatus }: {
+export default function MarsMap({ mode, layers, pois, hazards, waypoints, track, trackPoint, suggestedPath, drawing, onAdd, onSelectPoi, onSelectHazard, onViewChange, onSelectOpenData = () => {}, onOverlayStatus, hardware = [], hardwareDate = '9999-12-31' }: {
   mode: 'global' | 'jezero'; layers: Set<LayerId>; pois: POI[]; hazards: Array<{ id: string; name: string; severity: string; coordinates: Array<{ lat: number; lon: number }> }>;
   footprints?: Array<{ id: string; name: string; instrument: string; coordinates: Array<{ lat: number; lon: number }>; sourceUrl: string }>;
   waypoints: RouteWaypoint[]; track: PlacesPoint[]; trackPoint?: PlacesPoint; suggestedPath: RouteWaypoint[]; drawing: boolean; onAdd: (point: RouteWaypoint) => void; onSelectPoi: (poi: POI) => void; onSelectHazard: (hazard: RegionData['hazards'][number]) => void; onViewChange: (view: {lat:number;lon:number;zoom:number}) => void;
-  onSelectOpenData?: (selection: OpenDataSelection) => void; onOverlayStatus?: (text: string) => void;
+  onSelectOpenData?: (selection: OpenDataSelection) => void; onOverlayStatus?: (text: string) => void; hardware?: MarsHardware[]; hardwareDate?: string;
 }) {
   return <MapContainer center={[JEZERO_CENTER.lat, JEZERO_CENTER.lon]} zoom={5} minZoom={1} maxZoom={10} crs={L.CRS.EPSG4326} zoomControl={false} attributionControl={false} className={drawing ? 'mars-map is-drawing' : 'mars-map'}>
     {(['viking','hrsc-color','hrsc-shade','imagery'] as const).filter((id)=>layers.has(id)).slice(0,1).map((id) => <TileLayer key={id} url={`${TREK_BASE_URL}/${({viking:'Mars_Viking_MDIM21_ClrMosaic_global_232m','hrsc-color':'Mars_MOLA_blend200ppx_HRSC_ClrShade_clon0dd_200mpp_lzw','hrsc-shade':'Mars_MOLA_blend200ppx_HRSC_Shade_clon0dd_200mpp_lzw',imagery:'Mars_MGS_MOLA_ClrShade_merge_global_463m'} as const)[id]}/1.0.0/default/default028mm/{z}/{y}/{x}.jpg`} minZoom={0} maxZoom={10} maxNativeZoom={id.startsWith('hrsc') ? 8 : 7} noWrap />)}
     <MapMotion mode={mode} onAdd={onAdd} drawing={drawing} onViewChange={onViewChange} />
     {layers.has('hazards') && hazards.map((hazard) => <Polygon key={hazard.id} positions={hazard.coordinates.map((point) => [point.lat, point.lon])} bubblingMouseEvents={false} pathOptions={{ color: '#B84A3A', weight: 1, fillColor: '#B84A3A', fillOpacity: .18, dashArray: '4 4' }} eventHandlers={{ click: () => onSelectHazard(hazard as RegionData['hazards'][number]) }}><Tooltip>{hazard.name} · illustrative only</Tooltip></Polygon>)}
+    {layers.has('hardware') && <HardwareLayer items={hardware} date={hardwareDate} drawing={drawing} onSelect={onSelectOpenData} />}
     <OpenDataOverlays names={layers.has('names')} dtm={layers.has('hirise')} landings={layers.has('landings')} drawing={drawing} onSelect={onSelectOpenData} onStatus={onOverlayStatus} />
     {layers.has('pois') && pois.map((poi) => <CircleMarker key={poi.id} center={[poi.lat, poi.lon]} radius={6} bubblingMouseEvents={false} pathOptions={{ color: '#F2F0EA', weight: 1, fillColor: '#12161F', fillOpacity: 1 }} eventHandlers={{ click: () => onSelectPoi(poi) }}><Tooltip>{poi.name} · {poi.sourceKind === 'DEMO' ? 'DEMO / NOT NASA PRODUCT' : 'NASA PLACES'}</Tooltip></CircleMarker>)}
     {track.length > 1 && <Polyline positions={track.map((p) => [p.lat,p.lon])} pathOptions={{color:'#111',weight:5,opacity:.95}} />}
