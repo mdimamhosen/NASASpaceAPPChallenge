@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Headers, MessageEvent, Param, Post, Query, Sse, UnauthorizedException } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { IsBoolean, IsIn, IsInt, IsOptional, IsString, IsUrl, Max, MaxLength, Min, MinLength } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { Observable } from 'rxjs';
@@ -77,6 +78,7 @@ export class RagController {
     return `${st.signature.length}:${st.builtAt}|${cloud ? 'cloud' : 'local'}|${question.toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim()}`;
   }
 
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Post('ask')
   async ask(@Body() body: AskDto) {
     const key = await this.cacheKey(body.question, body.useCloudModels);
@@ -91,6 +93,7 @@ export class RagController {
   }
 
   /** SSE: `passages` as soon as retrieval finishes, `token` deltas while the answer streams, then `done`. Repeat questions replay from cache. */
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Sse('ask/stream')
   askStream(@Query() query: AskStreamDto): Observable<MessageEvent> {
     return new Observable<MessageEvent>((subscriber) => {
@@ -116,15 +119,18 @@ export class RagController {
     });
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('documents/url')
   addUrl(@Body() body: UrlDto, @Headers('x-rag-token') token?: string) { this.authorize(token); return this.ingest.addUrl(body.url, body.source, body.title); }
 
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('documents/text')
   addText(@Body() body: TextDto, @Headers('x-rag-token') token?: string) { this.authorize(token); return this.ingest.addText(body.title, body.body, body.url); }
 
   @Delete('documents/:id')
   remove(@Param('id') id: string, @Headers('x-rag-token') token?: string) { this.authorize(token); return this.ingest.remove(id); }
 
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('reindex')
   async reindex(@Headers('x-rag-token') token?: string) { this.authorize(token); await this.index.rebuild(); return this.status(); }
 

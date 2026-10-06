@@ -12,6 +12,8 @@ const QUESTIONS = {
   earth: 'Does the goal ask about current natural events on Earth such as wildfires, storms, floods, or sea ice?',
   orbit: 'Does the goal ask about Earth–Mars distance, signal or command delay, or orbital geometry?',
   briefing: 'Does the goal ask for a mission briefing or written report about a route?',
+  opendata: 'Does the goal ask which NASA datasets, archives, or data.nasa.gov catalog records exist for a Mars mission or instrument?',
+  names: 'Does the goal ask for the official names of Mars surface features such as craters, valleys, or mountains near a place?',
 } as const;
 
 /**
@@ -49,7 +51,7 @@ export class JevRouterService {
       if (!answers) throw new Error('Jev response had no answers.');
       const p = (k: keyof typeof QUESTIONS) => (typeof answers[k]?.noul === 'number' ? answers[k]!.noul! : 0);
       const hasEndpoints = rules.sols.length > 0 || /landing/i.test(goal);
-      const decided = { route: p('route') >= 0.5 && hasEndpoints, earth: p('earth') >= 0.5, orbit: p('orbit') >= 0.5, briefing: p('briefing') >= 0.5 && hasEndpoints };
+      const decided = { route: p('route') >= 0.5 && hasEndpoints, earth: p('earth') >= 0.5, orbit: p('orbit') >= 0.5, briefing: p('briefing') >= 0.5 && hasEndpoints, opendata: p('opendata') >= 0.5, names: p('names') >= 0.5 };
       return {
         ...rules, ...decided,
         // Always retrieve unless Jev is confident the goal is purely operational (another tool covers it).

@@ -1,4 +1,4 @@
-import type { AssistantResponse, LayerId, MapLayer, MissionBriefing, POI, RegionData, RouteAnalysis, RouteWaypoint, PlacesTrack, SuggestedRoute, EonetProvenance, DtmGrid, RagStatus, RagDocument, RagSearchResult, RagAnswer, RagEval, RagProjection, RagMode, AgentRun } from '@mars-explorer/shared';
+import type { AssistantResponse, LayerId, MapLayer, MissionBriefing, POI, RegionData, RouteAnalysis, RouteWaypoint, PlacesTrack, SuggestedRoute, EonetProvenance, DtmGrid, RagStatus, RagDocument, RagSearchResult, RagAnswer, RagEval, RagProjection, RagMode, AgentRun, OpenCatalogResult, MarsFeature, HiriseDtm, MissionLanding, OpenDataProduct } from '@mars-explorer/shared';
 import type { EarthEventSummary, EarthEventDetail } from './earth-types';
 
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
@@ -32,7 +32,17 @@ export const getEarthEvent = (id: string) => request<EarthEventDetail>(`/eonet/e
 export const getEonetCategories = () => request<{ categories: Array<{ id: string; title: string }> }>('/eonet/categories');
 export const getEonetGeoJson = (limit = 60, status: 'open' | 'closed' | 'all' = 'open') => request<{ type: 'FeatureCollection'; features: Array<{ properties?: { id?: string; categories?: Array<{id:string;title:string}> } }> }>(`/eonet/events/geojson?limit=${limit}&status=${status}`);
 
-export const layerIds: LayerId[] = ['imagery', 'viking', 'hrsc-color', 'hrsc-shade', 'hazards', 'pois', 'hirise'];
+export const layerIds: LayerId[] = ['imagery', 'viking', 'hrsc-color', 'hrsc-shade', 'hazards', 'pois', 'hirise', 'names', 'landings'];
+
+// NASA Open Data (data.nasa.gov, tag "mars")
+export type MapBox = { south: number; west: number; north: number; east: number };
+const boxQuery = (b: MapBox) => `south=${b.south.toFixed(3)}&north=${b.north.toFixed(3)}&west=${b.west.toFixed(3)}&east=${b.east.toFixed(3)}`;
+export const getOpenCatalog = (q = '', mission = '', offset = 0, source: 'snapshot' | 'live' = 'snapshot', limit = 24) =>
+  request<OpenCatalogResult>(`/opendata/catalog?${new URLSearchParams({ q, ...(mission ? { mission } : {}), offset: String(offset), limit: String(limit), source })}`);
+export const getMarsFeatures = (box: MapBox, zoom: number) => request<MarsFeature[]>(`/opendata/features?${boxQuery(box)}&zoom=${zoom}`);
+export const getHiriseDtms = (box: MapBox) => request<HiriseDtm[]>(`/opendata/hirise-dtm?${boxQuery(box)}`);
+export const getLandings = () => request<MissionLanding[]>('/opendata/landings');
+export const getOpenDataProducts = () => request<OpenDataProduct[]>('/opendata/products');
 export type { POI, RouteWaypoint, EarthEventSummary };
 
 export const getRecentTraces = () => request<Array<{id:string;createdAt:string;question:string;steps:Array<{step:string;detail:string}>}>>('/assistant/traces/recent');

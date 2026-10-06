@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { AgentLabel, AgentModel, AgentRun, AgentStep, LatLon, RagPassage, RouteWaypoint } from '@mars-explorer/shared';
-import { earthMarsGeometry } from '@mars-explorer/shared';
+import { earthMarsGeometry, NASA_MARS_LANDINGS } from '@mars-explorer/shared';
 import { EonetService } from '../eonet/eonet.service';
 import { PlacesService } from '../places/places.service';
 import { AnswerService } from '../rag/answer.service';
@@ -11,12 +11,15 @@ import { RoutesService } from '../routes/routes.service';
 import { AssistantService } from './assistant.service';
 import { JevRouterService } from './jev-router.service';
 import { getEarthNaturalEvents } from './tools/earth-events.tool';
+import { OpenDataService } from '../opendata/opendata.service';
+import { detectMission } from '../opendata/opendata.logic';
 
 type ToolResult = { output: unknown; summary: string; label: AgentLabel };
 export type AgentEvent = { type: 'step'; data: AgentStep } | { type: 'token'; data: string } | { type: 'reset' };
 type Ctx = { passages: RagPassage[]; route?: RouteWaypoint[]; steps: AgentStep[]; outputs: Array<{ tool: string; output: unknown }>; emit: (e: AgentEvent) => void; started: number };
 
 const MAX_TURNS = 8;
+const JEZERO_LANDING = NASA_MARS_LANDINGS.find((s) => s.mission === 'PERSEVERANCE')!;
 const point = { type: 'object', properties: { lat: { type: 'number' }, lon: { type: 'number', description: 'East-positive longitude' } }, required: ['lat', 'lon'] };
 
 const TOOLS: ToolSpec[] = [
@@ -27,6 +30,8 @@ const TOOLS: ToolSpec[] = [
   { name: 'analyze_route', description: 'Distance, DEM coverage, elevation change, and non-certifying Traverse Risk Index for a route of 2–24 waypoints.', parameters: { type: 'object', properties: { waypoints: { type: 'array', items: point } }, required: ['waypoints'] } },
   { name: 'earth_events', description: 'Open NASA EONET natural events on EARTH (wildfires, storms, ice). Earth only; never Mars conditions.', parameters: { type: 'object', properties: { category: { type: 'string', description: 'Optional EONET category id, e.g. wildfires, severeStorms, seaLakeIce' }, limit: { type: 'integer' } } } },
   { name: 'orbit_geometry', description: 'Earth–Mars distance and one-way light time on a date, from NASA JPL approximate Keplerian elements.', parameters: { type: 'object', properties: { date: { type: 'string', description: 'YYYY-MM-DD; defaults to today' } } } },
+  { name: 'nasa_open_data', description: 'Search the NASA Open Data portal (data.nasa.gov, tag mars; 1,300+ catalog records, mostly PDS archives) for datasets about a Mars mission, instrument, or topic. Returns titles and data.nasa.gov links.', parameters: { type: 'object', properties: { query: { type: 'string' }, mission: { type: 'string', description: 'Optional mission tag, e.g. CURIOSITY, INSIGHT, PHOENIX, OPPORTUNITY, SPIRIT, MRO, MAVEN, MARS EXPRESS' } }, required: ['query'] } },
+  { name: 'named_features', description: 'IAU-approved Mars feature names (craters, valles, montes…) nearest a point, or the record for one named feature, from the IAU/USGS Gazetteer of Planetary Nomenclature listed on data.nasa.gov.', parameters: { type: 'object', properties: { lat: { type: 'number' }, lon: { type: 'number', description: 'East-positive longitude' }, name: { type: 'string', description: 'Exact feature name, e.g. Jezero, Neretva Vallis' } } } },
   { name: 'create_briefing', description: 'Deterministic mission briefing for a route (objectives, terrain considerations, Risk Index components, sources).', parameters: { type: 'object', properties: { waypoints: { type: 'array', items: point } }, required: ['waypoints'] } },
 ];
 
@@ -36,6 +41,7 @@ const SYSTEM = [
   '- For mission, science, instrument, or data-source facts, call search_knowledge and cite the passages you rely on as [n] using the numbers it returns.',
   '- Never invent coordinates. Get them from verified_locations or rover_position.',
   '- To plan a route: get endpoints, call suggest_corridor, then analyze_route on the corridor it returns.',
+  '- For which datasets or archives exist, call nasa_open_data and give the data.nasa.gov links. For official place names, call named_features.',
   '- earth_events returns EARTH data only. Label it EARTH / EONET and never present it as Mars conditions.',
   '- Routes, corridors, and the Risk Index are non-certifying research aids; never call anything safe.',
   '- Stop calling tools once you have enough evidence. Then give the final answer in plain prose (no markdown headings), under 220 words, with [n] citations for knowledge claims.',
@@ -55,6 +61,7 @@ export class MissionAgentService {
     private readonly eonet: EonetService,
     private readonly assistant: AssistantService,
     private readonly router: JevRouterService,
+    private readonly openData: OpenDataService,
   ) {}
 
   private step(ctx: Ctx, s: Omit<AgentStep, 'i'>) {
@@ -122,6 +129,24 @@ export class MissionAgentService {
         if (Number.isNaN(date.getTime()) || date.getUTCFullYear() < 1800 || date.getUTCFullYear() > 2050) throw new Error('date must be YYYY-MM-DD between 1800 and 2050');
         const g = earthMarsGeometry(date);
         return { label: 'ORBIT', summary: `${raw}: ${(g.km / 1e6).toFixed(1)} million km, ${g.lightMinutes.toFixed(1)} min one-way light time`, output: { date: raw, distanceAu: Number(g.au.toFixed(4)), distanceKm: Math.round(g.km), lightMinutesOneWay: Number(g.lightMinutes.toFixed(2)), source: 'NASA JPL approximate Keplerian elements' } };
+      }
+      case 'nasa_open_data': {
+        const query = String(args.query ?? '').slice(0, 200).trim();
+        if (query.length < 2) throw new Error('query is required');
+        const mission = typeof args.mission === 'string' && /^[A-Za-z ]{3,20}$/.test(args.mission) ? args.mission.toUpperCase() : undefined;
+        const res = await this.openData.searchForAgent(query, mission);
+        return { label: 'OPEN DATA', summary: `${res.total} data.nasa.gov Mars datasets${mission ? ` for ${mission}` : ''}: ${res.items.slice(0, 2).map((d) => d.title).join('; ') || 'none'}`, output: { source: 'data.nasa.gov catalog snapshot (tag: mars)', snapshotAt: res.fetchedAt, total: res.total, datasets: res.items.map((d) => ({ title: d.title, url: d.url, missions: d.missions, publisher: d.publisher, landingPage: d.landingPage })) } };
+      }
+      case 'named_features': {
+        if (typeof args.name === 'string' && args.name.trim()) {
+          const f = await this.openData.findFeature(args.name.slice(0, 80));
+          if (!f) throw new Error(`no IAU-adopted Mars feature named ${args.name}`);
+          return { label: 'MARS', summary: `${f.name}: ${f.type}, ${f.diameterKm} km at ${f.lat}°N ${f.lon}°E`, output: { source: 'IAU/USGS Gazetteer of Planetary Nomenclature (data.nasa.gov)', feature: f } };
+        }
+        const [p] = this.toPoints([{ lat: args.lat, lon: args.lon }], 1);
+        if (!p) throw new Error('lat/lon or name is required');
+        const near = await this.openData.nearestFeatures(p, 8);
+        return { label: 'MARS', summary: `Nearest IAU names: ${near.slice(0, 4).map((f) => `${f.name} (${f.distanceKm} km)`).join(', ')}`, output: { source: 'IAU/USGS Gazetteer of Planetary Nomenclature (data.nasa.gov)', point: p, features: near.map(({ name, type, diameterKm, distanceKm, lat, lon, link }) => ({ name, type, diameterKm, distanceKm, lat, lon, link })) } };
       }
       case 'create_briefing': {
         const pts = this.toPoints(args.waypoints);
@@ -202,7 +227,7 @@ export class MissionAgentService {
   private async fastPlan(goal: string, ctx: Ctx, cloud: boolean): Promise<AgentRun> {
     const r = await this.router.route(goal);
     const needsStart = r.route && (/landing/i.test(goal) || r.sols.length < 2);
-    const plan = [...(r.knowledge ? ['search_knowledge'] : []), ...(r.sols.length || needsStart ? ['rover_position'] : []), ...(r.route ? ['suggest_corridor', 'analyze_route'] : []), ...(r.briefing ? ['create_briefing'] : []), ...(r.earth ? ['earth_events'] : []), ...(r.orbit ? ['orbit_geometry'] : [])];
+    const plan = [...(r.knowledge ? ['search_knowledge'] : []), ...(r.sols.length || needsStart ? ['rover_position'] : []), ...(r.route ? ['suggest_corridor', 'analyze_route'] : []), ...(r.briefing ? ['create_briefing'] : []), ...(r.earth ? ['earth_events'] : []), ...(r.orbit ? ['orbit_geometry'] : []), ...(r.opendata ? ['nasa_open_data'] : []), ...(r.names ? ['named_features'] : [])];
     const conf = r.confidence ? ` · p(route)=${r.confidence.route} p(earth)=${r.confidence.earth} p(orbit)=${r.confidence.orbit}` : '';
     this.step(ctx, { kind: 'plan', summary: `System One router · ${r.engine === 'jev' ? `Jev (${this.router.model})` : 'deterministic rules'} · ${r.ms} ms → ${plan.join(' + ') || 'search_knowledge'}${conf}`, ms: r.ms });
 
@@ -217,7 +242,14 @@ export class MissionAgentService {
       ...sols.map((sol) => call('rover_position', { sol })),
       ...(r.earth ? [call('earth_events', { limit: 5 })] : []),
       ...(r.orbit ? [call('orbit_geometry', r.date ? { date: r.date } : {})] : []),
+      ...(r.opendata ? [call('nasa_open_data', { query: goal })] : []),
     ]);
+    // Named features need a point: a rover position asked for, else the landing site of a mission the goal names, else Perseverance's.
+    if (r.names) {
+      const at = positions.slice(0, sols.length).find(Boolean);
+      const site = NASA_MARS_LANDINGS.find((s) => s.mission === detectMission(goal)) ?? JEZERO_LANDING;
+      await call('named_features', at ? { lat: Number(at.lat), lon: Number(at.lon) } : { lat: site.lat, lon: site.lon });
+    }
     // Phase 2: route tools depend on the positions.
     if (r.route || r.briefing) {
       const pts = positions.slice(0, sols.length).filter(Boolean).map((p) => ({ lat: Number(p!.lat), lon: Number(p!.lon) }));

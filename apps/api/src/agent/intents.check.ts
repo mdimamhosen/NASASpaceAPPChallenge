@@ -19,4 +19,10 @@ assert.equal(c.route, false, 'a position question is not a route');
 assert.equal(detectIntents('Earth-Mars distance on 2027-02-19').date, '2027-02-19');
 assert.equal(detectIntents('Write a mission briefing for a route from landing to sol 700').briefing, true);
 assert.equal(detectIntents('Write a report about Mars geology').briefing, false, 'briefing needs route endpoints');
+
+const d = detectIntents('Which data.nasa.gov datasets exist for the Curiosity APXS instrument?');
+assert.equal(d.opendata, true);
+assert.equal(d.route, false);
+assert.equal(detectIntents('What craters are named near the landing site?').names, true);
+assert.equal(detectIntents('Where was Perseverance on sol 1000?').opendata, false);
 console.log('intent checks passed');

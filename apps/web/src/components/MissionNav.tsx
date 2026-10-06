@@ -5,7 +5,7 @@ const links = [
   ['SURVIVAL', '/survival'], ['JEZERO', '/jezero'], ['EONET', '/eonet'], ['EXPLORE', '/explore'],
   ['TARGETS', '/targets'], ['HAZARDS', '/hazards'], ['OPS', '/ops'], ['TRACES', '/traces'], ['RESEARCH', '/research'],
   ['BRIEFING', '/briefing/preview'], ['PIPELINE', '/pipeline'], ['ARCHITECTURE', '/architecture'],
-  ['STORY', '/story'], ['SCIENCE', '/science'],
+  ['STORY', '/story'], ['OPEN DATA', '/opendata'], ['SCIENCE', '/science'],
 ] as const;
 
 export default function MissionNav({ active }: { active?: string }) {

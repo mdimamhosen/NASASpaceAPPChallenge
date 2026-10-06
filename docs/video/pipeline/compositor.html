@@ -1,0 +1,277 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=block" rel="stylesheet">
+<style>
+  :root { --bg: #07090d; --fg: #f2f0ea; --muted: #9a9ea6; --mars: #C45C26; --line: rgba(242,240,234,.14); }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: #000; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); font-family: 'Space Grotesk', sans-serif; color: var(--fg); }
+  .scene { position: absolute; inset: 0; overflow: hidden; }
+  .layer { position: absolute; inset: 0; }
+  .fill { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .backdrop { background: radial-gradient(1200px 700px at 70% 40%, rgba(196,92,38,.10), transparent 60%), radial-gradient(900px 600px at 15% 80%, rgba(61,158,189,.06), transparent 60%), var(--bg); }
+  .grid { position: absolute; inset: -80px; background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px); background-size: 96px 96px; opacity: .2; mask-image: radial-gradient(closest-side, #000, transparent); }
+  .persp { position: absolute; inset: 0; perspective: 2200px; }
+  .card { position: absolute; left: 100px; top: 190px; width: 1150px; height: 720px; border: 1px solid rgba(242,240,234,.18); box-shadow: 0 60px 120px rgba(0,0,0,.65); overflow: hidden; background: #000; }
+  .card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.55) 100%); }
+  .shade-l { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(7,9,13,.85) 0%, rgba(7,9,13,.35) 40%, transparent 65%); }
+  .shade-solid { position: absolute; inset: 0; background: linear-gradient(90deg, #07090d 0%, #07090d 44%, rgba(7,9,13,.6) 54%, transparent 66%); }
+  .shade-b { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(7,9,13,.88) 0%, rgba(7,9,13,0) 46%); }
+  .mono { font-family: 'DM Mono', monospace; letter-spacing: .14em; text-transform: uppercase; }
+  .mask { overflow: hidden; display: block; }
+  .mask > span { display: inline-block; }
+  .title { position: absolute; font-weight: 600; letter-spacing: -.03em; line-height: .9; white-space: nowrap; }
+  .title .ch { display: inline-block; }
+  .rule { position: absolute; height: 2px; background: var(--mars); transform-origin: left center; }
+  .kicker { position: absolute; font-size: 17px; color: var(--muted); }
+  .kicker b { color: var(--mars); font-weight: 500; }
+  .kw { position: absolute; left: 120px; display: flex; align-items: center; gap: 18px; }
+  .kw .idx { font-size: 15px; color: var(--mars); }
+  .kw .tick { width: 44px; height: 2px; background: var(--mars); transform-origin: left; }
+  .kw .txt { font-size: 24px; }
+  .kwbig { position: absolute; left: 1330px; width: 520px; }
+  .kwbig .idx { font-size: 15px; color: var(--mars); margin-bottom: 10px; }
+  .kwbig .txt { font-size: 50px; font-weight: 600; letter-spacing: -.02em; line-height: 1.02; }
+  .label { position: absolute; left: 120px; bottom: 120px; }
+  .label .idx { font-size: 16px; color: var(--mars); margin-bottom: 12px; }
+  .label .txt { font-size: 78px; font-weight: 600; letter-spacing: -.03em; line-height: 1; }
+  .flabel { position: absolute; left: 1330px; top: 380px; width: 520px; }
+  .flabel .idx { font-size: 16px; color: var(--mars); margin-bottom: 14px; }
+  .flabel .txt { font-size: 60px; font-weight: 600; letter-spacing: -.02em; line-height: 1.02; }
+  .flabel .list { margin-top: 34px; display: grid; gap: 8px; font-size: 14px; color: #5f646d; }
+  .flabel .list span.on { color: var(--fg); }
+  .portrait { position: absolute; overflow: hidden; border: 1px solid rgba(242,240,234,.18); box-shadow: 0 50px 120px rgba(0,0,0,.7); background: #111; }
+  .portrait img { width: 100%; height: 100%; object-fit: cover; }
+  .pname { position: absolute; font-size: 34px; font-weight: 600; letter-spacing: -.02em; }
+  .prole { position: absolute; font-size: 13px; color: #c9c6be; line-height: 1.6; }
+  .chip { position: absolute; z-index: 80; top: 56px; left: 120px; display: flex; align-items: center; gap: 22px; font-size: 14px; color: var(--muted); }
+  .chip b { color: var(--fg); font-weight: 500; }
+  .chip i { width: 8px; height: 8px; background: var(--mars); display: inline-block; }
+  .progress { position: absolute; z-index: 80; top: 60px; right: 120px; display: flex; gap: 6px; }
+  .progress span { width: 90px; height: 3px; background: rgba(242,240,234,.18); position: relative; overflow: hidden; }
+  .progress span i { position: absolute; inset: 0; background: var(--mars); transform-origin: left; }
+  .chapter { position: absolute; z-index: 85; inset: 0; display: flex; flex-direction: column; justify-content: center; padding-left: 120px; background: rgba(7,9,13,.95); pointer-events: none; }
+  .chapter .n { font-size: 18px; color: var(--mars); margin-bottom: 18px; }
+  .chapter .w { font-size: 190px; font-weight: 700; letter-spacing: -.04em; line-height: .9; }
+  .chapter .s { margin-top: 26px; font-size: 18px; color: #c9c6be; }
+  .grain { position: absolute; inset: -64px; pointer-events: none; opacity: .06; mix-blend-mode: overlay; z-index: 90; }
+  .black { position: absolute; inset: 0; background: #000; pointer-events: none; z-index: 99; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script>
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const eio = (x) => (x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+const eout = (x) => 1 - Math.pow(1 - x, 4);
+const lerp = (a, b, x) => a + (b - a) * x;
+const el = (tag, cls, parent, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; parent?.appendChild(e); return e; };
+const rise = (inner, t, a, d = 0.9) => { inner.style.transform = `translateY(${(1 - eout(prog(t, a, a + d))) * 110}%)`; };
+let TL, stage, scenes = [], grain, black, pending = [], chip, chipText, bars = [], chapterCard;
+
+function maskLine(parent, cls, text, styles = {}) { const wrap = el('div', `mask ${cls}`, parent); Object.assign(wrap.style, styles); return { wrap, inner: el('span', '', wrap, text) }; }
+function chars(parent, text, styles) { const t = el('div', 'title', parent); Object.assign(t.style, styles || {}); return [...text].map((c) => el('span', 'ch', t, c === ' ' ? '&nbsp;' : c)); }
+function setFrame(img, clip, localT) {
+  const meta = TL.clips[clip]; if (!meta) return;
+  const k = clamp(Math.floor(localT * 30), 0, meta.frames - 1);
+  const src = `clips/${clip}/f_${String(k).padStart(5, '0')}.jpg`;
+  if (img.dataset.src !== src) { img.dataset.src = src; img.src = src; pending.push(img.decode().catch(() => {})); }
+}
+/** Plays scene clips back to back with 0.7 s crossfades; each clip is time-stretched to its slot. */
+function playClips(imgs, s, t, kb) {
+  const seg = s.dur / s.clips.length;
+  s.clips.forEach((clip, j) => {
+    const a = s.start + j * seg, local = t - a, img = imgs[j];
+    const vis = j === 0 ? 1 : eio(prog(t, a - 0.35, a + 0.35));
+    img.style.display = t >= a - 0.4 && t <= a + seg + 0.4 ? 'block' : 'none';
+    img.style.opacity = String(vis);
+    setFrame(img, clip, Math.max(0, local + 0.35) * (s.speeds[j] ?? 1));
+    const x = clamp(local / seg);
+    // Landing-page footage carries its own MARS EXPLORER heading; zoom toward the planet so titles never double up.
+    const hero = clip === 'hero';
+    img.style.transformOrigin = hero ? '72% 50%' : '60% 50%';
+    img.style.transform = hero ? `scale(${lerp(1.18, 1.28, eio(x))})` : kb ? `scale(${lerp(1.06, 1.14, eio(x))}) translateX(${(j % 2 ? 1 : -1) * lerp(-10, 10, x)}px)` : `scale(${lerp(1, 1.05, eio(x))})`;
+  });
+}
+function buildKeywords(root, words, big) {
+  return words.map((w, i) => {
+    if (big) { const box = el('div', 'kwbig', root); box.style.top = `${330 + i * 150}px`; return { big, box, idx: maskLine(box, 'idx mono', String(i + 1).padStart(2, '0')), txt: maskLine(box, 'txt', w) }; }
+    const box = el('div', 'kw', root); box.style.bottom = `${130 + (words.length - 1 - i) * 58}px`;
+    return { big, box, idx: el('span', 'idx mono', box, String(i + 1).padStart(2, '0')), tick: el('span', 'tick', box), txt: maskLine(box, 'txt mono', w) };
+  });
+}
+function animKeywords(list, t, cues, end) {
+  list.forEach((k, i) => {
+    const a = cues[i], p = eout(prog(t, a, a + 0.9)), out = prog(t, end - 0.8, end - 0.2);
+    if (k.big) { rise(k.idx.inner, t, a); rise(k.txt.inner, t, a + 0.12); }
+    else { k.tick.style.transform = `scaleX(${p})`; k.idx.style.opacity = String(p); rise(k.txt.inner, t, a + 0.15, 0.85); }
+    k.box.style.opacity = String(1 - out);
+  });
+}
+
+function buildScene(s) {
+  const root = el('div', 'scene', stage); const R = { root, s };
+  if (s.kind === 'title' || s.kind === 'full' || s.kind === 'end') {
+    const L = el('div', 'layer', root); R.imgs = s.clips.map(() => el('img', 'fill', L));
+    el('div', s.kind === 'full' ? 'shade-l' : 'shade-solid', root); el('div', 'shade-b', root);
+  }
+  if (s.kind === 'framed' || s.kind === 'team') { const b = el('div', 'layer backdrop', root); R.grid = el('div', 'grid', b); }
+  if (s.kind === 'framed') {
+    const p = el('div', 'persp', root); R.card = el('div', 'card', p);
+    R.imgs = s.clips.map(() => el('img', '', R.card));
+  }
+  if (s.kind === 'title') {
+    R.kick = maskLine(root, 'kicker mono', `<b>●</b>&nbsp; ${s.kicker}`, { left: '120px', top: '420px' });
+    R.t1 = chars(root, 'MARS', { left: '112px', top: '470px', fontSize: '200px' });
+    R.t2 = chars(root, 'EXPLORER', { left: '112px', top: '650px', fontSize: '200px', color: 'transparent', webkitTextStroke: '2px #f2f0ea' });
+    R.rule = el('div', 'rule', root); Object.assign(R.rule.style, { left: '120px', top: '875px', width: '560px' });
+    R.sub = maskLine(root, 'kicker mono', 'BY <b>BINARY EXPLORERS</b> · A SOURCE-GROUNDED MARSWALK CONSOLE', { left: '120px', top: '900px' });
+  }
+  if (s.kind === 'team') {
+    R.cards = TL.team.map((m, j) => {
+      const x = 170 + j * 540;
+      const c = el('div', 'portrait', root); Object.assign(c.style, { left: `${x}px`, top: '170px', width: '470px', height: '560px' });
+      const img = el('img', '', c); img.src = `photos/${m.image}`; img.style.objectPosition = m.focus;
+      const name = maskLine(root, 'pname', m.name, { left: `${x}px`, top: '752px' });
+      const role = maskLine(root, 'prole mono', m.role, { left: `${x}px`, top: '806px', width: '470px' });
+      return { c, img, name, role };
+    });
+    R.title = chars(root, 'BINARY EXPLORERS', { left: '170px', top: '880px', fontSize: '96px' });
+  }
+  if (s.kind === 'end') {
+    R.title = chars(root, 'MARS EXPLORER', { left: '120px', top: '300px', fontSize: '168px' });
+    R.rule = el('div', 'rule', root); Object.assign(R.rule.style, { left: '120px', top: '492px', width: '760px' });
+    R.by = maskLine(root, '', 'by <b style="color:#C45C26;font-weight:600">Binary Explorers</b>', { position: 'absolute', left: '120px', top: '520px', fontSize: '48px', fontWeight: '500' });
+    R.names = TL.team.map((m, j) => maskLine(root, 'kicker mono', `<span style="color:#f2f0ea">${m.name}</span><br>${m.role}`, { left: `${120 + j * 560}px`, top: '690px', lineHeight: '1.8', width: '520px' }));
+    R.foot = maskLine(root, 'kicker mono', 'REAL NASA DATA · HONEST LIMITS · ANSWERS YOU CAN TRACE', { left: '120px', top: '900px' });
+  }
+  if (s.keywords?.length) R.kws = buildKeywords(root, s.keywords, s.kind === 'framed');
+  if (s.labels?.length && s.kind === 'full') R.labels = s.labels.map((w, i) => { const box = el('div', 'label', root); return { box, idx: maskLine(box, 'idx mono', `${String(i + 1).padStart(2, '0')} / ${String(s.labels.length).padStart(2, '0')}`), txt: maskLine(box, 'txt', w) }; });
+  if (s.labels?.length && s.kind === 'framed') {
+    const box = el('div', 'flabel', root);
+    R.fl = { idx: maskLine(box, 'idx mono', ''), txt: maskLine(box, 'txt', '') };
+    const list = el('div', 'list mono', box); R.flList = s.labels.map((w) => el('span', '', list, w));
+  }
+  el('div', 'vignette', root);
+  return R;
+}
+
+function transition(R, t) {
+  const s = R.s, first = s.index === 0, last = s.index === TL.scenes.length - 1;
+  const pin = first ? 1 : eio(prog(t, s.start - 0.4, s.start + 0.4)), pout = last ? 0 : eio(prog(t, s.end - 0.4, s.end + 0.4));
+  const visible = t >= s.start - 0.4 && t <= s.end + 0.4;
+  R.root.style.display = visible ? 'block' : 'none';
+  if (!visible) return false;
+  R.root.style.opacity = String(Math.min(pin, 1 - pout));
+  R.root.style.transform = `scale(${lerp(1.03, 1, pin) * (1 - pout * 0.02)})`;
+  R.root.style.filter = pin < 1 ? `blur(${(1 - pin) * 6}px)` : pout > 0 ? `blur(${pout * 5}px)` : 'none';
+  R.root.style.zIndex = String(10 + s.index);
+  return true;
+}
+
+function render(R, t) {
+  if (!transition(R, t)) return;
+  const s = R.s, lt = t - s.start, x = clamp(lt / s.dur);
+  if (s.kind === 'full' || s.kind === 'title' || s.kind === 'end') playClips(R.imgs, s, t, true);
+  if (s.kind === 'title') {
+    R.imgs[0].style.opacity = String(eio(prog(t, 0.2, 2.2)));
+    const c = s.cues.title;
+    rise(R.kick.inner, t, c - 0.8, 0.8);
+    [...R.t1, ...R.t2].forEach((ch, j) => { const p = eout(prog(t, c + j * 0.05, c + j * 0.05 + 0.9)); ch.style.transform = `translateY(${(1 - p) * 60}px)`; ch.style.opacity = String(p); });
+    R.rule.style.transform = `scaleX(${eout(prog(t, c + 0.8, c + 1.8))})`;
+    rise(R.sub.inner, t, c + 1.1);
+  }
+  if (s.kind === 'end') {
+    R.imgs.forEach((im) => { im.style.opacity = String(0.3 * Number(im.style.opacity || 1)); });
+    R.title.forEach((ch, j) => { const p = eout(prog(lt, 0.3 + j * 0.04, 1.2 + j * 0.04)); ch.style.transform = `translateY(${(1 - p) * 60}px)`; ch.style.opacity = String(p); });
+    R.rule.style.transform = `scaleX(${eout(prog(lt, 1.1, 2.1))})`;
+    rise(R.by.inner, lt, 1.4);
+    R.names.forEach((n, j) => rise(n.inner, lt, 2.2 + j * 0.25));
+    rise(R.foot.inner, lt, 3.2);
+  }
+  if (s.kind === 'framed') {
+    R.grid.style.transform = `translate(${-lt * 6}px, ${-lt * 3}px)`;
+    const p = eout(prog(lt, 0, 1.4));
+    R.card.style.transform = `rotateY(${lerp(13, 4, eio(x))}deg) rotateX(${lerp(4, 1.5, eio(x))}deg) translateZ(${lerp(-120, 0, p)}px) scale(${lerp(0.98, 1.03, eio(x))})`;
+    playClips(R.imgs, s, t, false);
+  }
+  if (s.kind === 'team') {
+    R.grid.style.transform = `translate(${-lt * 5}px, 0)`;
+    R.cards.forEach((c, j) => {
+      const a = s.cues.members[j];
+      const p = eout(prog(t, a - 0.5, a + 0.6));
+      c.c.style.transform = `translateY(${(1 - p) * 70}px)`; c.c.style.opacity = String(p);
+      c.img.style.transform = `scale(${lerp(1.12, 1.03, eio(x))})`;
+      // Dim the cards that are not being introduced right now.
+      const next = s.cues.members[j + 1] ?? s.end - 2.4;
+      const focusOn = t >= a - 0.3 && t < next - 0.3;
+      c.c.style.filter = `grayscale(${focusOn || t >= s.end - 2.4 ? 0 : 0.85}) brightness(${focusOn || t >= s.end - 2.4 ? 1 : 0.6})`;
+      rise(c.name.inner, t, a); rise(c.role.inner, t, a + 0.2);
+    });
+    R.title.forEach((ch, j) => { const p = eout(prog(t, s.cues.title + j * 0.03, s.cues.title + 0.8 + j * 0.03)); ch.style.transform = `translateY(${(1 - p) * 50}px)`; ch.style.opacity = String(p); });
+  }
+  if (R.kws) animKeywords(R.kws, t, s.cues.keywords, s.end);
+  if (R.labels) {
+    const seg = s.dur / s.labels.length;
+    R.labels.forEach((L, j) => { const a = s.start + j * seg; const on = t >= a - 0.1 && t < a + seg - 0.1; L.box.style.display = on ? 'block' : 'none'; if (on) { rise(L.idx.inner, t, a + 0.15, 0.6); rise(L.txt.inner, t, a + 0.25, 0.7); } });
+  }
+  if (R.fl) {
+    const seg = s.dur / s.labels.length, j = clamp(Math.floor((t - s.start) / seg), 0, s.labels.length - 1), a = s.start + j * seg;
+    R.fl.idx.inner.textContent = `${String(j + 1).padStart(2, '0')} / ${String(s.labels.length).padStart(2, '0')}`;
+    R.fl.txt.inner.textContent = s.labels[j];
+    rise(R.fl.idx.inner, t, a + 0.1, 0.5); rise(R.fl.txt.inner, t, a + 0.15, 0.6);
+    R.flList.forEach((e, k) => e.classList.toggle('on', k === j));
+  }
+}
+
+function renderChrome(t) {
+  const s = TL.scenes.find((x) => t >= x.start && t < x.end) ?? TL.scenes.at(-1);
+  const ch = TL.chapters[s.chapter];
+  chipText.innerHTML = `<i></i><b>${ch.label}</b>${ch.sub}`;
+  chip.style.opacity = String(prog(t, 2.0, 3.0) * (1 - prog(t, TL.duration - 3.5, TL.duration - 2.8)));
+  TL.chapterOrder.forEach((k, i) => { const c = TL.chapters[k]; bars[i].style.transform = `scaleX(${prog(t, c.start, c.end)})`; });
+  // Chapter title card for 1.6 s at the start of WHY, WHAT and HOW (WHO opens on the hook title).
+  const card = TL.chapterOrder.slice(1).map((k) => TL.chapters[k]).find((c) => t >= c.start - 0.3 && t < c.start + 1.6);
+  if (card) {
+    const p = eio(prog(t, card.start - 0.3, card.start + 0.2)) * (1 - eio(prog(t, card.start + 1.2, card.start + 1.6)));
+    chapterCard.style.display = 'flex'; chapterCard.style.opacity = String(p);
+    chapterCard.querySelector('.n').textContent = card.label.split(' — ')[0];
+    chapterCard.querySelector('.w').textContent = card.label.split(' — ')[1];
+    chapterCard.querySelector('.s').textContent = card.sub;
+  } else chapterCard.style.display = 'none';
+}
+
+window.setup = async (timeline) => {
+  TL = timeline; stage = document.getElementById('stage');
+  scenes = TL.scenes.map(buildScene);
+  chip = el('div', 'chip mono', stage); chipText = chip;
+  const pr = el('div', 'progress', stage); bars = TL.chapterOrder.map(() => el('i', '', el('span', '', pr)));
+  chapterCard = el('div', 'chapter', stage, '<div class="n mono"></div><div class="w"></div><div class="s mono"></div>');
+  const cv = document.createElement('canvas'); cv.width = cv.height = 256; const g = cv.getContext('2d'); const d = g.createImageData(256, 256);
+  let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < d.data.length; i += 4) { const v = rnd() * 255; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 255; }
+  g.putImageData(d, 0, 0);
+  grain = el('div', 'grain', stage); grain.style.backgroundImage = `url(${cv.toDataURL()})`;
+  black = el('div', 'black', stage);
+  await document.fonts.ready;
+  await Promise.all([...document.images].map((i) => i.decode().catch(() => {})));
+  return true;
+};
+
+window.renderFrame = async (t) => {
+  pending = [];
+  scenes.forEach((R) => render(R, t));
+  renderChrome(t);
+  const f = Math.round(t * 30);
+  grain.style.transform = `translate(${(f * 37) % 64 - 32}px, ${(f * 53) % 64 - 32}px)`;
+  black.style.opacity = String(Math.max(1 - prog(t, 0, 1.0), prog(t, TL.duration - 1.4, TL.duration - 0.05)));
+  await Promise.all(pending);
+  return true;
+};
+</script>
+</body>
+</html>

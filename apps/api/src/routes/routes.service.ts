@@ -1,12 +1,13 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import type { RouteAnalysis, RouteWaypoint, SuggestedRoute } from '@mars-explorer/shared';
 import { RegionsService } from '../regions/regions.service';
+import { OpenDataService } from '../opendata/opendata.service';
 import { DtmService } from './dtm.service';
 import { haversineKm, pointSegmentDistanceKm } from './geo/haversine';
 
 @Injectable()
 export class RoutesService {
-  constructor(private readonly dtm: DtmService, private readonly regions: RegionsService) {}
+  constructor(private readonly dtm: DtmService, private readonly regions: RegionsService, private readonly openData: OpenDataService) {}
   async analyze(waypoints: RouteWaypoint[]): Promise<RouteAnalysis> {
     if (waypoints.length < 2 || waypoints.length > 100) throw new BadRequestException('A route needs 2–100 waypoints.');
     if (waypoints.some((p)=>!Number.isFinite(p.lat)||!Number.isFinite(p.lon)||p.lat < -90||p.lat > 90||p.lon < -180||p.lon > 180)) throw new BadRequestException('Invalid Mars coordinate.');
@@ -30,7 +31,10 @@ export class RoutesService {
     const endElevation=this.dtm.sample(waypoints.at(-1)!);
     const region=await this.regions.getJezero();
     const nearbyPois=region.pois.filter((poi)=>waypoints.slice(1).some((point,i)=>pointSegmentDistanceKm(poi,waypoints[i],point)<=0.5));
-    return {distanceKm:Number(distanceKm.toFixed(2)),riskScore:total,riskNotes,nearbyPois,terrainMethod:method,riskIndex:{total,components,method,certifying:false},terrainSamples:samples,dtmCoverage:Number(coverage.toFixed(3)),elevationDeltaM:method==='dtm-sample' && startElevation && endElevation ? Number((endElevation.elevationM-startElevation.elevationM).toFixed(1)):undefined};
+    // NASA Open Data context is additive: a missing snapshot must never break route analysis.
+    const openData=await this.openData.routeContext(waypoints).catch(()=>undefined);
+    if (openData?.hiriseDtms.length) riskNotes.push(`HiRISE DTM ${openData.hiriseDtms[0].id} (${openData.hiriseDtms[0].scaleM.toFixed(0)} m posts) covers ${Math.round(openData.hiriseDtms[0].coveredShare*100)}% of this route; finer elevation exists but is not sampled here.`);
+    return {openData,distanceKm:Number(distanceKm.toFixed(2)),riskScore:total,riskNotes,nearbyPois,terrainMethod:method,riskIndex:{total,components,method,certifying:false},terrainSamples:samples,dtmCoverage:Number(coverage.toFixed(3)),elevationDeltaM:method==='dtm-sample' && startElevation && endElevation ? Number((endElevation.elevationM-startElevation.elevationM).toFixed(1)):undefined};
   }
   dtmGrid() { return this.dtm.publicGrid(); }
 

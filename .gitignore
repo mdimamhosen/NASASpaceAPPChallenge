@@ -22,3 +22,13 @@ docs/video/*.m4a
 data/rag/index.json
 docs/video/team/*.mp4
 config.bat
+
+# video pipeline outputs (regenerate with docs/video/pipeline)
+docs/video/pipeline/vo/
+docs/video/pipeline/clips/
+docs/video/pipeline/frames/
+docs/video/pipeline/audio/
+docs/video/pipeline/photos/
+docs/video/pipeline/chrome-*/
+docs/video/pipeline/timeline.json
+docs/video/pipeline/*.mp4

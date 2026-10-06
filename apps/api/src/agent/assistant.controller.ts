@@ -2,6 +2,7 @@ import { Body, Controller, Get, Post } from '@nestjs/common';
 import { ArrayMaxSize, IsArray, IsBoolean, IsNumber, IsOptional, IsString, MinLength, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import type { RouteWaypoint } from '@mars-explorer/shared';
+import { Throttle } from '@nestjs/throttler';
 import { AssistantService } from './assistant.service';
 
 class WaypointInput implements RouteWaypoint {
@@ -40,6 +41,7 @@ export class AssistantController {
   @Get('traces')
   traces() { return this.assistant.getTrace(); }
 
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Post('ask')
   ask(@Body() body: AskDto) {
     return this.assistant.ask(body.question, body.waypoints, body.useCloudModels, body.compareModels);

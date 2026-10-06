@@ -1,240 +1,277 @@
 1
-00:00:02,200 --> 00:00:06,999
-Planning a walk on Mars should start with
-evidence, not guesswork.
+00:00:02,200 --> 00:00:03,147
+Jezero Crater:
 
 2
-00:00:07,049 --> 00:00:08,688
-This is Mars Explorer —
+00:00:03,197 --> 00:00:06,600
+an ancient lake bed on Mars, where NASA's
+Perseverance rover is searching for signs of
 
 3
-00:00:08,738 --> 00:00:12,802
-a mission console built entirely on published
-NASA data.
+00:00:06,650 --> 00:00:10,053
+past life.
 
 4
-00:00:14,697 --> 00:00:19,955
-Imam Hosen, our team lead, architected and
-built the entire system —
+00:00:10,103 --> 00:00:12,973
+Now imagine planning your own walk there.
 
 5
-00:00:20,005 --> 00:00:24,092
-the console, the retrieval engine, and the AI
-agents.
+00:00:13,701 --> 00:00:15,454
+We're Binary Explorers.
 
 6
-00:00:24,942 --> 00:00:31,072
-Ahad, our researcher and NASA data analyst,
-sourced and verified every dataset.
+00:00:15,504 --> 00:00:20,156
+Imam Hosen, our team lead, architected and
+built the system.
 
 7
-00:00:31,922 --> 00:00:36,234
-And Biswadev, our 3D and UI designer and QA
-tester, shaped the visuals and tested every
+00:00:20,206 --> 00:00:24,232
+Ahad, our NASA data analyst, verified every
+dataset.
 
 8
-00:00:36,284 --> 00:00:40,597
-feature.
+00:00:24,282 --> 00:00:31,207
+And Biswadev, our 3D designer and QA tester,
+shaped the visuals and tested every feature.
 
 9
-00:00:41,947 --> 00:00:44,341
-The home page opens on real ground —
+00:00:31,935 --> 00:00:34,985
+We love Mars, and we kept hitting the same
+wall:
 
 10
-00:00:44,391 --> 00:00:47,803
-HiRISE imagery draped over NASA's elevation
-model —
+00:00:35,035 --> 00:00:39,633
+the data is public, but the tools rarely show
+where an answer came from.
 
 11
-00:00:47,853 --> 00:00:51,266
-and lets you ask the mission a question right
-away.
+00:00:39,683 --> 00:00:41,764
+So we built one that always does.
 
 12
-00:00:53,661 --> 00:00:58,800
-In the console, switch between NASA Mars Trek
-layers, then scrub through the sols to watch
+00:00:43,492 --> 00:00:47,457
+NASA publishes thirteen hundred Mars datasets,
+elevation down to one metre, and the rover's
 
 13
-00:00:58,850 --> 00:01:03,990
-Perseverance's published path unfold across
-Jezero.
+00:00:47,507 --> 00:00:51,472
+path sol by sol.
 
 14
-00:01:06,385 --> 00:01:09,795
-Load a real route, and the system samples the
-terrain.
+00:00:51,522 --> 00:00:52,290
+All open...
 
 15
-00:01:09,845 --> 00:01:13,575
-The Traverse Risk Index lists every component
-and its source, and the profile shows
+00:00:52,340 --> 00:00:53,331
+but scattered.
 
 16
-00:01:13,625 --> 00:01:17,355
-elevation and slope along the way.
+00:00:54,059 --> 00:00:55,026
+Who feels that?
 
 17
-00:01:19,749 --> 00:01:25,505
-Pick two points, and an A* search suggests a
-slope-aware corridor —
+00:00:55,076 --> 00:00:57,671
+A student asking why Jezero was chosen.
 
 18
-00:01:25,555 --> 00:01:28,104
-always labeled non-certifying.
+00:00:57,721 --> 00:01:00,654
+A teacher who wants a real mission in class.
 
 19
-00:01:30,499 --> 00:01:35,610
-Switch to 3D, and fly the route across real
-HiRISE imagery.
+00:01:00,704 --> 00:01:03,434
+One day, the first crews to walk on Mars.
 
 20
-00:01:38,005 --> 00:01:40,860
-The assistant answers with cited passages.
+00:01:03,484 --> 00:01:07,570
+And when a chatbot invents a coordinate, no
+one can check it.
 
 21
-00:01:40,910 --> 00:01:44,836
-A command palette puts every action one
-keystroke away, and a single click turns the
+00:01:08,299 --> 00:01:11,244
+Signals take up to twenty-two minutes between
+Earth and Mars, so crews must plan on their
 
 22
-00:01:44,886 --> 00:01:48,813
-route into a mission briefing.
+00:01:11,294 --> 00:01:14,239
+own.
 
 23
-00:01:51,208 --> 00:01:54,340
-The research console hosts the mission agent.
+00:01:14,289 --> 00:01:15,259
+The opportunity:
 
 24
-00:01:54,390 --> 00:01:57,910
-A fast router picks tools in one pass, they
-run in parallel, and the answer streams in,
+00:01:15,309 --> 00:01:19,082
+NASA's evidence, and its limits, in one place
+you can trace.
 
 25
-00:01:57,960 --> 00:02:01,481
-step by step.
+00:01:20,811 --> 00:01:21,711
+Our big idea:
 
 26
-00:02:03,876 --> 00:02:09,329
-Ask the corpus, and every sentence comes back
-with a clickable citation.
+00:01:21,761 --> 00:01:26,718
+Mars Explorer, a mission console where every
+number is tied to a NASA source, starting with
 
 27
-00:02:09,379 --> 00:02:12,920
-The live panel previews retrieval as you type
-—
+00:01:26,768 --> 00:01:31,725
+real HiRISE ground on NASA's elevation model.
 
 28
-00:02:12,970 --> 00:02:15,137
-keyword, semantic, or hybrid.
+00:01:32,453 --> 00:01:36,032
+In the console, switch NASA Mars Trek layers,
+and scrub sol by sol along Perseverance's
 
 29
-00:02:17,532 --> 00:02:21,342
-Add a page or a document, and it's indexed in
-seconds.
+00:01:36,082 --> 00:01:39,661
+published path.
 
 30
-00:02:21,392 --> 00:02:27,060
-The quality table and the 3D embedding space
-show exactly how evidence is found.
+00:01:40,389 --> 00:01:44,799
+Official feature names, HiRISE terrain-model
+footprints, and every NASA landing site come
 
 31
-00:02:29,455 --> 00:02:31,255
-Earth gets its own lane.
+00:01:44,849 --> 00:01:49,259
+straight from data dot NASA dot gov.
 
 32
-00:02:31,305 --> 00:02:36,805
-NASA's EONET feed shows live wildfires and
-storms with full provenance —
+00:01:49,987 --> 00:01:53,011
+Load a route, and the system samples the
+terrain:
 
 33
-00:02:36,855 --> 00:02:39,812
-fetch time, content hash, and sources —
+00:01:53,061 --> 00:01:57,057
+a Traverse Risk Index with every source, an
+elevation and slope profile, and the named
 
 34
-00:02:39,862 --> 00:02:41,662
-on a separate Earth map.
+00:01:57,107 --> 00:02:01,104
+features and terrain models along the way.
 
 35
-00:02:44,057 --> 00:02:46,644
-Every page is a 3D data story.
+00:02:01,832 --> 00:02:06,429
+Pick two points for a slope-aware A* corridor,
+always non-certifying, then fly it in 3D over
 
 36
-00:02:46,694 --> 00:02:49,193
-Earth and Mars at true scale.
+00:02:06,479 --> 00:02:11,076
+HiRISE imagery.
 
 37
-00:02:49,243 --> 00:02:52,094
-Jezero's elevation, cell by cell.
+00:02:11,804 --> 00:02:15,852
+The assistant cites its passages, a command
+palette puts every action one keystroke away,
 
 38
-00:02:52,144 --> 00:02:55,610
-Perseverance's traverse, stacked by sol.
+00:02:15,902 --> 00:02:19,951
+and one click makes a mission briefing.
 
 39
-00:02:58,005 --> 00:03:02,274
-Where Earth and Mars are on any day, with the
-light delay.
+00:02:20,679 --> 00:02:24,561
+The mission agent routes each goal to the
+right tools, runs them in parallel, and
 
 40
-00:03:02,324 --> 00:03:04,657
-Every NASA landing on one globe.
+00:02:24,611 --> 00:02:28,493
+streams a grounded answer, step by step.
 
 41
-00:03:04,707 --> 00:03:07,636
-And the source stack behind every claim.
+00:02:29,221 --> 00:02:33,459
+Ask the corpus, and every sentence carries a
+clickable citation.
 
 42
-00:03:10,031 --> 00:03:13,647
-Perseverance's climb, in published elevations.
+00:02:33,509 --> 00:02:37,110
+Retrieval previews live, new documents index
+in seconds, and the embedding space shows how
 
 43
-00:03:13,697 --> 00:03:15,719
-Slopes in measured relief.
+00:02:37,160 --> 00:02:40,761
+evidence is found.
 
 44
-00:03:15,769 --> 00:03:22,892
-A route raised into an elevation curtain, a
-server PDF, and a mission card ready to share.
+00:02:41,489 --> 00:02:45,131
+The Open Data page searches every Mars dataset
+NASA lists, live or offline, with a data shelf
 
 45
-00:03:25,287 --> 00:03:27,483
-Traces record every assistant run.
+00:02:45,181 --> 00:02:48,823
+for each mission.
 
 46
-00:03:27,533 --> 00:03:31,216
-The pipeline page shows what the system holds,
-and the architecture view animates how NASA
+00:02:49,551 --> 00:02:51,242
+Earth gets its own lane:
 
 47
-00:03:31,266 --> 00:03:34,948
-data flows through it.
+00:02:51,292 --> 00:02:57,626
+live EONET wildfires and storms, with full
+provenance, never mixed into a Mars decision.
 
 48
-00:03:37,343 --> 00:03:40,181
-And for the story around the science:
+00:02:58,354 --> 00:03:01,024
+Every page tells a 3D data story:
 
 49
-00:03:40,231 --> 00:03:46,657
-a NASA image gallery, model comparisons, Earth
-analog questions, and a guided tour.
+00:03:01,074 --> 00:03:07,412
+Earth and Mars at true scale, Jezero cell by
+cell, the traverse by sol, every NASA landing,
 
 50
-00:03:49,052 --> 00:03:50,425
-Real NASA data.
+00:03:07,462 --> 00:03:13,800
+slopes in relief, and a route raised into an
+elevation curtain.
 
 51
-00:03:50,475 --> 00:03:51,753
-Honest limits.
+00:03:14,528 --> 00:03:15,261
+Behind it:
 
 52
-00:03:51,803 --> 00:03:53,840
-Answers you can trace.
+00:03:15,311 --> 00:03:21,012
+run traces, a live architecture view, a source
+register, a gallery, model comparisons, Earth
 
 53
-00:03:53,890 --> 00:03:55,263
-Mars Explorer —
+00:03:21,062 --> 00:03:26,764
+analogs, a guided story, and a shareable
+mission card.
 
 54
-00:03:55,313 --> 00:03:57,350
+00:03:28,492 --> 00:03:29,273
+What changes?
+
+55
+00:03:29,323 --> 00:03:33,366
+Planning on Mars becomes something you can
+check, classrooms get a real mission, and
+
+56
+00:03:33,416 --> 00:03:37,459
+researchers reach the right archive faster.
+
+57
+00:03:38,187 --> 00:03:42,666
+Next, we need planetary-science mentors,
+support to sample HiRISE terrain models
+
+58
+00:03:42,716 --> 00:03:47,195
+directly, and educators to pilot it with
+students.
+
+59
+00:03:47,923 --> 00:03:51,316
+One day, the first crew could rehearse their
+Marswalk right here, with NASA's evidence at
+
+60
+00:03:51,366 --> 00:03:54,759
+every step.
+
+61
+00:03:54,809 --> 00:03:55,850
+Mars Explorer...
+
+62
+00:03:55,900 --> 00:03:57,350
 from Binary Explorers.

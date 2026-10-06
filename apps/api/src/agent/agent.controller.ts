@@ -2,6 +2,7 @@ import { Body, Controller, Get, MessageEvent, Post, Query, Sse } from '@nestjs/c
 import { IsBoolean, IsIn, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { Observable } from 'rxjs';
+import { Throttle } from '@nestjs/throttler';
 import { MissionAgentService } from './mission-agent.service';
 
 class RunDto {
@@ -15,10 +16,12 @@ export class AgentController {
   constructor(private readonly agent: MissionAgentService) {}
 
   /** Whole run in one response. */
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Post('run')
   run(@Body() body: RunDto) { return this.agent.run(body.goal, { cloud: body.cloud, mode: body.mode }); }
 
   /** Server-sent events: `step` per plan/tool/answer, `token` deltas of the streamed answer, `reset`, then `done`. */
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @Sse('stream')
   stream(@Query() query: RunDto): Observable<MessageEvent> {
     return new Observable<MessageEvent>((subscriber) => {

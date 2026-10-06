@@ -35,15 +35,16 @@ Built by **Binary Explorers** for the NASA Space Apps Challenge.
 8. [RAG: the cited assistant](#rag-the-cited-assistant)
 9. [Agentic AI: the mission agent](#agentic-ai-the-mission-agent)
 10. [Earth lane: NASA EONET](#earth-lane-nasa-eonet)
-11. [Pages](#pages)
-12. [API reference](#api-reference)
-13. [Getting started](#getting-started)
-14. [Configuration](#configuration)
-15. [Checks and evaluation](#checks-and-evaluation)
-16. [Deployment](#deployment)
-17. [How we built it](#how-we-built-it)
-18. [Honest limits](#honest-limits)
-19. [Team](#team)
+11. [NASA Open Data (data.nasa.gov)](#nasa-open-data-datanasagov)
+12. [Pages](#pages)
+13. [API reference](#api-reference)
+14. [Getting started](#getting-started)
+15. [Configuration](#configuration)
+16. [Checks and evaluation](#checks-and-evaluation)
+17. [Deployment](#deployment)
+18. [How we built it](#how-we-built-it)
+19. [Honest limits](#honest-limits)
+20. [Team](#team)
 
 ---
 
@@ -162,6 +163,7 @@ flowchart TB
         EONET["EONET v3 API<br/>Earth events"]
         JPL["JPL SSD · NSSDCA<br/>orbits · fact sheets"]
         PAGES["NASA mission pages<br/>science.nasa.gov"]
+        OPEN["data.nasa.gov · tag mars<br/>CKAN catalog · HiRISE DTM index<br/>IAU nomenclature"]
     end
 
     subgraph DATA["data/ (versioned, checksummed)"]
@@ -170,6 +172,7 @@ flowchart TB
         CORPUS["corpus/<br/>22 NASA docs"]
         RAGIDX["rag/index.json<br/>BM25 + embeddings"]
         ECACHE["eonet/ cache"]
+        ODATA["opendata/<br/>catalog · DTM footprints · IAU names"]
     end
 
     subgraph API["apps/api · NestJS (port 4000)"]
@@ -180,6 +183,7 @@ flowchart TB
         EON[eonet]
         RAG["rag<br/>retrieve · answer · ingest"]
         AGENT["agent<br/>router · tools · traces"]
+        OPENMOD["opendata<br/>catalog search · map layers · route context"]
         BRIEF["briefings<br/>JSON · PDF"]
         OPS["ops (simulated WS)"]
     end
@@ -205,6 +209,10 @@ flowchart TB
     PAGES -->|ingest:corpus| CORPUS
     EONET --> EON
     JPL --> SHARED
+    OPEN -->|refresh:opendata| ODATA --> OPENMOD
+    OPEN -.live search.-> OPENMOD
+    OPENMOD --> ROUTES
+    OPENMOD --> EXP
 
     PERS --> PLACES
     DTM --> ROUTES
@@ -212,7 +220,7 @@ flowchart TB
     EON <--> ECACHE
 
     RAG --> GEM -.fails.-> CLA -.fails.-> DET
-    AGENT --> RAG & ROUTES & PLACES & REGIONS & EON & BRIEF
+    AGENT --> RAG & ROUTES & PLACES & REGIONS & EON & BRIEF & OPENMOD
 
     LAYERS & PLACES & REGIONS & ROUTES --> EXP
     ROUTES --> R3D
@@ -237,6 +245,7 @@ flowchart TB
 │   │       ├── eonet/       EONET v3 client + durable cache + provenance
 │   │       ├── rag/         chunk · embed · BM25 · RRF · MMR · answer · ingest (SSRF-guarded)
 │   │       ├── agent/       assistant, mission agent, Jev/rules router, tools, traces
+│   │       ├── opendata/    data.nasa.gov catalog search, IAU names, HiRISE DTM footprints, route context
 │   │       ├── briefings/   deterministic briefing + PDF
 │   │       ├── ops/         explicitly simulated WebSocket feed
 │   │       ├── config/      env validation
@@ -247,6 +256,7 @@ flowchart TB
 ├── data/
 │   ├── perseverance/        PLACES CSV + SOURCE.json (URL, retrieval time, sha256)
 │   ├── corpus/              NASA documents for RAG
+│   ├── opendata/            data.nasa.gov snapshots + SOURCE.json (URL, retrieval time, sha256)
 │   ├── jezero/              DEMO seeds (NOT NASA PRODUCT, off by default)
 │   ├── eonet/ rag/ traces/  caches and indexes (gitignored, rebuilt)
 │   └── layers.json          Trek layer catalog
@@ -286,6 +296,9 @@ sequenceDiagram
 | NASA Mars Trek WMTS | [Trek API](https://trek.nasa.gov/tiles/apidoc/trekAPI.html?body=mars) | MOLA, Viking, MOLA/HRSC map layers | Raster color and hillshade are context, not measurements. |
 | Mars Trek Jezero orthomosaics | [trek.nasa.gov/mars](https://trek.nasa.gov/mars/) | HiRISE 25 cm / CTX 6 m texture for 3D views | Resampled to ~10 m/px with vertical exaggeration. Visual only. |
 | NASA EONET v3 | [API](https://eonet.gsfc.nasa.gov/api/v3) · [docs](https://eonet.gsfc.nasa.gov/docs/v3) | Earth events map, provenance, Earth agent tool | Earth geometry never enters the Mars map or Risk Index. |
+| **data.nasa.gov** Mars catalog (tag `mars`) | [data.nasa.gov/dataset/?tags=mars](https://data.nasa.gov/dataset/?tags=mars) | Open Data page, landing-site data shelves, agent tool `nasa_open_data` | 1,321 catalog records, mostly PDS archive pointers. Mission tags are inferred. |
+| **data.nasa.gov** MRO HiRISE DTM V1.0 | [dataset](https://data.nasa.gov/dataset/mro-mars-high-resolution-imaging-science-experiment-dtm-v1-0) · [PDS index](https://hirise-pds.lpl.arizona.edu/PDS/INDEX/DTMCUMINDEX.TAB) | 1,315 DTM footprints on the Mars map, route DTM coverage | Shows where 1–2 m DTMs exist; their elevations are not sampled. |
+| **data.nasa.gov** Gazetteer of Planetary Nomenclature: Mars | [dataset](https://data.nasa.gov/dataset/gazetteer-of-planetary-nomenclature-mars-mola-global-images) · [IAU/USGS](https://planetarynames.wr.usgs.gov/) | 2,052 IAU feature labels on the map, named features on routes and briefings, agent tool `named_features` | Center points, not boundaries. |
 | JPL approximate planet positions | [ssd.jpl.nasa.gov](https://ssd.jpl.nasa.gov/planets/approx_pos.html) | Orbit scrubber, light delay | Approximate; not a trajectory. |
 | NSSDCA | [Fact Sheet](https://nssdc.gsfc.nasa.gov/planetary/factsheet/) · [Mars](https://nssdc.gsfc.nasa.gov/planetary/planets/marspage.html) | Earth–Mars scale, landing globe | Bundled constants. |
 | NASA mission pages | [Perseverance](https://science.nasa.gov/mission/mars-2020-perseverance/) and 20 more in [`data/corpus`](data/corpus) | RAG corpus for the cited assistant | Mission context does not validate a user-drawn route. |
@@ -320,6 +333,7 @@ sequenceDiagram
 
 ```sh
 pnpm refresh:nasa                      # re-download PLACES + DEM from NASA PDS
+pnpm refresh:opendata                  # re-snapshot data.nasa.gov catalog, HiRISE DTM index, IAU names
 python3 scripts/refresh-nasa-archives.py --skip-dem | --skip-places | --force
 ```
 
@@ -403,6 +417,8 @@ flowchart TB
         T6["earth_events<br/>(labelled EARTH / EONET)"]
         T7["orbit_geometry<br/>(JPL elements)"]
         T8[create_briefing]
+        T9["nasa_open_data<br/>(data.nasa.gov)"]
+        T10["named_features<br/>(IAU gazetteer)"]
     end
     PAR -.-> TOOLS
     LOOP -.-> TOOLS
@@ -429,6 +445,24 @@ EONET v3 is **Earth-only**, so Mars Explorer gives it its own lane:
 
 ---
 
+## NASA Open Data (data.nasa.gov)
+
+Mars Explorer uses the [NASA Open Data portal's Mars datasets](https://data.nasa.gov/dataset/?tags=mars) in five places:
+
+| Where | What it does | data.nasa.gov dataset |
+|---|---|---|
+| **Main Mars map** · `IAU feature names` layer (on by default) | Labels craters, valles and montes. Small features appear as you zoom in, and a screen-space declutter keeps labels readable. | Gazetteer of Planetary Nomenclature: Mars |
+| **Main Mars map** · `HiRISE DTM footprints` layer | Draws the outline of every HiRISE Digital Terrain Model. Click one for its stereo pair, post spacing and PDS directory. | MRO HiRISE DTM V1.0 |
+| **Main Mars map** · `Mission landing sites` layer | Shows each NASA lander with its number of catalog datasets. Click one to open its data shelf. | Mars catalog (1,321 records) |
+| **Route analysis + briefing** | Lists the IAU-named features a route crosses and the share of the route covered by each HiRISE DTM. The Evidence Cockpit, risk notes, Markdown/PDF briefing and citations all carry them. | Gazetteer + HiRISE DTM |
+| **`/opendata` page** | Searches all 1,321 records (from the snapshot or live from the data.nasa.gov CKAN API) with mission facets and provenance. | Mars catalog |
+| **Mission agent** | `nasa_open_data` finds datasets for a mission or instrument. `named_features` returns official names near a point. | Mars catalog + Gazetteer |
+| **RAG corpus** | `data/corpus/nasa-open-data-mars.md` is generated from the snapshots so the assistant can cite them. | All three |
+
+**Robust by design:** every product is snapshotted with its sha256 in `data/opendata/SOURCE.json`, so the app works offline. Live search times out after 8 s, is cached for 10 minutes, and falls back to the snapshot with a visible note. Snapshot files reload by mtime after `pnpm refresh:opendata`, and route analysis never fails because of open-data context.
+
+---
+
 ## Pages
 
 | Route | What it shows |
@@ -443,6 +477,7 @@ EONET v3 is **Earth-only**, so Mars Explorer gives it its own lane:
 | `/timeline` | JPL-element orbit scrubber with light delay |
 | `/data` | NASA landing-site globe |
 | `/science` | Source register: every product, link, retrieval date and limit |
+| `/opendata` | NASA Open Data: products used in the app, searchable data.nasa.gov Mars catalog, mission data shelves |
 | `/targets` | PLACES elevation pillars (explicit DEMO switch) |
 | `/hazards` | DEM slope field (explicit DEMO switch) |
 | `/briefing` | Route elevation curtain, briefing and server PDF |
@@ -465,6 +500,14 @@ Base URL: `http://localhost:4000`
 | Method | Path | Purpose |
 |---|---|---|
 | GET | `/health` | Liveness |
+| GET | `/health/ready` | Readiness: every data product with size and age; 503 if a required one is missing |
+| GET | `/opendata/catalog?q=&mission=&limit=&offset=&source=snapshot\|live` | Search the data.nasa.gov Mars catalog, with mission facets and provenance |
+| GET | `/opendata/catalog/:id` | One catalog record |
+| GET | `/opendata/features?south=&west=&north=&east=&zoom=` | IAU feature names in view, decluttered for the zoom |
+| GET | `/opendata/features/near?lat=&lon=` | Nearest IAU feature names |
+| GET | `/opendata/hirise-dtm?south=&west=&north=&east=` | HiRISE DTM footprints in view |
+| GET | `/opendata/landings` | NASA landing sites with data.nasa.gov dataset counts |
+| GET | `/opendata/products` | Snapshotted products with URL, retrieval time and sha256 |
 | GET | `/layers` | NASA Trek layer catalog |
 | GET | `/places/perseverance?fromSol=&toSol=` | Downsampled published PLACES localizations |
 | GET | `/regions/jezero?demo=true` | Verified locations; optional DEMO seeds |
@@ -538,6 +581,7 @@ docker compose up --build
 | `pnpm lint` | Lint web and API |
 | `pnpm refresh:nasa` | Re-download PLACES and DEM from NASA PDS |
 | `pnpm ingest:corpus` | Ingest the curated NASA page list into RAG (API must be running) |
+| `pnpm refresh:opendata` | Re-snapshot data.nasa.gov products and regenerate the open-data corpus note |
 
 ---
 
@@ -561,6 +605,7 @@ All secrets live in the root `.env` and are read **only by the API**. The browse
 | `POSTGIS_ENABLED` | `false` | Optional seeded Jezero spatial profile |
 | `NASA_API_KEY` | `DEMO_KEY` | NASA API key |
 | `NEXT_PUBLIC_GOOGLE_MAP_API_KEY` | — | Browser-restricted Maps key for the Earth map (OSM fallback without it) |
+| `RATE_LIMIT_PER_MIN` | `240` | Per-client request budget. AI endpoints are capped at 20/min and corpus changes at 10/min. |
 
 ---
 
@@ -571,6 +616,7 @@ node apps/api/src/rag/rag.check.ts           # chunking, BM25, RRF, MMR, citatio
 node apps/api/src/agent/intents.check.ts     # deterministic intent routing
 node apps/web/src/lib/geo.check.ts           # great-circle distance, geometry
 node packages/shared/src/orbits.check.ts     # JPL orbit math
+node apps/api/src/opendata/opendata.check.ts # data.nasa.gov snapshots, search, declutter, route context
 curl -s localhost:4000/rag/eval | jq         # Recall@k and MRR on 16 labelled questions
 ```
 

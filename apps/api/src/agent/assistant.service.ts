@@ -150,6 +150,10 @@ export class AssistantService {
       'Collect and cache samples for possible future return.',
     ];
     citations.push(...analysis.nearbyPois.filter((poi)=>poi.sourceKind==='NASA_PLACES').map((poi)=>({title:poi.name,url:poi.sourceUrl,mission:'PLACES',excerpt:poi.summary})));
+    const named = analysis.openData?.namedFeatures ?? [];
+    const dtms = analysis.openData?.hiriseDtms ?? [];
+    citations.push(...named.slice(0, 4).map((f) => ({ title: `${f.name} (IAU ${f.type})`, url: f.link, mission: 'IAU / data.nasa.gov', excerpt: `${f.diameterKm} km ${f.type.toLowerCase()} ${f.distanceKm} km from the route. ${f.origin}` })));
+    citations.push(...dtms.slice(0, 2).map((d) => ({ title: `HiRISE DTM ${d.id}`, url: d.pdsUrl, mission: 'MRO HiRISE / data.nasa.gov', excerpt: `${d.rationale}. ${d.scaleM.toFixed(0)} m post spacing; covers ${Math.round(d.coveredShare * 100)}% of the route.` })));
     const observations = citations.map((citation) => `${citation.title}: ${citation.excerpt}`);
     const markdown = [
       '# Jezero Marswalk Mission Briefing',
@@ -164,6 +168,12 @@ export class AssistantService {
       '',
       '## Terrain considerations',
       ...analysis.riskNotes.map((item) => `- ${item}`),
+      '',
+      '## Named features on route (IAU, via data.nasa.gov)',
+      ...(named.length ? named.map((f) => `- ${f.name} — ${f.type}, ${f.diameterKm} km, ${f.distanceKm} km from route ([gazetteer](${f.link}))`) : ['- No IAU-named feature lies on this route.']),
+      '',
+      '## HiRISE DTM coverage (MRO HiRISE DTM V1.0, via data.nasa.gov)',
+      ...(dtms.length ? dtms.map((d) => `- ${d.id}: ${d.rationale} · ${d.scaleM.toFixed(0)} m posts · ${Math.round(d.coveredShare * 100)}% of route ([PDS](${d.pdsUrl}))`) : ['- No HiRISE DTM footprint covers this route.']),
       '',
       '## Nearby science context',
       ...(analysis.nearbyPois.length
@@ -182,7 +192,7 @@ export class AssistantService {
       scientificObjectives: objectives,
       terrainConsiderations: analysis.riskNotes,
       relevantObservations: observations,
-      recommendedInvestigationPoints: analysis.nearbyPois.map((poi) => poi.name),
+      recommendedInvestigationPoints: [...analysis.nearbyPois.map((poi) => poi.name), ...named.map((f) => `${f.name} (IAU ${f.type.toLowerCase()}, ${f.distanceKm} km from route)`)],
       citations,
       markdown,
       riskIndex: analysis.riskIndex,

@@ -1,0 +1,27 @@
+{
+  "catalog": {
+    "product": "data.nasa.gov CKAN catalog, tag mars",
+    "sourceUrl": "https://data.nasa.gov/dataset/?tags=mars",
+    "apiUrl": "https://data.nasa.gov/api/3/action/package_search?fq=tags:mars",
+    "retrievedAt": "2026-10-05T18:02:57.352572+00:00",
+    "count": 1321,
+    "sha256": "db7d45b541d685ecdd834eaeb1dccbe48328765b28ef3a655786e6d698c2c899"
+  },
+  "hiriseDtm": {
+    "product": "HiRISE DTM cumulative index (DTMCUMINDEX.TAB)",
+    "sourceUrl": "https://hirise-pds.lpl.arizona.edu/PDS/INDEX/DTMCUMINDEX.TAB",
+    "labelUrl": "https://hirise-pds.lpl.arizona.edu/PDS/INDEX/DTMCUMINDEX.LBL",
+    "datasetUrl": "https://data.nasa.gov/dataset/mro-mars-high-resolution-imaging-science-experiment-dtm-v1-0",
+    "retrievedAt": "2026-10-05T17:36:32.174691+00:00",
+    "count": 1315,
+    "sha256": "d8c4cf061e27d77c72dc6abdca99afa2dba265e7b5f45b21ce5269d88bf1696d"
+  },
+  "iauFeatures": {
+    "product": "IAU/USGS Mars nomenclature center points",
+    "sourceUrl": "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MARS_nomenclature_center_pts.zip",
+    "datasetUrl": "https://data.nasa.gov/dataset/gazetteer-of-planetary-nomenclature-mars-mola-global-images",
+    "retrievedAt": "2026-10-05T17:36:32.174691+00:00",
+    "count": 2052,
+    "sha256": "bb851c3716d933e79dba6c9f59e77bb378a53d3e4d23c2bfd68bfd3e9f76eb59"
+  }
+}

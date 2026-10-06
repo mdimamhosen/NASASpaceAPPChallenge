@@ -18,9 +18,11 @@ function loadArchiveDates() {
   try {
     const places = JSON.parse(readFileSync(join(root, 'perseverance/SOURCE.json'), 'utf8')) as { retrievedAt?: string };
     const dem = JSON.parse(readFileSync(join(root, 'jezero/pds-orbital-dem-grid.json'), 'utf8')) as { retrievedAt?: string };
-    return { places: formatUtc(places.retrievedAt), dem: formatUtc(dem.retrievedAt) };
+    const open = (() => { try { return JSON.parse(readFileSync(join(root, 'opendata/SOURCE.json'), 'utf8')) as Record<string, { retrievedAt?: string; count?: number }>; } catch { return {}; } })();
+    const openDate = (key: string) => open[key] ? `${formatUtc(open[key].retrievedAt)} · ${open[key].count} records` : 'RUN pnpm refresh:opendata';
+    return { places: formatUtc(places.retrievedAt), dem: formatUtc(dem.retrievedAt), catalog: openDate('catalog'), dtm: openDate('hiriseDtm'), names: openDate('iauFeatures') };
   } catch {
-    return { places: 'RUN pnpm refresh:nasa', dem: 'RUN pnpm refresh:nasa' };
+    return { places: 'RUN pnpm refresh:nasa', dem: 'RUN pnpm refresh:nasa', catalog: 'RUN pnpm refresh:opendata', dtm: 'RUN pnpm refresh:opendata', names: 'RUN pnpm refresh:opendata' };
   }
 }
 
@@ -37,6 +39,9 @@ export default function SciencePage() {
     { name: 'NASA NSSDCA / Mars mission landing sites', role: 'Approximate landing coordinates for the landing-record globe; Perseverance uses PLACES sol 0.', url: 'https://nssdc.gsfc.nasa.gov/planetary/planets/marspage.html', date: 'Bundled constants', limit: 'Rounded published coordinates for visualization, not a geodetic reference.' },
     { name: 'NASA Planetary Fact Sheet', role: 'Radius, axial tilt, sidereal day, and gravity in the Earth–Mars scale scene.', url: 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/', date: 'Bundled constants', limit: 'Mean values; the scene shows true relative size but not true separation.' },
     { name: 'Research console corpus (public NASA pages)', role: 'Retrieval-augmented answers and the mission agent cite passages from ~20 ingested NASA pages (Perseverance, instruments, samples, PLACES, Mars Trek, EONET docs, JPL, MRO/HiRISE, other landers) plus the app methods note.', url: 'https://science.nasa.gov/mission/mars-2020-perseverance/', date: 'Per-document retrievedDate in data/corpus', limit: 'Answers are limited to indexed text; weak evidence is refused. Model output is kept only with valid passage citations.' },
+    { name: 'NASA Open Data portal / data.nasa.gov datasets tagged "mars"', role: 'Searchable catalog on the Open Data page, dataset shelves on landing-site markers, and the agent tool nasa_open_data.', url: 'https://data.nasa.gov/dataset/?tags=mars', date: archives.catalog, limit: 'Catalog records describe archives (mostly PDS); mission tags are inferred from titles and descriptions. Refresh with pnpm refresh:opendata.' },
+    { name: 'data.nasa.gov / MRO HiRISE DTM V1.0 footprints (PDS DTM cumulative index)', role: 'Footprint layer on the Mars map; route coverage share in the Evidence Cockpit, risk notes, and briefing.', url: 'https://data.nasa.gov/dataset/mro-mars-high-resolution-imaging-science-experiment-dtm-v1-0', date: archives.dtm, limit: 'Footprints show where 1–2 m HiRISE DTMs exist. The app does not sample their elevations; the Risk Index still uses the ~118 m PLACES grid.' },
+    { name: 'data.nasa.gov / Gazetteer of Planetary Nomenclature: Mars (IAU/USGS)', role: 'Feature-name labels on the Mars map, named features along routes and in briefings, and the agent tool named_features.', url: 'https://data.nasa.gov/dataset/gazetteer-of-planetary-nomenclature-mars-mola-global-images', date: archives.names, limit: 'Center points of IAU-adopted names, not feature boundaries or landing targets. Labels thin out by feature diameter as you zoom out.' },
     { name: 'NASA EONET v3 / Earth events', role: 'Live Earth natural event metadata, source links, and category counts.', url: 'https://eonet.gsfc.nasa.gov/docs/v3', date: 'Live feed; cache time shown in UI', limit: 'Earth-only geometry. EONET is never plotted on Mars Trek.' },
     { name: 'NASA Perseverance mission', role: 'Local evidence corpus and linked mission context.', url: 'https://science.nasa.gov/mission/mars-2020-perseverance/', date: 'Original corpus retrieval not recorded', limit: 'Mission facts do not authenticate demo marker coordinates.' },
     { name: 'NASA Photojournal / Jezero Crater’s Kodiak and scarps', role: 'Orbital interpretation and image context in the local corpus.', url: 'https://science.nasa.gov/photojournal/jezero-craters-kodiak-and-scarps/', date: 'Original corpus retrieval not recorded', limit: 'Photojournal context is not a precision footprint or route safety finding.' },

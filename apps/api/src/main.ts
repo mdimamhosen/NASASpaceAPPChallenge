@@ -11,6 +11,8 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   // RAG text uploads can reach 200 KB; Express defaults to 100 KB.
   app.useBodyParser('json', { limit: '512kb' });
+  // Behind Render/Vercel proxies, rate limits must key on the client IP, not the proxy's.
+  app.set('trust proxy', 1);
   const config = app.get(ConfigService);
   if (
     config.get('observabilityBackend') === 'langfuse' &&
