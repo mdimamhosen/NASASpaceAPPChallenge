@@ -3,7 +3,7 @@ services:
     name: mars-explorer-api
     runtime: node
     plan: free
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @mars-explorer/shared build && pnpm --filter @mars-explorer/api build
+    buildCommand: corepack enable && rm -f apps/api/*.tsbuildinfo packages/shared/*.tsbuildinfo && pnpm install --frozen-lockfile && pnpm --filter @mars-explorer/shared build && pnpm --filter @mars-explorer/api build && test -f apps/api/dist/main.js
     startCommand: cd apps/api && node dist/main.js
     healthCheckPath: /health
     envVars:
