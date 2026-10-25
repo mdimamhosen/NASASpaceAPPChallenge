@@ -11,7 +11,7 @@ const EXAGGERATION = 3, SLOPE_CAP = 15;
 const TONES: Array<[number, THREE.Color]> = [[0, new THREE.Color('#1e232c')], [5, new THREE.Color('#5d636d')], [10, new THREE.Color('#c9c7c1')], [SLOPE_CAP, new THREE.Color('#C45C26')], [25, new THREE.Color('#ff7a3d')]];
 function slopeColor(s: number) {
   for (let i = 1; i < TONES.length; i++) if (s <= TONES[i][0]) return TONES[i - 1][1].clone().lerp(TONES[i][1], (s - TONES[i - 1][0]) / (TONES[i][0] - TONES[i - 1][0]));
-  return TONES.at(-1)![1].clone();
+  return (TONES.at(-1)?.[1] ?? TONES[0][1]).clone();
 }
 
 /** Grid slope (deg) by central differences, matching the API's ~118 m sampling scale. */

@@ -37,6 +37,15 @@ function normalizeBox({ south, north, west, east }: BoxQuery) {
 export class OpenDataController {
   constructor(private readonly openData: OpenDataService) {}
 
+  /** Perseverance sample tubes, Ingenuity flights, or MEDA weather snapshots (404 until the refresh script has run). */
+  @Get('mission/:name')
+  async mission(@Param('name') name: string) {
+    if (name !== 'samples' && name !== 'ingenuity' && name !== 'weather') throw new NotFoundException('unknown dataset');
+    const data = await this.openData.snapshot(name);
+    if (!data) throw new NotFoundException(`${name} snapshot missing; run scripts/refresh-${name === 'weather' ? 'meda' : name}.py`);
+    return data;
+  }
+
   @Get('catalog')
   catalog(@Query() q: CatalogQuery) {
     return this.openData.catalog(q.q?.trim() ?? '', q.mission?.toUpperCase(), q.limit ?? 24, q.offset ?? 0, q.source ?? 'snapshot');

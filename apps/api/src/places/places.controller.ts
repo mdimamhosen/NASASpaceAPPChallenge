@@ -7,12 +7,23 @@ export class PlacesController {
 
   @Get('perseverance')
   perseverance(@Query('fromSol') from?: string, @Query('toSol') to?: string) {
-    const parse = (value: string | undefined, fallback: number) => value === undefined ? fallback : Number(value);
-    const fromSol = parse(from, 0);
-    const toSol = parse(to, Number.MAX_SAFE_INTEGER);
+    const { fromSol, toSol } = this.parse(from, to);
+    return this.places.perseverance(fromSol, toSol);
+  }
+
+  @Get('curiosity')
+  curiosity(@Query('fromSol') from?: string, @Query('toSol') to?: string) {
+    const { fromSol, toSol } = this.parse(from, to);
+    return this.places.curiosity(fromSol, toSol);
+  }
+
+  private parse(from?: string, to?: string) {
+    const p = (value: string | undefined, fallback: number) => value === undefined ? fallback : Number(value);
+    const fromSol = p(from, 0);
+    const toSol = p(to, Number.MAX_SAFE_INTEGER);
     if (!Number.isInteger(fromSol) || !Number.isInteger(toSol) || fromSol < 0 || toSol < fromSol) {
       throw new BadRequestException('fromSol and toSol must be non-negative, ordered integers.');
     }
-    return this.places.perseverance(fromSol, toSol);
+    return { fromSol, toSol };
   }
 }

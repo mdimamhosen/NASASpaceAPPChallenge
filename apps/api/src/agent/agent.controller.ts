@@ -7,7 +7,7 @@ import { MissionAgentService } from './mission-agent.service';
 
 class RunDto {
   @IsString() @MinLength(3) @MaxLength(500) goal!: string;
-  @IsOptional() @Transform(({ value }) => value === true || value === 'true' || value === '1') @IsBoolean() cloud = true;
+  @IsOptional() @Transform(({ value }) => value === true || value === 'true' || value === '1') @IsBoolean() cloud = false;
   @IsOptional() @IsIn(['fast', 'deep']) mode: 'fast' | 'deep' = 'fast';
   @IsOptional() @IsIn(['en', 'bn']) lang: 'en' | 'bn' = 'en';
 }

@@ -12,8 +12,10 @@ const track = [{ lat: 18.44, lon: 77.4, sol: 10 }, { lat: 18.45, lon: 77.4, sol:
 const onTrack = compareWithTrack(track, track)!;
 assert.equal(onTrack.withinShare, 1);
 assert.equal(onTrack.meanOffsetKm, 0);
+assert.equal(onTrack.maxOffsetKm, 0);
 const offTrack = compareWithTrack([{ lat: 18.44, lon: 77.5 }], track)!;
 assert.equal(offTrack.withinShare, 0);
 assert.equal(offTrack.nearestSol, 10);
+assert.ok(offTrack.maxOffsetKm > 0);
 assert.equal(compareWithTrack([], track), null);
 console.log('geo checks passed');

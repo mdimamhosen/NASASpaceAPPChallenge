@@ -7,14 +7,18 @@ import type { MissionLanding, OpenCatalogResult, OpenDataProduct } from '@mars-e
 import { DATA_NASA_MARS_URL } from '@mars-explorer/shared';
 import { getLandings, getOpenCatalog, getOpenDataProducts } from '@/lib/api';
 import MissionNav from './MissionNav';
+import Data3DSection from './scenes/Data3DSection';
+import { uiText } from '@/lib/ui-copy';
+import { useUiLanguage } from '@/lib/use-ui-language';
 
 const PAGE = 24;
 const fmtDate = (iso: string) => (iso ? new Date(iso).toISOString().slice(0, 16).replace('T', ' ') + ' UTC' : '—');
 
 export default function OpenDataPage() {
+  const { language: uiLang } = useUiLanguage();
   const [q, setQ] = useState('');
   const [mission, setMission] = useState('');
-  const [source, setSource] = useState<'snapshot' | 'live'>('snapshot');
+  const [source, setSource] = useState<'snapshot' | 'live'>('live');
   const [result, setResult] = useState<OpenCatalogResult | null>(null);
   const [items, setItems] = useState<OpenCatalogResult['items']>([]);
   const [products, setProducts] = useState<OpenDataProduct[]>([]);
@@ -60,7 +64,7 @@ export default function OpenDataPage() {
   return <main className="theater-page open-data-page">
     <MissionNav active="/opendata" />
     <section className="theater-hero">
-      <div><p className="eyebrow">NASA OPEN DATA / DATA.NASA.GOV · TAG “MARS”</p><h1>Every Mars dataset NASA lists, one search away.</h1><p>Mars Explorer snapshots the data.nasa.gov Mars catalog, puts three of its products on the Mars map, and lets the mission agent search the rest. Most records describe NASA Planetary Data System archives and link to them.</p></div>
+      <div><p className="eyebrow">{uiText('openDataTitle', uiLang).toUpperCase()} / DATA.NASA.GOV · TAG “MARS”</p><h1>{uiText('openDataTitle', uiLang)}</h1><p>Mars Explorer snapshots the data.nasa.gov Mars catalog, puts three of its products on the Mars map, and lets the mission agent search the rest. Most records describe NASA Planetary Data System archives and link to them.</p></div>
       <aside><span>CATALOG RECORDS</span><strong>{catalogTotal ?? '—'}<br />DATASETS</strong><small><a href={DATA_NASA_MARS_URL} target="_blank" rel="noreferrer">DATA.NASA.GOV ↗</a></small></aside>
     </section>
 
@@ -75,7 +79,7 @@ export default function OpenDataPage() {
     </section>
 
     <section className="theater-section" id="catalog">
-      <div className="theater-section-head"><span>02 / SEARCH THE CATALOG</span><span>{busy ? 'SEARCHING…' : result ? `${result.total.toLocaleString()} MATCHES` : '—'}</span></div>
+      <div className="theater-section-head"><span>02 / {uiText('searchCatalog', uiLang).toUpperCase()}</span><span>{busy ? 'SEARCHING…' : result ? `${result.total.toLocaleString()} MATCHES` : '—'}</span></div>
       <div className="open-search">
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search: HiRISE DTM, APXS, weather, seismometer, SPICE…" aria-label="Search data.nasa.gov Mars datasets" />
         <div role="group" aria-label="Catalog source"><button className={source === 'snapshot' ? 'active' : ''} onClick={() => setSource('snapshot')}>SNAPSHOT</button><button className={source === 'live' ? 'active' : ''} onClick={() => setSource('live')} disabled={Boolean(mission)} title={mission ? 'Mission tags exist only in the snapshot' : 'Query data.nasa.gov directly'}>LIVE DATA.NASA.GOV</button></div>
@@ -96,11 +100,12 @@ export default function OpenDataPage() {
     </section>
 
     <section className="theater-section">
-      <div className="theater-section-head"><span>03 / MISSION DATA SHELVES</span><span>NASA LANDINGS · NSSDCA COORDINATES</span></div>
+      <div className="theater-section-head"><span>03 / {uiText('missionDataShelves', uiLang).toUpperCase()}</span><span>NASA LANDINGS · NSSDCA COORDINATES</span></div>
       <div className="open-landings">{landings.map((l) => <button key={l.name} onClick={() => { setSource('snapshot'); setQ(''); setMission(l.mission); document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth' }); }} disabled={!l.datasetCount}>
         <small>{l.year} · {l.place.toUpperCase()}</small><strong>{l.name}</strong><span>{l.datasetCount ? `${l.datasetCount} DATASETS` : 'PDS PLACES ONLY'}</span>
       </button>)}</div>
     </section>
     <footer className="theater-footer"><span>REFRESH: pnpm refresh:opendata · RECORDS DESCRIBE ARCHIVES; THEY DO NOT VALIDATE A ROUTE</span><Link href="/explore">OPEN THE MARS MAP ↗</Link></footer>
+    <Data3DSection variant="hardware" eyebrow="OPEN DATA / LEFT ON MARS" title="Every spacecraft we left behind." body="Every NASA lander, rover and helicopter on Mars on the Viking globe. Drag the year: green spacecraft are still talking, grey ones have gone silent." />
   </main>;
 }

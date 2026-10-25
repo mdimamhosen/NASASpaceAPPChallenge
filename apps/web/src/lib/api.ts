@@ -1,4 +1,4 @@
-import type { AssistantResponse, LayerId, MapLayer, MissionBriefing, POI, RegionData, RouteAnalysis, RouteWaypoint, PlacesTrack, SuggestedRoute, EonetProvenance, DtmGrid, RagStatus, RagDocument, RagSearchResult, RagAnswer, RagEval, RagProjection, RagMode, AgentRun, OpenCatalogResult, MarsFeature, HiriseDtm, MissionLanding, OpenDataProduct, MarsHardware, AnswerLang } from '@mars-explorer/shared';
+import type { AssistantResponse, LayerId, MapLayer, MissionBriefing, POI, RegionData, RouteAnalysis, RouteWaypoint, PlacesTrack, SuggestedRoute, EonetProvenance, DtmGrid, RagStatus, RagDocument, RagSearchResult, RagAnswer, RagEval, RagProjection, RagMode, AgentRun, OpenCatalogResult, MarsFeature, HiriseDtm, MissionLanding, OpenDataProduct, MarsHardware, AnswerLang, RoverImagesResult } from '@mars-explorer/shared';
 import type { EarthEventSummary, EarthEventDetail } from './earth-types';
 
 const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
@@ -18,8 +18,12 @@ async function request<T>(path: string, body?: unknown, init: { method?: string;
 }
 
 export const getRegion = (demo = false) => request<RegionData>(`/regions/jezero${demo ? '?demo=true' : ''}`);
+export const getRegionGale = () => request<RegionData>('/regions/gale');
 export const getPlaces = (fromSol?: number, toSol?: number) => request<PlacesTrack>(`/places/perseverance${fromSol == null ? '' : `?fromSol=${fromSol}&toSol=${toSol ?? fromSol}`}`);
+export const getPlacesGale = (fromSol?: number, toSol?: number) => request<PlacesTrack>(`/places/curiosity${fromSol == null ? '' : `?fromSol=${fromSol}&toSol=${toSol ?? fromSol}`}`);
+export const getRoverImages = (sol: number, limit = 12) => request<RoverImagesResult>(`/raw-images/perseverance?sol=${sol}&limit=${limit}`);
 export const suggestRoute = (waypoints: RouteWaypoint[]) => request<SuggestedRoute>('/routes/suggest', { waypoints });
+export const classroomWorksheetUrl = (lang: AnswerLang = 'en') => `${base}/briefings/classroom-worksheet?lang=${lang}`;
 export const getEonetProvenance = (limit = 60, status: 'open' | 'closed' | 'all' = 'open') => request<EonetProvenance>(`/eonet/provenance?limit=${limit}&status=${status}`);
 export const getDtmGrid = () => request<DtmGrid>('/routes/dtm-grid');
 export const getLayers = () => request<MapLayer[]>('/layers');
@@ -56,7 +60,7 @@ export async function downloadBriefingPdf(waypoints: RouteWaypoint[]): Promise<v
   const url = URL.createObjectURL(await response.blob());
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'jezero-marswalk-briefing.pdf';
+  link.download = 'jezero-marswalk-field-guide.pdf';
   link.click();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
@@ -74,5 +78,16 @@ export const ragReindex = (token?: string) => request<RagStatus>('/rag/reindex',
 export const getRagEval = () => request<RagEval>('/rag/eval');
 export const getRagProjection = (q?: string) => request<RagProjection>(`/rag/projection${q ? `?q=${encodeURIComponent(q)}` : ''}`);
 export const agentRun = (goal: string, cloud: boolean) => request<AgentRun>('/agent/run', { goal, cloud });
+export const runAgent = (goal: string, cloud: boolean, mode: 'fast' | 'deep' = 'fast', lang: AnswerLang = 'en') => request<AgentRun>('/agent/run', { goal, cloud, mode, lang });
 export const agentStreamUrl = (goal: string, cloud: boolean, mode: 'fast' | 'deep' = 'fast', lang: AnswerLang = 'en') => `${base}/agent/stream?goal=${encodeURIComponent(goal)}&cloud=${cloud}&mode=${mode}&lang=${lang}`;
 export const ragStreamUrl = (question: string, cloud: boolean, lang: AnswerLang = 'en') => `${base}/rag/ask/stream?question=${encodeURIComponent(question)}&cloud=${cloud}&lang=${lang}`;
+type SlopeRow = { n: number; meanDeg: number; p50Deg: number; p90Deg: number; maxDeg: number; over10: number; over15: number };
+export type ValidationReport = {
+  generatedAt: string;
+  slopes: { driven: SlopeRow; randomAnywhere: SlopeRow; randomNearDrive: SlopeRow; lines: number; lineKm: number; seed: number; demSource: string; trackSource: string; note: string };
+  corridors: { legs: Array<{ fromSol: number; toSol: number; drivenKm: number; corridorKm?: number; corridor: { waypoints: number; meanOffsetM: number; maxOffsetM: number; within200m: number } | null }>; note: string };
+  agent: { items: Array<{ goal: string; expected: string[]; planned: string[]; pass: boolean; precision: number }>; passed: number; total: number; meanPrecision: number; router: string };
+  science: { mars24: Array<{ check: string; ours: number; reference: number; unit: string; tolerance: number; source: string; pass: boolean }>; conjunctions: Array<{ check: string; start: string; end: string; ours: string; source: string; pass: boolean }> };
+};
+export const getValidation = () => request<ValidationReport>('/validation/report');
+export const getMissionData = (name: 'samples' | 'ingenuity' | 'weather') => request<unknown>(`/opendata/mission/${name}`);

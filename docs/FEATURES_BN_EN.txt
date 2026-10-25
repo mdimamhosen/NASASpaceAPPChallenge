@@ -1,0 +1,52 @@
+WHAT IS DONE (EN)
+Mars Explorer now has a 25-route mission console, a source-aware Jezero traverse workflow, science and survival references, Earth-only event viewing, voice controls, and a five-contract browser game. The UI offers English and Bangla chrome on the shared navigation and the covered major pages. A four-minute local walkthrough is available from the landing page and /story. The demo runs locally; no public demo URL is claimed.
+
+যা সম্পন্ন হয়েছে (BN)
+Mars Explorer-এ এখন ২৫টি রুটের মিশন কনসোল, সূত্রসহ Jezero পথ পরিকল্পনা, বিজ্ঞান ও বেঁচে থাকার তথ্য, শুধু-পৃথিবীর ঘটনা মানচিত্র, ভয়েস নিয়ন্ত্রণ এবং পাঁচটি কন্ট্রাক্টের ব্রাউজার গেম রয়েছে। নেভিগেশন ও প্রধান কিছু পৃষ্ঠায় ইংরেজি ও বাংলা ইন্টারফেস আছে। ল্যান্ডিং পৃষ্ঠা এবং /story থেকে চার মিনিটের স্থানীয় ভিডিও দেখা যায়। ডেমো স্থানীয়ভাবে চলে; কোনো প্রকাশ্য ডেমো URL দাবি করা হয়নি।
+
+FEATURES
+01. EN: Landing and mission entry. BN: ল্যান্ডিং পৃষ্ঠা ও মিশনে প্রবেশ। WHERE: /, apps/web/src/app/page.tsx. TEST: pnpm smoke:pages, pnpm smoke:ui. RESULT: PASS.
+02. EN: Mars survival guide and conjunction calendar. BN: মঙ্গল বেঁচে থাকার নির্দেশিকা ও যোগাযোগ-বিরতি ক্যালেন্ডার। WHERE: /survival. TEST: pnpm smoke:pages, pnpm smoke:ui. RESULT: PASS.
+03. EN: Mission timeline and conjunction view. BN: মিশন সময়রেখা ও যোগাযোগ-বিরতি দৃশ্য। WHERE: /timeline. TEST: pnpm smoke:pages. RESULT: PASS.
+04. EN: Mission overview. BN: মিশন পরিচিতি। WHERE: /mission. TEST: pnpm smoke:pages. RESULT: PASS.
+05. EN: Jezero overview. BN: Jezero পরিচিতি। WHERE: /jezero. TEST: pnpm smoke:pages. RESULT: PASS.
+06. EN: Earth events lane, isolated from Mars map analysis. BN: মঙ্গল মানচিত্র বিশ্লেষণ থেকে পৃথক পৃথিবীর ঘটনা। WHERE: /eonet. TEST: pnpm smoke:pages, pnpm smoke:ui. RESULT: PASS.
+07. EN: Explore map, route analysis, GeoJSON export and briefing. BN: Explore মানচিত্র, পথ বিশ্লেষণ, GeoJSON রপ্তানি ও ব্রিফিং। WHERE: /explore. TEST: pnpm smoke:explore, pnpm smoke:pages. RESULT: PASS.
+08. EN: Classroom learning and quiz. BN: শ্রেণিকক্ষ শিক্ষা ও কুইজ। WHERE: /classroom. TEST: pnpm smoke:pages. RESULT: PASS.
+09. EN: Mission targets. BN: মিশন লক্ষ্যবস্তু। WHERE: /targets. TEST: pnpm smoke:pages. RESULT: PASS.
+10. EN: Hazard reference. BN: ঝুঁকি নির্দেশিকা। WHERE: /hazards. TEST: pnpm smoke:pages. RESULT: PASS.
+11. EN: Operations console. BN: অপারেশন কনসোল। WHERE: /ops. TEST: pnpm smoke:pages. RESULT: PASS.
+12. EN: Trace and evidence view. BN: ট্রেস ও প্রমাণ দৃশ্য। WHERE: /traces. TEST: pnpm smoke:pages. RESULT: PASS.
+13. EN: Research agent and retrieval console; cloud mode defaults off. BN: গবেষণা এজেন্ট ও তথ্য-অনুসন্ধান কনসোল; ক্লাউড মোড ডিফল্টে বন্ধ। WHERE: /research. TEST: pnpm smoke:pages, pnpm smoke:ui. RESULT: PASS.
+14. EN: Briefing preview. BN: ব্রিফিং পূর্বরূপ। WHERE: /briefing/preview. TEST: pnpm smoke:pages, pnpm smoke:explore. RESULT: PASS.
+15. EN: Data pipeline status. BN: তথ্য পাইপলাইন অবস্থা। WHERE: /pipeline. TEST: pnpm smoke:pages. RESULT: PASS.
+16. EN: System architecture. BN: সিস্টেম স্থাপত্য। WHERE: /architecture. TEST: pnpm smoke:pages. RESULT: PASS.
+17. EN: Mission story and local walkthrough video. BN: মিশন কাহিনি ও স্থানীয় পরিচিতি ভিডিও। WHERE: /story, apps/web/public/video/mars-explorer-240s.mp4. TEST: pnpm smoke:pages, pnpm smoke:ui; offline HTTP 200. RESULT: PASS.
+18. EN: Sol Contract, five-scenario Mars route survival campaign. BN: Sol Contract, পাঁচ ধাপের মঙ্গল পথ-টিকে-থাকার অভিযান। WHERE: /game. TEST: pnpm smoke:game, pnpm smoke:pages; one contract completion and one failed route debrief. RESULT: PASS.
+19. EN: NASA Open Data catalog, live view by default. BN: NASA Open Data তথ্যভান্ডার, ডিফল্টে লাইভ দৃশ্য। WHERE: /opendata. TEST: pnpm smoke:pages, pnpm smoke:ui. RESULT: PASS.
+20. EN: Science sources, retrieval dates and limitations. BN: বিজ্ঞান সূত্র, সংগ্রহের তারিখ ও সীমাবদ্ধতা। WHERE: /science. TEST: pnpm smoke:pages, pnpm check. RESULT: PASS.
+21. EN: Data explorer. BN: তথ্য অনুসন্ধান। WHERE: /data. TEST: pnpm smoke:pages. RESULT: PASS.
+22. EN: Mission media gallery. BN: মিশন মিডিয়া গ্যালারি। WHERE: /gallery. TEST: pnpm smoke:pages. RESULT: PASS.
+23. EN: Analog mission reference. BN: অ্যানালগ মিশন নির্দেশিকা। WHERE: /analog. TEST: pnpm smoke:pages. RESULT: PASS.
+24. EN: Comparison view. BN: তুলনামূলক দৃশ্য। WHERE: /compare. TEST: pnpm smoke:pages. RESULT: PASS.
+25. EN: Validation report and reproducible checks. BN: যাচাই প্রতিবেদন ও পুনরুৎপাদনযোগ্য পরীক্ষা। WHERE: /validation. TEST: pnpm smoke:pages, pnpm smoke:ui. RESULT: PASS.
+26. EN: Shared navigation links to /game and switches EN/বাংলা. BN: অভিন্ন নেভিগেশনে /game লিংক ও EN/বাংলা ভাষা পরিবর্তন। WHERE: apps/web/src/components/MissionNav.tsx. TEST: pnpm smoke:ui, pnpm smoke:game. RESULT: PASS.
+27. EN: Deterministic Sol Contract scoring, risk/budget/distance/goal gates, sourced debrief, replay, optional detour and local leaderboard. Scores are NON-CERTIFYING. BN: নির্ধারিত Sol Contract স্কোর, ঝুঁকি/সময়/দূরত্ব/লক্ষ্য যাচাই, সূত্রসহ ফলাফল, পুনরায় খেলা, ঐচ্ছিক ঘুরপথ এবং স্থানীয় স্কোরবোর্ড। স্কোর NON-CERTIFYING। WHERE: packages/shared/src/sol-contract.ts; apps/web/src/components/SolContractGame.tsx. TEST: pnpm check, pnpm smoke:game. RESULT: PASS.
+28. EN: Explore draw/analyze/export/briefing browser flow. BN: Explore-এ পথ আঁকা/বিশ্লেষণ/রপ্তানি/ব্রিফিং ব্রাউজার প্রবাহ। WHERE: scripts/smoke-explore-flow.mjs. TEST: pnpm smoke:explore. RESULT: PASS.
+29. EN: Voice navigation, spoken reply and stop while speaking. BN: ভয়েসে নেভিগেশন, কথ্য উত্তর এবং কথা চলাকালে থামানো। WHERE: apps/web/src/components/voice/VoiceGlobe.tsx; scripts/smoke-voice-ui.mjs. TEST: pnpm smoke:voice-ui. RESULT: PASS.
+30. EN: Voice transcription integration. BN: ভয়েস ট্রান্সক্রিপশন সংযোগ। WHERE: scripts/smoke-voice.mjs. TEST: pnpm smoke:voice. RESULT: SKIP — Gemini returned HTTP 402; credential/service billing is unavailable in this environment.
+31. EN: Offline demo and service worker assets. BN: অফলাইন ডেমো ও সার্ভিস ওয়ার্কার সম্পদ। WHERE: pnpm demo:offline; apps/web/public/sw.js. TEST: offline API 15/15, /game and landing HTTP 200, local video HTTP 200, EONET endpoint HTTP 200. RESULT: PASS.
+32. EN: Local four-minute video fallback and YouTube reference. BN: চার মিনিটের স্থানীয় ভিডিও বিকল্প ও YouTube সূত্র। WHERE: apps/web/public/video/mars-explorer-240s.mp4; docs/SUBMISSION.md. TEST: browser video source and HTTP 200. RESULT: PASS. Direct download from the provided YouTube ID was unavailable; used the matching 240.93-second video already in docs/video and added captions.
+33. EN: Complete build and project checks. BN: পূর্ণ বিল্ড ও প্রকল্প পরীক্ষা। WHERE: pnpm check; pnpm build. TEST: shared checks, EN/BN dictionary check, API and web production build. RESULT: PASS.
+34. EN: Full route and feature smoke suite. BN: সব রুট ও ফিচারের স্মোক পরীক্ষা। WHERE: pnpm smoke. TEST: API 15/15, routes 25/25, Explore, game, voice UI, detailed UI. RESULT: PASS.
+
+WHAT IS STILL OPEN (EN)
+Gemini-backed speech transcription needs an available credential and billing to exercise its live integration test. The provided YouTube video ID could not be downloaded, so the app uses the existing matching local four-minute cut and captions. Bangla coverage is present on shared navigation and selected major page chrome; deep NASA product details and technical prose remain in English by design. Terrain risk and game scores are non-certifying planning aids.
+
+যা এখনো বাকি (BN)
+Gemini-ভিত্তিক কথন শনাক্তকরণের লাইভ পরীক্ষা চালাতে কার্যকর credential ও billing দরকার। দেওয়া YouTube ভিডিও ID ডাউনলোড করা যায়নি, তাই অ্যাপে আগে থেকে থাকা মিলযুক্ত চার মিনিটের ভিডিও ও ক্যাপশন ব্যবহার করা হয়েছে। অভিন্ন নেভিগেশন ও নির্বাচিত প্রধান শিরোনামে বাংলা আছে; NASA পণ্যের বিস্তারিত ও প্রযুক্তিগত লেখা ইংরেজিতে রাখা হয়েছে। ভূখণ্ড ঝুঁকি ও গেম স্কোর কেবল পরিকল্পনার সহায়ক, সার্টিফায়েড নয়।
+
+COUNTS
+PASS: 33
+FAIL: 0
+SKIP: 1

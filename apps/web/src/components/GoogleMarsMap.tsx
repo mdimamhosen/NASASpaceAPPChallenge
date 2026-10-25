@@ -5,7 +5,7 @@ import type { LayerId, POI, RegionData, RouteWaypoint, PlacesPoint } from '@mars
 import { loadGoogleMaps } from '@/lib/load-google-maps';
 
 type Props = {
-  mode: 'global' | 'jezero'; layers: Set<LayerId>; pois: POI[];
+  mode: 'global' | 'jezero' | 'gale'; layers: Set<LayerId>; pois: POI[];
   hazards: Array<{ id: string; name: string; severity: string; coordinates: Array<{ lat: number; lon: number }> }>;
   footprints: Array<{ id: string; name: string; instrument: string; coordinates: Array<{ lat: number; lon: number }> }>;
   waypoints: RouteWaypoint[]; track: PlacesPoint[]; trackPoint?: PlacesPoint; suggestedPath: RouteWaypoint[]; drawing: boolean;

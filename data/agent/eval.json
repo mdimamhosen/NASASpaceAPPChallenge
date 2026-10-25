@@ -1,0 +1,174 @@
+[
+  {
+    "goal": "Where was Perseverance on sol 1000?",
+    "expected": [
+      "rover_position"
+    ]
+  },
+  {
+    "goal": "Plan a route from the landing site to sol 400.",
+    "expected": [
+      "rover_position",
+      "suggest_corridor",
+      "analyze_route"
+    ]
+  },
+  {
+    "goal": "Write a mission briefing for a route from landing to sol 700.",
+    "expected": [
+      "rover_position",
+      "create_briefing"
+    ]
+  },
+  {
+    "goal": "How long does a command from Earth take to reach Mars today?",
+    "expected": [
+      "orbit_geometry"
+    ]
+  },
+  {
+    "goal": "Earth-Mars distance on 2027-02-19",
+    "expected": [
+      "orbit_geometry"
+    ]
+  },
+  {
+    "goal": "What wildfires and storms is NASA EONET tracking?",
+    "expected": [
+      "earth_events"
+    ]
+  },
+  {
+    "goal": "Which data.nasa.gov datasets exist for the Curiosity APXS instrument?",
+    "expected": [
+      "nasa_open_data"
+    ]
+  },
+  {
+    "goal": "What craters are named near the landing site?",
+    "expected": [
+      "named_features"
+    ]
+  },
+  {
+    "goal": "Which NASA landers went silent on Mars, and when was the last contact?",
+    "expected": [
+      "mars_hardware"
+    ]
+  },
+  {
+    "goal": "Show raw images from sol 420.",
+    "expected": [
+      "rover_images"
+    ]
+  },
+  {
+    "goal": "What did Perseverance find in the Jezero delta?",
+    "expected": [
+      "search_knowledge"
+    ]
+  },
+  {
+    "goal": "What instruments does Perseverance carry?",
+    "expected": [
+      "search_knowledge"
+    ]
+  },
+  {
+    "goal": "When is sunset at Jezero today?",
+    "expected": [
+      "mars_time"
+    ]
+  },
+  {
+    "goal": "Is it dust storm season on Mars right now?",
+    "expected": [
+      "mars_time"
+    ]
+  },
+  {
+    "goal": "When is the next solar conjunction blackout?",
+    "expected": [
+      "comm_window"
+    ]
+  },
+  {
+    "goal": "When will we be out of contact with Mars next?",
+    "expected": [
+      "comm_window"
+    ]
+  },
+  {
+    "goal": "Can astronauts walk from landing to sol 400 within suit time, and what radiation dose?",
+    "expected": [
+      "eva_budget",
+      "analyze_route"
+    ]
+  },
+  {
+    "goal": "How much radiation would a Marswalk from the landing site to sol 700 give?",
+    "expected": [
+      "eva_budget"
+    ]
+  },
+  {
+    "goal": "Where should we build a habitat in Jezero?",
+    "expected": [
+      "site_suitability"
+    ]
+  },
+  {
+    "goal": "What are the best landing-site candidates near the delta?",
+    "expected": [
+      "site_suitability"
+    ]
+  },
+  {
+    "goal": "How many Ingenuity flights were there?",
+    "expected": [
+      "ingenuity_flights"
+    ]
+  },
+  {
+    "goal": "Which sample tubes are in the Three Forks depot?",
+    "expected": [
+      "mars_samples"
+    ]
+  },
+  {
+    "goal": "How much solar power would a solar array make at Jezero?",
+    "expected": [
+      "solar_power"
+    ]
+  },
+  {
+    "goal": "How fast does sound travel on Mars?",
+    "expected": [
+      "sound_on_mars"
+    ]
+  },
+  {
+    "goal": "What is the peak deceleration during Mars entry?",
+    "expected": [
+      "entry_physics"
+    ]
+  },
+  {
+    "goal": "Is there line of sight from landing to sol 400?",
+    "expected": [
+      "line_of_sight"
+    ]
+  },
+  {
+    "goal": "How much drive energy does the route from landing to sol 700 take?",
+    "expected": [
+      "drive_energy"
+    ]
+  },
+  {
+    "goal": "What was the temperature on sol 300?",
+    "expected": [
+      "weather_on_sol"
+    ]
+  }
+]

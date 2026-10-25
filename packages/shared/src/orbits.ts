@@ -42,3 +42,33 @@ export function earthMarsGeometry(date: Date) {
   const au = Math.hypot(m[0] - e[0], m[1] - e[1], m[2] - e[2]);
   return { au, km: au * AU_KM, lightMinutes: (au * AU_KM) / LIGHT_KM_S / 60, earth: e, mars: m };
 }
+
+/** Sun–Mars angle as seen from Earth (solar elongation), degrees. Near 0° = solar conjunction. */
+export function solarElongationDeg(date: Date): number {
+  const e = planetPosition('earth', date), m = planetPosition('mars', date);
+  const toSun = e.map((v) => -v), toMars = m.map((v, i) => v - e[i]);
+  const dot = toSun.reduce((s, v, i) => s + v * toMars[i], 0);
+  return (Math.acos(Math.max(-1, Math.min(1, dot / (Math.hypot(...toSun) * Math.hypot(...toMars))))) * 180) / Math.PI;
+}
+
+export type ConjunctionWindow = { start: string; end: string; minDate: string; minDeg: number };
+
+/**
+ * Days when Mars sits within `thresholdDeg` of the Sun from Earth: NASA pauses commanding near solar conjunction
+ * because solar plasma corrupts radio links. NON-CERTIFYING planning aid; real moratorium dates are set per mission.
+ */
+export function conjunctionWindows(from: Date, to: Date, thresholdDeg = 3): ConjunctionWindow[] {
+  const out: ConjunctionWindow[] = [];
+  let cur: ConjunctionWindow | null = null;
+  // Scan whole UTC days so the same window comes back whatever time of day `from` is.
+  for (let t = Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate()); t <= to.getTime(); t += 86_400_000) {
+    const day = new Date(t), deg = solarElongationDeg(day), iso = day.toISOString().slice(0, 10);
+    if (deg < thresholdDeg) {
+      if (!cur) cur = { start: iso, end: iso, minDate: iso, minDeg: deg };
+      cur.end = iso;
+      if (deg < cur.minDeg) { cur.minDeg = deg; cur.minDate = iso; }
+    } else if (cur) { out.push(cur); cur = null; }
+  }
+  if (cur) out.push(cur);
+  return out;
+}

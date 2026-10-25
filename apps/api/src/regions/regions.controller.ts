@@ -9,4 +9,9 @@ export class RegionsController {
   jezero(@Query('demo') demo?: string) {
     return this.regions.getJezero(demo === 'true');
   }
+
+  @Get('gale')
+  gale() {
+    return this.regions.getGale();
+  }
 }

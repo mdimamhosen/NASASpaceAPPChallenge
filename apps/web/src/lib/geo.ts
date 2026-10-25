@@ -16,13 +16,13 @@ export function cumulativeKm(points: LatLon[]): number[] {
   return out;
 }
 
-export type TrackComparison = { meanOffsetKm: number; withinShare: number; nearestSol: number; nearestKm: number };
+export type TrackComparison = { meanOffsetKm: number; maxOffsetKm: number; withinShare: number; nearestSol: number; nearestKm: number };
 
 /** Compare route vertices with the published PLACES rover track. */
 // ponytail: O(route × track) nearest-point scan; add a grid index if the track grows past a few thousand points.
 export function compareWithTrack(route: LatLon[], track: PlacesPoint[], withinKm = 0.2): TrackComparison | null {
   if (!route.length || !track.length) return null;
-  let total = 0, within = 0, nearestKm = Infinity, nearestSol = track[0].sol;
+  let total = 0, within = 0, nearestKm = Infinity, maxOffsetKm = 0, nearestSol = track[0].sol;
   for (const vertex of route) {
     let best = Infinity, bestSol = track[0].sol;
     for (const point of track) {
@@ -30,8 +30,9 @@ export function compareWithTrack(route: LatLon[], track: PlacesPoint[], withinKm
       if (d < best) { best = d; bestSol = point.sol; }
     }
     total += best;
+    if (best > maxOffsetKm) maxOffsetKm = best;
     if (best <= withinKm) within++;
     if (best < nearestKm) { nearestKm = best; nearestSol = bestSol; }
   }
-  return { meanOffsetKm: total / route.length, withinShare: within / route.length, nearestSol, nearestKm };
+  return { meanOffsetKm: total / route.length, maxOffsetKm, withinShare: within / route.length, nearestSol, nearestKm };
 }

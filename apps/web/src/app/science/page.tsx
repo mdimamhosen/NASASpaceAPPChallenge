@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
 import MissionNav from '@/components/MissionNav';
 import Data3DSection from '@/components/scenes/Data3DSection';
+import SoundOnMars from '@/components/SoundOnMars';
+import LocalizedCopy from '@/components/LocalizedCopy';
 
 function formatUtc(iso?: string) {
   if (!iso) return 'NOT RECORDED';
@@ -16,13 +18,18 @@ function formatUtc(iso?: string) {
 function loadArchiveDates() {
   const root = join(process.cwd(), '../../data');
   try {
-    const places = JSON.parse(readFileSync(join(root, 'perseverance/SOURCE.json'), 'utf8')) as { retrievedAt?: string };
-    const dem = JSON.parse(readFileSync(join(root, 'jezero/pds-orbital-dem-grid.json'), 'utf8')) as { retrievedAt?: string };
+    const places = JSON.parse(readFileSync(join(root, 'perseverance/SOURCE.json'), 'utf8')) as { retrievedAt?: string; sha256?: string; sourceUrl?: string };
+    const dem = JSON.parse(readFileSync(join(root, 'jezero/pds-orbital-dem-grid.json'), 'utf8')) as { retrievedAt?: string; product?: string };
     const open = (() => { try { return JSON.parse(readFileSync(join(root, 'opendata/SOURCE.json'), 'utf8')) as Record<string, { retrievedAt?: string; count?: number }>; } catch { return {}; } })();
+    const status = (() => { try { return JSON.parse(readFileSync(join(root, 'nasa-archive-status.json'), 'utf8')) as { refreshedAt?: string }; } catch { return {}; } })();
     const openDate = (key: string) => open[key] ? `${formatUtc(open[key].retrievedAt)} · ${open[key].count} records` : 'RUN pnpm refresh:opendata';
-    return { places: formatUtc(places.retrievedAt), dem: formatUtc(dem.retrievedAt), catalog: openDate('catalog'), dtm: openDate('hiriseDtm'), names: openDate('iauFeatures') };
+    return {
+      places: formatUtc(places.retrievedAt), dem: formatUtc(dem.retrievedAt), catalog: openDate('catalog'), dtm: openDate('hiriseDtm'), names: openDate('iauFeatures'),
+      placesSha: places.sha256?.slice(0, 16) ?? 'see SOURCE.json', placesUrl: places.sourceUrl ?? 'https://pds-geosciences.wustl.edu/m2020/urn-nasa-pds-mars2020_rover_places/data_localizations/best_interp.csv',
+      demProduct: dem.product ?? 'm20_orbital_dem (sampled)', refreshStatus: formatUtc(status.refreshedAt),
+    };
   } catch {
-    return { places: 'RUN pnpm refresh:nasa', dem: 'RUN pnpm refresh:nasa', catalog: 'RUN pnpm refresh:opendata', dtm: 'RUN pnpm refresh:opendata', names: 'RUN pnpm refresh:opendata' };
+    return { places: 'RUN pnpm refresh:nasa', dem: 'RUN pnpm refresh:nasa', catalog: 'RUN pnpm refresh:opendata', dtm: 'RUN pnpm refresh:opendata', names: 'RUN pnpm refresh:opendata', placesSha: '—', placesUrl: '#', demProduct: '—', refreshStatus: '—' };
   }
 }
 
@@ -39,6 +46,9 @@ export default function SciencePage() {
     { name: 'NASA NSSDCA / Mars mission landing sites', role: 'Approximate landing coordinates for the landing-record globe; Perseverance uses PLACES sol 0.', url: 'https://nssdc.gsfc.nasa.gov/planetary/planets/marspage.html', date: 'Bundled constants', limit: 'Rounded published coordinates for visualization, not a geodetic reference.' },
     { name: 'NASA Planetary Fact Sheet', role: 'Radius, axial tilt, sidereal day, and gravity in the Earth–Mars scale scene.', url: 'https://nssdc.gsfc.nasa.gov/planetary/factsheet/', date: 'Bundled constants', limit: 'Mean values; the scene shows true relative size but not true separation.' },
     { name: 'Research console corpus (public NASA pages)', role: 'Retrieval-augmented answers and the mission agent cite passages from ~20 ingested NASA pages (Perseverance, instruments, samples, PLACES, Mars Trek, EONET docs, JPL, MRO/HiRISE, other landers) plus the app methods note.', url: 'https://science.nasa.gov/mission/mars-2020-perseverance/', date: 'Per-document retrievedDate in data/corpus', limit: 'Answers are limited to indexed text; weak evidence is refused. Model output is kept only with valid passage citations.' },
+    { name: 'NASA GISS / Mars24 Sunclock', role: 'Local Mars time, season (Ls), and daylight calculation in the survival card, Field Guide PDF, and mars_time agent tool.', url: 'https://www.giss.nasa.gov/tools/mars24/help/algorithm.html', date: 'Bundled exact implementation of Allison & McEwen 2000', limit: 'Algorithm 1.0 logic. Verified against published examples A and B.' },
+    { name: 'Curiosity RAD surface radiation dose', role: 'Estimated Marswalk radiation dose in the survival card, Field Guide PDF, and eva_budget agent tool.', url: 'https://www.science.org/doi/10.1126/science.1244797', date: 'Curiosity RAD measurement (~0.67 mSv/day, Hassler et al. 2014)', limit: 'Constant surface-dose assumption, scaling linearly with EVA time. Non-certifying.' },
+    { name: 'Subsurface Water Ice Mapping (SWIM 2.0)', role: 'Global 0–1m composite ice consistency (C_i) layer on the Mars map, loaded for the active region.', url: 'https://swim.psi.edu/', date: 'GeoTIFF downloaded from SWIM server', limit: 'Consistency value -1 to 1; -30 indicates no data. Non-certifying.' },
     { name: 'NASA Open Data portal / data.nasa.gov datasets tagged "mars"', role: 'Searchable catalog on the Open Data page, dataset shelves on landing-site markers, and the agent tool nasa_open_data.', url: 'https://data.nasa.gov/dataset/?tags=mars', date: archives.catalog, limit: 'Catalog records describe archives (mostly PDS); mission tags are inferred from titles and descriptions. Refresh with pnpm refresh:opendata.' },
     { name: 'data.nasa.gov / MRO HiRISE DTM V1.0 footprints (PDS DTM cumulative index)', role: 'Footprint layer on the Mars map; route coverage share in the Evidence Cockpit, risk notes, and briefing.', url: 'https://data.nasa.gov/dataset/mro-mars-high-resolution-imaging-science-experiment-dtm-v1-0', date: archives.dtm, limit: 'Footprints show where 1–2 m HiRISE DTMs exist. The app does not sample their elevations; the Risk Index still uses the ~118 m PLACES grid.' },
     { name: 'data.nasa.gov / Gazetteer of Planetary Nomenclature: Mars (IAU/USGS)', role: 'Feature-name labels on the Mars map, named features along routes and in briefings, and the agent tool named_features.', url: 'https://data.nasa.gov/dataset/gazetteer-of-planetary-nomenclature-mars-mola-global-images', date: archives.names, limit: 'Center points of IAU-adopted names, not feature boundaries or landing targets. Labels thin out by feature diameter as you zoom out.' },
@@ -46,6 +56,7 @@ export default function SciencePage() {
     { name: 'NASA GIBS / VIIRS NOAA-20 corrected reflectance (true colour)', role: 'Earth basemap for the EONET map and the landing mini-map (Earth lane only).', url: 'https://nasa-gibs.github.io/gibs-api-docs/', date: 'Live WMTS, previous UTC day', limit: 'Daily swath imagery can show gaps between orbits. Earth only; never drawn on the Mars map. NOAA-20 is used because Suomi-NPP data ends 1 Nov 2026.' },
     { name: 'NASA EONET v3 / Earth events', role: 'Live Earth natural event metadata, source links, and category counts.', url: 'https://eonet.gsfc.nasa.gov/docs/v3', date: 'Live feed; cache time shown in UI', limit: 'Earth-only geometry. EONET is never plotted on Mars Trek.' },
     { name: 'NASA Perseverance mission', role: 'Local evidence corpus and linked mission context.', url: 'https://science.nasa.gov/mission/mars-2020-perseverance/', date: 'Original corpus retrieval not recorded', limit: 'Mission facts do not authenticate demo marker coordinates.' },
+    { name: 'NASA Mars 2020 / Ingenuity raw images (mars.nasa.gov RSS)', role: 'Sol-synced camera strip in Explore and agent tool rover_images; LIVE → CACHE → FIXTURE.', url: 'https://mars.nasa.gov/mars2020/multimedia/raw-images/', date: 'Live RSS; fixtures for sols 0/400/420/700', limit: 'Public raw images by sol. Not live rover telemetry. Offline demos use committed fixtures under data/fixtures/raw-images/.' },
     { name: 'NASA Photojournal / Jezero Crater’s Kodiak and scarps', role: 'Orbital interpretation and image context in the local corpus.', url: 'https://science.nasa.gov/photojournal/jezero-craters-kodiak-and-scarps/', date: 'Original corpus retrieval not recorded', limit: 'Photojournal context is not a precision footprint or route safety finding.' },
   ];
   return (
@@ -57,11 +68,11 @@ export default function SciencePage() {
       </header>
       <section className="science-intro">
         <p className="eyebrow">MARS EXPLORER / METHODS</p>
-        <h1>Science & data verification</h1>
+        <LocalizedCopy as="h1" id="scienceTitle" />
         <p>Every live product, retrieval date, and unresolved limit in the mission path. PLACES CSV and DEM grid dates update after <code>pnpm refresh:nasa</code>.</p>
       </section>
       <section className="science-section">
-        <h2>Published product register</h2>
+        <LocalizedCopy as="h2" id="productRegister" />
         <div className="source-table">
           {products.map((p) => (
             <article key={p.name}>
@@ -78,8 +89,46 @@ export default function SciencePage() {
           ))}
         </div>
       </section>
+      <section className="science-section" id="reproduce">
+        <LocalizedCopy as="h2" id="reproduceResult" />
+        <div className="method-grid reproduce-grid">
+          <article>
+            <strong>PLACES checksum</strong>
+            <p>sha256 prefix <code>{archives.placesSha}</code> · retrieved {archives.places}</p>
+            <a href={archives.placesUrl} target="_blank" rel="noreferrer">OPEN PLACES CSV <ArrowUpRight size={13} /></a>
+          </article>
+          <article>
+            <strong>DEM grid builder</strong>
+            <p>{archives.demProduct} · retrieved {archives.dem}</p>
+            <p><code>python3 scripts/build-jezero-dtm-grid.py</code> · <code>pnpm refresh:nasa</code></p>
+            <p><code>pnpm refresh:opendata</code> refreshes catalog / HiRISE DTM / IAU names.</p>
+          </article>
+          <article>
+            <strong>Archive status</strong>
+            <p>Last refresh record: {archives.refreshStatus}</p>
+            <p>File: <code>data/nasa-archive-status.json</code> · Postgres for EONET is optional; file/fixture cache is enough for demos.</p>
+          </article>
+          <article>
+            <strong>Runnable checks</strong>
+            <p><code>node apps/api/src/rag/rag.check.ts</code></p>
+            <p><code>node apps/api/src/agent/intents.check.ts</code></p>
+            <p><code>node packages/shared/src/orbits.check.ts</code></p>
+            <p><code>node apps/web/src/lib/geo.check.ts</code></p>
+          </article>
+          <article>
+            <strong>Raw image fixtures</strong>
+            <p>Offline sols 0 / 400 / 420 / 700 under <code>data/fixtures/raw-images/</code></p>
+            <p>API: <code>GET /raw-images/perseverance?sol=420</code></p>
+          </article>
+          <article>
+            <strong>Retrieval quality</strong>
+            <p>Open the pipeline eval card for labelled RAG questions.</p>
+            <Link href="/pipeline">PIPELINE / RAG EVAL <ArrowUpRight size={13} /></Link>
+          </article>
+        </div>
+      </section>
       <section className="science-section">
-        <h2>What the measurements can support</h2>
+        <LocalizedCopy as="h2" id="whatMeasurementsSupport" />
         <div className="method-grid">
           <article>
             <strong>Route length</strong>
@@ -111,7 +160,7 @@ export default function SciencePage() {
         <Link href="/">MARS EXPLORER</Link>
         <span>RESEARCH AID · NOT FOR OPERATIONAL NAVIGATION</span>
       </footer>
-      <Data3DSection variant="stack" eyebrow="SCIENCE / SOURCE STACK" title="The register, as layers." body="The PDS DEM, the Trek HiRISE and CTX mosaics, and the PLACES localizations listed above, exploded in 3D for one Jezero tile." cta={{ href: '/explore?view=3d', label: 'OPEN IN 3D CONSOLE' }} /><LongFormExtras page="science" />
+      <Data3DSection variant="stack" eyebrow="SCIENCE / SOURCE STACK" title="The register, as layers." body="The PDS DEM, the Trek HiRISE and CTX mosaics, and the PLACES localizations listed above, exploded in 3D for one Jezero tile." cta={{ href: '/explore?view=3d', label: 'OPEN IN 3D CONSOLE' }} /><SoundOnMars /><LongFormExtras page="science" />
     </main>
   );
 }

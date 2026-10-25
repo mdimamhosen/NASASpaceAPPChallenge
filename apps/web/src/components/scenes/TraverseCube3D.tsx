@@ -16,12 +16,12 @@ const DRAW_S = 14, HOLD_S = 3;
  */
 export default function TraverseCube3D({ track }: { track: PlacesTrack }) {
   const model = useMemo(() => {
-    const pts = track.points;
+    const pts = track?.points ?? [];
     const pad = 0.006;
     const b = { latMin: Math.min(...pts.map((p) => p.lat)) - pad, latMax: Math.max(...pts.map((p) => p.lat)) + pad, lonMin: Math.min(...pts.map((p) => p.lon)) - pad, lonMax: Math.max(...pts.map((p) => p.lon)) + pad };
     const kmPerDeg = (Math.PI / 180) * MARS_RADIUS_KM;
     const W = (b.lonMax - b.lonMin) * kmPerDeg * Math.cos((((b.latMin + b.latMax) / 2) * Math.PI) / 180), D = (b.latMax - b.latMin) * kmPerDeg;
-    const H = Math.max(W, D) * 0.55, maxSol = Math.max(1, pts.at(-1)!.sol);
+    const H = Math.max(W, D) * 0.55, maxSol = Math.max(1, pts.at(-1)?.sol ?? 1);
     const xz = (lat: number, lon: number) => [((lon - b.lonMin) / (b.lonMax - b.lonMin) - 0.5) * W, (0.5 - (lat - b.latMin) / (b.latMax - b.latMin)) * D] as const;
     const path = pts.map((p) => { const [x, z] = xz(p.lat, p.lon); return [x, (p.sol / maxSol) * H, z] as [number, number, number]; });
     const shadow = path.map(([x, , z]) => [x, 0.01, z] as [number, number, number]);
@@ -35,7 +35,7 @@ export default function TraverseCube3D({ track }: { track: PlacesTrack }) {
   const counter = useRef<HTMLSpanElement>(null);
   const nodes = useRef(new Map<string, HTMLSpanElement>());
   const labels = useMemo<ScreenLabel[]>(() => [
-    { key: 'start', text: 'SOL 0 · OCTAVIA E. BUTLER LANDING', tone: '#9a9ea6', at: () => model.path[0] },
+    { key: 'start', text: 'SOL 0 · OCTAVIA E. BUTLER LANDING', tone: '#9a9ea6', at: () => model.path[0] ?? [0, 0, 0] },
     ...model.ticks.map((sol) => ({ key: `t${sol}`, text: `SOL ${sol}`, tone: '#5a606b', at: () => { const p = model.tickAt(sol); return [p[0], p[1] + 0.05, p[2]] as [number, number, number]; } })),
   ], [model]);
 

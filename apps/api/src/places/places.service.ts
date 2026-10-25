@@ -7,21 +7,26 @@ type ProductMeta = { sourceUrl: string; retrievedAt: string };
 
 @Injectable()
 export class PlacesService {
-  private loaded?: PlacesTrack;
-  private loadedMtimeMs = -1;
+  private loaded: Record<string, PlacesTrack> = {};
+  private loadedMtimeMs: Record<string, number> = {};
 
   constructor(private readonly dataPath: DataPathService) {}
 
   async perseverance(fromSol = 0, toSol = Number.MAX_SAFE_INTEGER): Promise<PlacesTrack> {
-    const track = await this.loadFresh();
-    return { ...track, points: track.points.filter((point) => point.sol >= fromSol && point.sol <= toSol) };
+    const raw = await this.loadFresh('perseverance');
+    return { ...raw, points: raw.points.filter((point) => point.sol >= fromSol && point.sol <= toSol) };
   }
 
-  private async loadFresh(): Promise<PlacesTrack> {
-    const csvPath = this.dataPath.resolve('perseverance/best_interp.csv');
-    const metaPath = this.dataPath.resolve('perseverance/SOURCE.json');
+  async curiosity(fromSol = 0, toSol = Number.MAX_SAFE_INTEGER): Promise<PlacesTrack> {
+    const raw = await this.loadFresh('curiosity');
+    return { ...raw, points: raw.points.filter((point) => point.sol >= fromSol && point.sol <= toSol) };
+  }
+
+  private async loadFresh(dir: string): Promise<PlacesTrack> {
+    const csvPath = this.dataPath.resolve(`${dir}/best_interp.csv`);
+    const metaPath = this.dataPath.resolve(`${dir}/SOURCE.json`);
     const stamp = Math.max((await stat(csvPath)).mtimeMs, (await stat(metaPath)).mtimeMs);
-    if (this.loaded && stamp === this.loadedMtimeMs) return this.loaded;
+    if (this.loaded[dir] && stamp === this.loadedMtimeMs[dir]) return this.loaded[dir];
     const [csv, metadata] = await Promise.all([
       readFile(csvPath, 'utf8'),
       readFile(metaPath, 'utf8').then((raw) => JSON.parse(raw) as ProductMeta),
@@ -54,7 +59,7 @@ export class PlacesService {
       bySol.set(point.sol, point);
     }
     const points = [...bySol.values()].sort((a, b) => a.sol - b.sol);
-    this.loaded = {
+    const track: PlacesTrack = {
       provider: 'PLACES',
       label: 'MARS',
       quality: 'interpolated_published',
@@ -63,7 +68,8 @@ export class PlacesService {
       latestSol: points.at(-1)?.sol ?? 0,
       points,
     };
-    this.loadedMtimeMs = stamp;
-    return this.loaded;
+    this.loaded[dir] = track;
+    this.loadedMtimeMs[dir] = stamp;
+    return track;
   }
 }

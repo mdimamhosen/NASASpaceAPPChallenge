@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { XR, createXRStore } from '@react-three/xr';
 import { Grid, Line, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import type { DtmGrid, LatLon, PlacesPoint, POI } from '@mars-explorer/shared';
@@ -223,6 +224,8 @@ export type TerrainView3DProps = {
   showcase?: boolean;
 };
 
+const store = createXRStore({ controller: false, hand: false, foveation: 0 });
+
 export default function TerrainView3D({ grid, waypoints = [], suggestedPath = [], track = [], trackPoint, pois = [], showcase = false }: TerrainView3DProps) {
   const m = useMemo(() => buildModel(grid), [grid]);
   const [exaggeration, setExaggeration] = useState(3);
@@ -252,6 +255,7 @@ export default function TerrainView3D({ grid, waypoints = [], suggestedPath = []
   return (
     <div className={`terrain-3d ${showcase ? 'is-showcase' : ''}`}>
       <Canvas shadows dpr={[1, 2]} camera={{ position: [0, m.W * 0.62, m.W * 0.92], fov: 38, near: 0.01, far: 200 }} gl={{ antialias: true }}>
+        <XR store={store}>
         <color attach="background" args={['#07090d']} />
         <fog attach="fog" args={['#07090d', m.W * 1.1, m.W * 3]} />
         <hemisphereLight args={['#f2efe8', '#1a1410', 0.55]} />
@@ -269,6 +273,7 @@ export default function TerrainView3D({ grid, waypoints = [], suggestedPath = []
         <Grid position={[0, -0.26, 0]} args={[m.W * 4, m.W * 4]} cellSize={0.5} cellThickness={0.5} cellColor="#1c2029" sectionSize={2.5} sectionThickness={1} sectionColor="#2a303c" fadeDistance={m.W * 2.5} infiniteGrid />
         <OrbitControls makeDefault enabled={!flying} enableDamping autoRotate={showcase && !flying} autoRotateSpeed={0.35} maxPolarAngle={Math.PI / 2.15} minDistance={1} maxDistance={m.W * 2.2} />
         <FlyCamera path={flyPath} active={flying} onDone={() => setFlying(false)} />
+        </XR>
       </Canvas>
       <LabelLayer labels={screenLabels} nodes={labelNodes} />
       <div className="terrain-hud terrain-hud-top">
@@ -283,6 +288,7 @@ export default function TerrainView3D({ grid, waypoints = [], suggestedPath = []
         <div className="terrain-controls">
           <label>EXAGGERATION ×{exaggeration}<input type="range" min={1} max={6} step={1} value={exaggeration} onChange={(e) => setExaggeration(Number(e.target.value))} /></label>
           <button onClick={() => setFlying((f) => !f)} disabled={flyPath.length < 2}>{flying ? 'STOP' : routeLine.length > 1 ? 'FLY ROUTE' : 'FLY PERSEVERANCE TRACK'}</button>
+          <button onClick={() => store.enterAR()} aria-label="View in Augmented Reality">AR / XR TABLETOP</button>
         </div>
       )}
       <div className="terrain-credit">

@@ -485,6 +485,7 @@ Mars Explorer uses the [NASA Open Data portal's Mars datasets](https://data.nasa
 | **Offline-first** (`OFFLINE=1`, `pnpm demo:offline`) | All upstream calls; LIVE / CACHE / FIXTURE / SNAPSHOT / OFFLINE badges | The demo runs with the wifi off; committed fixtures under `data/fixtures/` |
 | **NASA GIBS Earth basemap** | `/eonet`, landing mini-map | VIIRS NOAA-20 true colour (Suomi-NPP ends 1 Nov 2026); Google is opt-in |
 | **Bangla answers** | Research console EN / বাংলা switch | Cited answers in Bangla from a cloud model, with numbers and `[n]` unchanged |
+| **Sol Contract game** | `/game`, linked from the mission navigation and landing actions | Five source-linked contracts with route analysis, EVA/time limits, JPL comms windows, debriefs and a local browser scoreboard; scores are NON-CERTIFYING |
 | **Submission kit** | `LICENSE` (Apache-2.0), `docs/AI_USE.md`, `docs/SUBMISSION.md`, `CLAUDE.md`, `.claude/skills/` | Open license, AI disclosure, project page with challenge 11 named |
 
 ---

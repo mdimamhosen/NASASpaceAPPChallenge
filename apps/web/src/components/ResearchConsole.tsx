@@ -6,7 +6,11 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { Activity, ArrowUpRight, Bot, Database, FileText, Globe2, Link2, MapPin, MessageSquarePlus, Orbit, RefreshCw, Route, Search, ShieldCheck, Trash2, Upload, Zap } from 'lucide-react';
 import type { AgentRun, AgentStep, AnswerLang, Provenance, RagAnswer, RagDocument, RagEval, RagMode, RagPassage, RagProjection, RagSearchResult, RagStatus } from '@mars-explorer/shared';
 import { agentStreamUrl, getHealthReady, getRagDocuments, getRagEval, getRagProjection, getRagStatus, ragAddText, ragAddUrl, ragDelete, ragReindex, ragSearch, ragStreamUrl } from '@/lib/api';
+import { uiText } from '@/lib/ui-copy';
+import { useUiLanguage } from '@/lib/use-ui-language';
+import { onVoiceSync } from '@/lib/voice-sync';
 import MissionNav from './MissionNav';
+import Data3DSection from './scenes/Data3DSection';
 import SourceBadge from './ui/SourceBadge';
 
 const EmbeddingSpace3D = dynamic(() => import('./scenes/EmbeddingSpace3D'), { ssr: false, loading: () => <div className="map-loading">LOADING EMBEDDING SPACE…</div> });
@@ -49,13 +53,14 @@ function CitedText({ text, onCite, count }: { text: string; onCite: (n: number) 
 }
 
 export default function ResearchConsole({ variant = 'page' }: { variant?: 'page' | 'embedded' }) {
+  const { language: uiLang } = useUiLanguage();
   const [status, setStatus] = useState<RagStatus | null>(null);
   const [docs, setDocs] = useState<RagDocument[]>([]);
   const [evalData, setEvalData] = useState<RagEval | null>(null);
   const [projection, setProjection] = useState<RagProjection | null>(null);
   const [mode, setMode] = useState<'agent' | 'rag'>('agent');
   const [agentMode, setAgentMode] = useState<'fast' | 'deep'>('fast');
-  const [cloud, setCloud] = useState(true);
+  const [cloud, setCloud] = useState(false);
   const [lang, setLangState] = useState<AnswerLang>('en');
   const [offline, setOffline] = useState<boolean | null>(null);
   const [query, setQuery] = useState(SUGGESTIONS.agent[0]);
@@ -154,6 +159,10 @@ export default function ResearchConsole({ variant = 'page' }: { variant?: 'page'
     });
   }
 
+  useEffect(() => onVoiceSync((event) => {
+    if (event.type === 'research.ask') submit(event.question, 'agent');
+  }));
+
   const corpusAction = async (label: string, action: () => Promise<unknown>) => {
     setNotice(`${label}…`); setError('');
     try {
@@ -181,9 +190,9 @@ export default function ResearchConsole({ variant = 'page' }: { variant?: 'page'
       {!embedded && <MissionNav active="/research" />}
       <header className="research-head">
         <div>
-          <p className="eyebrow">{embedded ? 'ASK THE MISSION / AGENTIC RAG' : 'RESEARCH CONSOLE / AGENTIC RAG'}</p>
-          {embedded ? <h2>Ask the mission. Watch it work.</h2> : <h1>Ask the mission. Watch it work.</h1>}
-          <p>A tool-using mission agent and a retrieval-augmented assistant over {status?.documents ?? '—'} NASA documents. A System One router picks tools in one pass, tools run in parallel, and the answer streams in with citations.</p>
+          <p className="eyebrow">{uiText('researchEyebrow', uiLang)}</p>
+          {embedded ? <h2>{uiText('researchTitle', uiLang)}</h2> : <h1>{uiText('researchTitle', uiLang)}</h1>}
+          <p>{uiText('researchLead', uiLang)} · {status?.documents ?? '—'} NASA documents. Citations remain attached to the result.</p>
         </div>
         <div className="research-status">
           <span><Database size={12} /> {status ? `${status.documents} DOCS · ${status.chunks} CHUNKS` : 'CONNECTING…'}</span>
@@ -226,7 +235,7 @@ export default function ResearchConsole({ variant = 'page' }: { variant?: 'page'
         <section className="research-main" aria-label="Ask">
           <div className="rm-modes" role="tablist">
             <button role="tab" aria-selected={mode === 'agent'} className={mode === 'agent' ? 'active' : ''} onClick={() => { setMode('agent'); setQuery(SUGGESTIONS.agent[0]); setStreamed(''); }}><Bot size={13} /> MISSION AGENT</button>
-            <button role="tab" aria-selected={mode === 'rag'} className={mode === 'rag' ? 'active' : ''} onClick={() => { setMode('rag'); setQuery(SUGGESTIONS.rag[0]); setStreamed(''); }}><Search size={13} /> ASK THE CORPUS</button>
+            <button role="tab" aria-selected={mode === 'rag'} className={mode === 'rag' ? 'active' : ''} onClick={() => { setMode('rag'); setQuery(SUGGESTIONS.rag[0]); setStreamed(''); }}><Search size={13} /> {uiText('askMission', uiLang)}</button>
             {mode === 'agent' && (
               <span className="rm-speed" role="group" aria-label="Agent mode">
                 <button className={agentMode === 'fast' ? 'active' : ''} onClick={() => setAgentMode('fast')} title="System One router picks tools in one pass; tools run in parallel; answer streams"><Zap size={11} /> FAST</button>
@@ -234,11 +243,11 @@ export default function ResearchConsole({ variant = 'page' }: { variant?: 'page'
               </span>
             )}
             <span className="rm-lang" role="group" aria-label="Answer language"><button className={lang === 'en' ? 'active' : ''} onClick={() => setLang('en')}>EN</button><button className={lang === 'bn' ? 'active' : ''} onClick={() => setLang('bn')} title="Bangla answers need a cloud model; numbers and citations stay unchanged">বাংলা</button></span>
-            <label className="rm-cloud"><input type="checkbox" checked={cloud} onChange={(e) => setCloud(e.target.checked)} /> GEMINI → CLAUDE {cloud ? '' : '(OFF · LOCAL ONLY)'}</label>
+            <label className="rm-cloud"><input type="checkbox" checked={cloud} onChange={(e) => setCloud(e.target.checked)} /> GEMINI → CLAUDE {cloud ? '' : `(${uiText('localOnly', uiLang)})`}</label>
           </div>
           <form className="rm-ask" onSubmit={(e) => { e.preventDefault(); submit(); }}>
             <textarea value={query} onChange={(e) => setQuery(e.target.value)} rows={2} maxLength={500} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } }} />
-            <button type="submit" disabled={busy || query.trim().length < 3}>{busy ? (mode === 'agent' ? 'AGENT WORKING…' : 'STREAMING…') : mode === 'agent' ? 'RUN AGENT' : 'ASK'} <ArrowUpRight size={13} /></button>
+            <button type="submit" disabled={busy || query.trim().length < 3}>{busy ? (mode === 'agent' ? 'AGENT WORKING…' : 'STREAMING…') : mode === 'agent' ? uiText('runAgent', uiLang) : uiText('send', uiLang)} <ArrowUpRight size={13} /></button>
           </form>
           <div className="rm-suggest">{SUGGESTIONS[mode].map((s) => <button key={s} onClick={() => submit(s)} disabled={busy}>{s}</button>)}</div>
           {error && <p className="rm-error" role="alert">{error}</p>}
@@ -333,6 +342,7 @@ export default function ResearchConsole({ variant = 'page' }: { variant?: 'page'
           </ul>
         </div>
       </section>
+      {!embedded && <Data3DSection variant="agent" eyebrow="RESEARCH / AGENT" title="Watch the agent route a question." body="Every mission-agent tool as a node. Pick a question: the agent runs for real and lights each tool it calls; numbers in the answer must match those tool outputs." />}
     </main>
   );
 }

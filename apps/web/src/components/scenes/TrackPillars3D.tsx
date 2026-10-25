@@ -56,7 +56,7 @@ export default function TrackPillars3D({ track, pois = [] }: { track: PlacesTrac
       return { sol: p.sol, x, z, h: ((p.elevationM! - minE) / 1000) * EXAGGERATION + 0.05, elev: p.elevationM!, verified: verified.has(p.sol) };
     });
     const floor = pts.map((p) => { const [x, z] = xz(p.lat, p.lon); return [x, 0.01, z] as [number, number, number]; });
-    return { pillars, floor, minE, maxE, maxSol: pts.at(-1)!.sol };
+    return { pillars, floor, minE, maxE, maxSol: pts.at(-1)?.sol ?? 1 };
   }, [track, pois]);
   const nodes = useRef(new Map<string, HTMLSpanElement>());
   const labels = useMemo<ScreenLabel[]>(() => model.pillars.filter((p) => p.verified || p === model.pillars.at(-1)).map((p) => ({ key: `s${p.sol}`, text: `SOL ${p.sol} · ${Math.round(p.elev)} M${p.verified ? ' · VERIFIED' : ''}`, tone: p.verified ? '#C45C26' : '#9a9ea6', at: () => [p.x, p.h + 0.15, p.z] })), [model]);

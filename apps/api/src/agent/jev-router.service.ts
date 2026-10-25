@@ -15,6 +15,10 @@ const QUESTIONS = {
   briefing: 'Does the goal ask for a mission briefing or written report about a route?',
   opendata: 'Does the goal ask which NASA datasets, archives, or data.nasa.gov catalog records exist for a Mars mission or instrument?',
   hardware: 'Does the goal ask which NASA landers, rovers or helicopters are on Mars, which went silent, or when contact was lost?',
+  time: 'Does the goal ask about local time on Mars, sunrise, sunset, daylight, or the Mars season or dust-storm season?',
+  comms: 'Does the goal ask about solar conjunction or periods when Earth cannot communicate with Mars?',
+  eva: 'Does the goal ask whether astronauts can walk a route, about suit time, oxygen, consumables, or radiation dose on a Marswalk?',
+  sites: 'Does the goal ask where to land, build a habitat or base camp, or which sites are most suitable?',
   names: 'Does the goal ask for the official names of Mars surface features such as craters, valleys, or mountains near a place?',
 } as const;
 
@@ -53,7 +57,7 @@ export class JevRouterService {
       if (!answers) throw new Error('Jev response had no answers.');
       const p = (k: keyof typeof QUESTIONS) => (typeof answers[k]?.noul === 'number' ? answers[k]!.noul! : 0);
       const hasEndpoints = rules.sols.length > 0 || /landing/i.test(goal);
-      const decided = { route: p('route') >= 0.5 && hasEndpoints, earth: p('earth') >= 0.5, orbit: p('orbit') >= 0.5, briefing: p('briefing') >= 0.5 && hasEndpoints, opendata: p('opendata') >= 0.5, names: p('names') >= 0.5, hardware: p('hardware') >= 0.5 };
+      const decided = { route: p('route') >= 0.5 && hasEndpoints, earth: p('earth') >= 0.5, orbit: p('orbit') >= 0.5, briefing: p('briefing') >= 0.5 && hasEndpoints, opendata: p('opendata') >= 0.5, names: p('names') >= 0.5, hardware: p('hardware') >= 0.5, time: p('time') >= 0.5, comms: p('comms') >= 0.5, eva: p('eva') >= 0.5 && hasEndpoints, sites: p('sites') >= 0.5 };
       return {
         ...rules, ...decided,
         // Always retrieve unless Jev is confident the goal is purely operational (another tool covers it).

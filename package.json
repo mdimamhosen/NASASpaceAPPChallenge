@@ -10,7 +10,17 @@
     "refresh:nasa": "python3 scripts/refresh-nasa-archives.py",
     "refresh:opendata": "python3 scripts/refresh-open-data.py",
     "ingest:corpus": "node scripts/ingest-nasa-corpus.mjs",
-    "demo:offline": "OFFLINE=1 pnpm dev"
+    "demo:offline": "OFFLINE=1 pnpm dev",
+    "smoke:api": "node scripts/smoke-api.mjs",
+    "check": "pnpm --filter @mars-explorer/shared build && for f in $(find apps/*/src packages/*/src -name '*.check.ts'); do node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON $f || exit 1; done",
+    "smoke:pages": "node scripts/smoke-pages.mjs",
+    "smoke:explore": "node scripts/smoke-explore-flow.mjs",
+    "smoke:game": "node scripts/smoke-game.mjs",
+    "smoke:voice-ui": "node scripts/smoke-voice-ui.mjs",
+    "smoke:ui": "node scripts/smoke-ui-details.mjs",
+    "smoke": "pnpm check && pnpm smoke:api && pnpm smoke:voice && pnpm smoke:pages && pnpm smoke:explore && pnpm smoke:game && pnpm smoke:voice-ui && pnpm smoke:ui",
+    "smoke:voice": "node scripts/smoke-voice.mjs",
+    "refresh:missions": "python3 scripts/refresh-samples.py && python3 scripts/refresh-ingenuity.py && python3 scripts/refresh-curiosity.py && python3 scripts/refresh-swim-ice.py && python3 scripts/refresh-meda.py"
   },
   "devDependencies": {
     "typescript": "^5.7.3"

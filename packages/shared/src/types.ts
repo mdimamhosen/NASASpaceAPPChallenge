@@ -1,16 +1,23 @@
 export type LatLon = { lat: number; lon: number };
-export type LayerId = 'imagery' | 'viking' | 'hrsc-color' | 'hrsc-shade' | 'hazards' | 'pois' | 'hirise' | 'names' | 'landings' | 'hardware';
+export type LayerId = 'imagery' | 'viking' | 'hrsc-color' | 'hrsc-shade' | 'hazards' | 'pois' | 'hirise' | 'names' | 'landings' | 'hardware' | 'suitability' | 'swim' | 'tes-pyroxene' | 'tes-clay' | 'tes-plagioclase';
 export type MapLayer = { id: LayerId; name: string; description: string; source: string; trekLayerId?: string; enabledByDefault: boolean };
 export type POI = { id: string; name: string; lat: number; lon: number; category: 'geology' | 'mission' | 'hazard' | 'other'; summary: string; sourceUrl: string; mission?: string; sourceKind?: 'NASA_PLACES' | 'DEMO' };
 export type RouteWaypoint = LatLon & { id: string };
 export type TerrainMethod = 'heuristic' | 'dtm-sample' | 'postgis-jezero';
 export type PlacesPoint = LatLon & { sol: number; elevationM?: number; sclk?: number };
 export type PlacesTrack = { provider: 'PLACES'; label: 'MARS'; quality: 'interpolated_published'; sourceUrl: string; retrievedAt: string; latestSol: number; points: PlacesPoint[] };
-export type RiskBreakdown = { total: number; components: Array<{ id: string; label: string; score: number; source: string }>; method: TerrainMethod; certifying: false };
+export type RiskComponent = { id: string; label: string; score: number; source: string; formula: string; inputs: Record<string, number | string> };
+export type RiskBreakdown = { total: number; components: RiskComponent[]; method: TerrainMethod; certifying: false };
 export type TerrainSample = LatLon & { elevationM: number; slopeDeg?: number };
 export type DtmGrid = { product: string; sourceUrl: string; labelUrl: string; latMin: number; lonMin: number; sampleSpacingDegrees: number; rows: Array<Array<number | null>>; nonCertifying: true };
-export type SuggestedRoute = { waypoints: RouteWaypoint[]; method: 'dtm-grid-astar'; sourceUrl: string; certifying: false; note: string };
+export type AstarCostLegendItem = { id: string; label: string; detail: string };
+export type SuggestedRoute = { waypoints: RouteWaypoint[]; method: 'dtm-grid-astar'; sourceUrl: string; certifying: false; note: string; costLegend: AstarCostLegendItem[] };
 export type RouteAnalysis = { distanceKm: number; riskScore: number; riskNotes: string[]; nearbyPois: POI[]; elevationDeltaM?: number; terrainMethod: TerrainMethod; riskIndex: RiskBreakdown; terrainSamples: TerrainSample[]; dtmCoverage: number; suggestedPath?: RouteWaypoint[]; openData?: RouteOpenData };
+/** Where a value came from: upstream now, the local cache, a committed demo fixture, or OFFLINE=1 forcing local data. */
+export type SourceLabel = 'live' | 'cache' | 'fixture' | 'snapshot' | 'offline';
+/** Public Mars 2020 / Ingenuity raw images for a sol (NASA mars.nasa.gov RSS). */
+export type RoverImage = { id: string; sol: number; camera: string; title: string; earthDate?: string; imageUrl: string; thumbnailUrl: string; pageUrl: string; category: 'mars2020' | 'ingenuity' };
+export type RoverImagesResult = { sol: number; images: RoverImage[]; source: SourceLabel; sourceUrl: string; fetchedAt: string; note?: string };
 
 // NASA Open Data (data.nasa.gov, tag "mars") — snapshotted by scripts/refresh-open-data.py.
 export type OpenDataset = { id: string; title: string; notes: string; publisher: string; landingPage: string; identifier: string; modified: string; license: string; url: string; resources: string[]; missions: string[] };
@@ -22,13 +29,22 @@ export type MissionLanding = { year: number; name: string; mission: string; plac
 export type OpenDataProduct = { key: string; product: string; datasetUrl: string; sourceUrl: string; retrievedAt: string; count: number; sha256: string; usedFor: string };
 // NASA hardware left on (or still working on) Mars — challenge 1 overlap. Position basis is always stated.
 export type MarsHardware = { id: string; name: string; mission: string; kind: 'lander' | 'rover' | 'helicopter'; status: 'silent' | 'active'; landed: string; lastContact: string | null; whySilent: string | null; sourceUrl: string; lat: number; lon: number; positionBasis: 'landing-site' | 'places-latest'; positionNote: string };
-/** Where a value came from: upstream now, the local cache, a committed demo fixture, or OFFLINE=1 forcing local data. */
-export type SourceLabel = 'live' | 'cache' | 'fixture' | 'snapshot' | 'offline';
 export type RouteOpenData = { namedFeatures: Array<MarsFeature & { distanceKm: number }>; hiriseDtms: Array<Pick<HiriseDtm, 'id' | 'rationale' | 'scaleM' | 'pdsUrl'> & { coveredShare: number }>; sources: { features: string; dtm: string } };
 export type Citation = { title: string; url: string; mission?: string; excerpt: string };
 export type AssistantResponse = { answer: string; citations: Citation[]; passages?: RagPassage[]; modelUsed: 'claude' | 'gemini' | 'deepseek' | 'local-evidence'; refused: boolean; traceId?: string; observabilityBackend?: 'langsmith' | 'langfuse'; comparison?: Array<{ model: string; answer: string }>; trace?: Array<{ step: string; detail: string }> };
-export type MissionBriefing = { title: string; distanceKm: number; explorationPoints: number; scientificObjectives: string[]; terrainConsiderations: string[]; relevantObservations: string[]; recommendedInvestigationPoints: string[]; citations: Citation[]; markdown: string; riskIndex: RiskBreakdown };
-export type RegionData = { id: string; name: string; center: LatLon; bounds: [[number, number], [number, number]]; demoOverlay: boolean; pois: POI[]; hazards: Array<{ id: string; name: string; coordinates: LatLon[]; severity: 'moderate' | 'high' }>; footprints: Array<{ id: string; name: string; instrument: string; coordinates: LatLon[]; sourceUrl: string }> };
+export type MissionBriefing = {
+  title: string; distanceKm: number; explorationPoints: number;
+  scientificObjectives: string[]; terrainConsiderations: string[]; relevantObservations: string[];
+  recommendedInvestigationPoints: string[]; citations: Citation[]; markdown: string; riskIndex: RiskBreakdown;
+  /** Methods appendix for Best Use of Science / reproducibility. */
+  methods: string[];
+  /** One-way Earth–Mars light time from JPL approximate elements (minutes). */
+  lightMinutes: number;
+  lightAu: number;
+};
+export type RegionData = { id: string; name: string; center: LatLon; bounds: [[number, number], [number, number]]; demoOverlay: boolean; pois: POI[]; hazards: Array<{ id: string; name: string; coordinates: LatLon[]; severity: 'moderate' | 'high' }>; footprints: Array<{ id: string; name: string; instrument: string; coordinates: LatLon[]; sourceUrl: string }>;
+  resources?: { swimIce?: { url: string; layers: Record<string, { latTop: number; lonLeft: number; stepDeg: number; rows: Array<Array<number | null>> }> } };
+};
 export type EonetProvenance = { fetchedAt: string; contentHash: string; servedFromCache: boolean; sourceUrl: string; storage: 'upstream' | 'memory' | 'durable' | 'fixture'; offline?: boolean };
 export type EarthEventSummary = {
   id: string; title: string; category: string; categoryId: string;
@@ -59,7 +75,7 @@ export type RagEval = { questions: number; semantic: boolean; rows: RagEvalRow[]
 export type RagProjection = { points: Array<{ chunkId: string; docId: string; title: string; x: number; y: number; z: number }>; query?: { x: number; y: number; z: number }; hits: string[] };
 
 // Agent: tool-calling mission agent (Gemini → Claude → deterministic planner).
-export type AgentLabel = 'RAG' | 'MARS' | 'EARTH / EONET' | 'ORBIT' | 'BRIEFING' | 'OPEN DATA';
+export type AgentLabel = 'RAG' | 'MARS' | 'EARTH / EONET' | 'ORBIT' | 'BRIEFING' | 'OPEN DATA' | 'SURVIVAL';
 export type AgentStep = { i: number; kind: 'plan' | 'tool' | 'answer' | 'error'; tool?: string; args?: Record<string, unknown>; summary: string; label?: AgentLabel; ms?: number };
 export type AgentModel = 'gemini' | 'claude' | 'local-planner';
 // Provenance gate: every number in an agent answer is matched to a sourced tool output, or flagged.

@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Annotation, END, START, StateGraph } from '@langchain/langgraph';
 import { CallbackHandler as LangfuseCallbackHandler } from '@langfuse/langchain';
 import type { AssistantResponse, Citation, MissionBriefing, RagPassage, RouteAnalysis, RouteWaypoint } from '@mars-explorer/shared';
+import { earthMarsGeometry } from '@mars-explorer/shared';
 import type { AppConfig } from '../config/configuration';
 import { EonetService } from '../eonet/eonet.service';
 import { AnswerService, REFUSAL } from '../rag/answer.service';
@@ -155,13 +156,25 @@ export class AssistantService {
     citations.push(...named.slice(0, 4).map((f) => ({ title: `${f.name} (IAU ${f.type})`, url: f.link, mission: 'IAU / data.nasa.gov', excerpt: `${f.diameterKm} km ${f.type.toLowerCase()} ${f.distanceKm} km from the route. ${f.origin}` })));
     citations.push(...dtms.slice(0, 2).map((d) => ({ title: `HiRISE DTM ${d.id}`, url: d.pdsUrl, mission: 'MRO HiRISE / data.nasa.gov', excerpt: `${d.rationale}. ${d.scaleM.toFixed(0)} m post spacing; covers ${Math.round(d.coveredShare * 100)}% of the route.` })));
     const observations = citations.map((citation) => `${citation.title}: ${citation.excerpt}`);
+    const geom = earthMarsGeometry(new Date());
+    const lightMinutes = Number(geom.lightMinutes.toFixed(1));
+    const lightAu = Number(geom.au.toFixed(4));
+    const methods = [
+      'Route length: great-circle segments on a Mars mean sphere of radius 3,390 km (haversine).',
+      'Elevation / slope: samples from the NASA PLACES orbital DEM resampled to ~118 m grid spacing in Jezero; local hazards are unresolved.',
+      'Traverse Risk Index: application weights on peak grid slope, length, interior turns, and missing DTM coverage. NON-CERTIFYING.',
+      'A* corridor (when used): slope-weighted cell cost on the same DEM grid; suggestion only.',
+      `Earth–Mars one-way light time at briefing generation: ${lightMinutes} min (${lightAu} AU) from NASA JPL approximate Keplerian elements — plan as if Earth cannot answer in real time.`,
+      'Reproduce: `pnpm refresh:nasa`, `python3 scripts/build-jezero-dtm-grid.py`, and runnable checks under apps/api (`*.check.ts`). See /science.',
+    ];
     const markdown = [
       '# Jezero Marswalk Mission Briefing',
       '',
       `**Route length:** ${analysis.distanceKm.toFixed(2)} km`,
       `**Exploration points:** ${waypoints.length}`,
+      `**Earth–Mars light time (one-way):** ${lightMinutes} min · ${lightAu} AU (JPL approx.)`,
       `**Traverse Risk Index (NON-CERTIFYING):** ${analysis.riskScore}/100 · ${analysis.terrainMethod}`,
-      ...analysis.riskIndex.components.map((item) => `- ${item.label}: ${item.score} / ${item.source}`),
+      ...analysis.riskIndex.components.map((item) => `- ${item.label}: ${item.score} · ${item.formula} · ${item.source}`),
       '',
       '## Scientific objectives',
       ...objectives.map((item) => `- ${item}`),
@@ -180,6 +193,9 @@ export class AssistantService {
         ? analysis.nearbyPois.map((poi) => `- ${poi.name}: ${poi.summary}`)
         : ['- No verified science points are associated with this route.']),
       '',
+      '## Methods',
+      ...methods.map((item) => `- ${item}`),
+      '',
       '## Sources',
       ...citations.map((citation) => `- [${citation.title}](${citation.url}) — ${citation.excerpt}`),
       '',
@@ -196,6 +212,9 @@ export class AssistantService {
       citations,
       markdown,
       riskIndex: analysis.riskIndex,
+      methods,
+      lightMinutes,
+      lightAu,
     };
   }
 }

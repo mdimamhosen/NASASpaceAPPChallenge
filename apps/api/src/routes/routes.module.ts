@@ -9,6 +9,6 @@ import { RoutesService } from './routes.service';
   imports: [RegionsModule, OpenDataModule],
   controllers: [RoutesController],
   providers: [RoutesService, DtmService],
-  exports: [RoutesService],
+  exports: [RoutesService, DtmService],
 })
 export class RoutesModule {}

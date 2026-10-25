@@ -4,6 +4,8 @@ import Data3DSection from '@/components/scenes/Data3DSection';
 import HomeResearch from '@/components/landing/HomeResearch';
 import SceneStage from '@/components/scenes/SceneStage';
 import MissionNav from '@/components/MissionNav';
+import LandingActions from '@/components/LandingActions';
+import WalkthroughVideo from '@/components/WalkthroughVideo';
 
 export default function Home() {
   return (
@@ -37,14 +39,7 @@ export default function Home() {
                 <br />
                 Carry the science with you.
               </p>
-              <div className="landing-actions">
-                <Link href="/explore" className="enter-button">
-                  ENTER MISSION CONSOLE <span>↗</span>
-                </Link>
-                <Link href="/survival" className="tour-button">
-                  START 4-MIN TOUR <span>↗</span>
-                </Link>
-              </div>
+              <LandingActions />
             </div>
           </div>
         </section>
@@ -72,6 +67,7 @@ export default function Home() {
           </div>
           <Link href="/survival">START THE FOUR-MINUTE TOUR ↗</Link>
         </section>
+        <WalkthroughVideo />
         <Data3DSection
           variant="terrain"
           eyebrow="MEASURED SURFACE / JEZERO DELTA"

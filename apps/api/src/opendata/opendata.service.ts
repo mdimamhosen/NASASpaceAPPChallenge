@@ -128,6 +128,12 @@ export class OpenDataService {
   }
 
   /** NASA hardware on Mars. Positions are never invented: landing sites from NSSDCA, or Perseverance's latest PLACES fix. */
+  /** Snapshotted mission datasets under data/ (samples, Ingenuity, MEDA weather); null when the snapshot has not been run. */
+  async snapshot(name: 'samples' | 'ingenuity' | 'weather'): Promise<unknown | null> {
+    const file = { samples: 'samples/tubes.json', ingenuity: 'ingenuity/flights.json', weather: 'weather/meda-jezero.json' }[name];
+    try { return JSON.parse(await readFile(this.dataPath.resolve(file), 'utf8')); } catch { return null; }
+  }
+
   async hardware(): Promise<MarsHardware[]> {
     type Raw = Omit<MarsHardware, 'lat' | 'lon' | 'positionBasis' | 'positionNote'> & { landing: string; positionFrom?: 'places-latest' };
     const raw = JSON.parse(await readFile(this.dataPath.resolve('mars-hardware.json'), 'utf8')) as { items: Raw[] };

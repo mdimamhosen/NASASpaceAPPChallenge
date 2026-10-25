@@ -13,6 +13,7 @@ const PRODUCTS = [
   { key: 'opendata-hirise-dtm', path: 'opendata/hirise-dtm.json', required: false, refresh: 'pnpm refresh:opendata' },
   { key: 'opendata-iau-features', path: 'opendata/iau-features.json', required: false, refresh: 'pnpm refresh:opendata' },
   { key: 'rag-index', path: 'rag/index.json', required: false, refresh: 'rebuilt on API start' },
+  { key: 'raw-images-fixture', path: 'fixtures/raw-images/sol-420.json', required: false, refresh: 'committed fixtures' },
 ] as const;
 
 @SkipThrottle()

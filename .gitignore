@@ -13,6 +13,7 @@ data/eonet/*.json
 data/nasa-archive-status.json
 apps/web/.next-feature
 data/traces/*.json
+data/cache/
 
 # generated walkthrough media (regenerate from docs/video/script.json)
 docs/video/*.mp4

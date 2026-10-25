@@ -1,0 +1,8 @@
+{
+  "product": "MSL Curiosity drive waypoints (NASA Mars Science Laboratory MMGIS map layer)",
+  "sourceUrl": "https://mars.nasa.gov/mmgis-maps/MSL/Layers/json/MSL_waypoints.json",
+  "sourcePage": "https://science.nasa.gov/mission/msl-curiosity/location-map/",
+  "retrievedAt": "2026-10-15T06:46:49+00:00",
+  "sha256": "36b5b53d8d18b62eab7686f09e997d23b049dfe9ce3aaa4c7cefc342459b8e4d",
+  "note": "Drive-end localizations published on NASA's Curiosity location map; elevation relative to the areoid. Not live telemetry."
+}

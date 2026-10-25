@@ -4,7 +4,7 @@
 **Challenge:** 11, Interplanetary Survival Guide: Martian Map (2026 NASA Space Apps Challenge, theme "The Next Frontier")
 **Also relevant:** 1, Abandoned but not Forgotten (the "Left on Mars" hardware layer)
 **Repository:** https://github.com/mdimamhosen/NASASpaceAPPChallenge (public, Apache-2.0)
-**240-second video:** _add the YouTube/Vimeo link_
+**240-second video:** [YouTube cut](https://www.youtube.com/watch?v=aB2ijaWs3-4) · Local player: `apps/web/public/video/mars-explorer-240s.mp4` (240.93 seconds)
 
 ---
 
@@ -14,7 +14,7 @@ Mars Explorer is a Martian survival map for planning a walk on Mars from evidenc
 
 ## Project Demo
 
-The 30-second global video covers: the team, the problem (scattered data and unverifiable answers), the map working (route, risk, corridor, 3D), the NASA datasets named on screen, and the impact.
+The project runs locally with `pnpm dev` (web on :3000, API on :4000) or `pnpm demo:offline`. There is no public demo URL. The landing page and `/story` play the four-minute video from a local file with native controls and English captions. The in-browser `/game` route is the five-contract Jezero Sol Contract campaign.
 
 ## Project Details
 
@@ -24,16 +24,26 @@ NASA publishes the data needed to plan a Mars traverse: rover localizations, a 1
 ### What
 - **Martian map:** NASA Mars Trek layers (MOLA, Viking, MOLA/HRSC), the PLACES rover track with a sol scrubber, IAU feature names, HiRISE DTM footprints, NASA landing sites with their data.nasa.gov datasets, and the "Left on Mars" hardware layer with a last-contact timeline.
 - **Route analysis:** DEM-sampled elevation and slope profile, Traverse Risk Index (non-certifying, every component sourced), comparison with Perseverance's real track, named features and DTM coverage on the route, A* corridor, and a 3D fly-through on HiRISE/CTX imagery.
-- **Evidence AI:** a hybrid RAG assistant (BM25 + embeddings, RRF + MMR, evidence gate, citation validation) and a mission agent with 10 validated tools. A provenance drawer shows the raw tool JSON behind each number, and Bangla answers are available.
+- **Evidence AI:** a hybrid RAG assistant (BM25 + embeddings, RRF + MMR, evidence gate, citation validation) and a mission agent with 24 validated tools. A provenance drawer shows the raw tool JSON behind each number, and Bangla answers are available.
+- **Survival layer:**
+  - Mars24 local time, daylight and season; solar-conjunction blackout calendar.
+  - EVA suit-time and radiation budget; solar-array energy; rover drive energy and slip risk; radio line of sight over the DEM.
+  - Habitat suitability heatmap; SWIM subsurface-ice and TES mineral overlays.
+  - Perseverance MEDA weather by sol; sound on Mars.
+  - A Field Guide PDF and a field notebook.
+- **Mission records:** Perseverance's 30 sample tubes (depot versus rover), Ingenuity's 72 flights, and Curiosity's drive at Gale Crater as a second region.
+- **Voice assistant:** three tiers. Gemini Live conversation through an API relay, push-to-talk transcription, and on-device speech offline. Every spoken number is checked by the provenance gate.
+- **Validation page:** NASA Mars24 worked examples, NASA conjunction moratoria, slopes on Perseverance's real drive against random lines, A* corridor against the drive, and a labelled agent-tool eval (28/28).
 - **Earth lane:** NASA EONET events on NASA GIBS VIIRS NOAA-20 imagery, kept strictly separate from Mars.
 - **Briefings:** Markdown and server PDF, plus a shareable mission card.
+- **Sol Contract game:** A five-contract Jezero campaign using published PLACES locations, route-risk and EVA limits, JPL comms-blackout checks, source-linked debriefs, replay and a browser-local score board. Scores are deterministic and NON-CERTIFYING.
 - **Offline-first:** every external source falls back from live to cache to a committed fixture, and the interface shows a LIVE/CACHE/FIXTURE badge.
 
 ### How
 TypeScript monorepo: Next.js + three.js on the web, NestJS on the API (one module per domain), with contracts shared in `packages/shared`. All science is deterministic code with runnable checks; models only retrieve, orchestrate and explain (see `docs/AI_USE.md`).
 
 ### Highlighted features
-Sol-by-sol rover track · Risk Index with sources · A* corridor · 3D fly-through · IAU names and HiRISE DTM coverage on routes · Left-on-Mars timeline · cited RAG · mission agent with provenance gate · data.nasa.gov catalog search · Bangla answers · offline mode · eleven 3D data stories.
+Sol-by-sol rover track · Risk Index with sources · A* corridor · 3D fly-through · IAU names and HiRISE DTM coverage on routes · Left-on-Mars timeline · cited RAG · mission agent with provenance gate · data.nasa.gov catalog search · Bangla answers · offline mode · installable PWA · voice assistant · validation page · 30 data-driven 3D scene components.
 
 ### Tools and technologies
 Next.js, React, three.js / React Three Fiber, Leaflet, NestJS, TypeScript, pnpm, Python (data refresh scripts), PDFKit, Gemini and Claude APIs (optional), TypeSafe Jev (optional), ffmpeg (video), Claude Code (development).
@@ -56,6 +66,14 @@ See [`docs/AI_USE.md`](AI_USE.md): every tool named, what it did and did not do,
 | NASA EONET v3 | Earth natural events (Earth only) | Live, with durable cache |
 | NASA GIBS (VIIRS NOAA-20 corrected reflectance) | Earth basemap | WMTS tiles |
 | NASA mission pages (science.nasa.gov) | RAG corpus | 23 documents with retrieval dates |
+| NASA Mars 2020 rock samples page | 30 sample tubes, depot vs rover | `scripts/refresh-samples.py`, sha256 |
+| NASA Mars 2020 MMGIS helicopter layer | 72 Ingenuity flight tracks | `scripts/refresh-ingenuity.py`, sha256 |
+| NASA MSL MMGIS waypoints layer | Curiosity drive, Gale Crater region | `scripts/refresh-curiosity.py`, sha256 |
+| PDS Atmospheres Node: Mars 2020 MEDA | Air/ground temperature and pressure by sol | `scripts/refresh-meda.py`, sha256 per file |
+| SWIM 2.0 (PSI, NASA-funded) | Subsurface-ice consistency around Jezero | `scripts/refresh-swim-ice.py`, HTTP range reads, sha256 |
+| NASA Trek MGS TES mineral maps | Pyroxene, clay/glass, plagioclase overlays | Live tiles |
+| NASA GISS Mars24 algorithm | Mars time, season, sun position | Implemented in code; checked against NASA worked examples |
+| NASA Mars Fact Sheet; Curiosity RAD (Hassler et al. 2014); SuperCam (Maurice et al. 2022) | Solar flux, atmosphere, radiation dose, speed of sound | Cited constants with checks |
 
 **Partner and third-party data:** the IAU Working Group for Planetary System Nomenclature and the USGS Astrogeology gazetteer (feature names), and the University of Arizona HiRISE team (DTM index and products).
 

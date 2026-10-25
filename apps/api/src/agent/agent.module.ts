@@ -9,13 +9,14 @@ import { JevRouterService } from './jev-router.service';
 import { PlacesModule } from '../places/places.module';
 import { RegionsModule } from '../regions/regions.module';
 import { OpenDataModule } from '../opendata/opendata.module';
+import { RawImagesModule } from '../raw-images/raw-images.module';
 import { TraceStoreService } from './trace-store.service';
 import { AssistantService } from './assistant.service';
 
 @Module({
-  imports: [RagModule, RoutesModule, EonetModule, PlacesModule, RegionsModule, OpenDataModule],
+  imports: [RagModule, RoutesModule, EonetModule, PlacesModule, RegionsModule, OpenDataModule, RawImagesModule],
   controllers: [AssistantController, AgentController],
   providers: [AssistantService, TraceStoreService, MissionAgentService, JevRouterService],
-  exports: [AssistantService],
+  exports: [AssistantService, MissionAgentService],
 })
 export class AgentModule {}

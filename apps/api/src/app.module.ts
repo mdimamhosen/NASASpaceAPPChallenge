@@ -16,6 +16,9 @@ import { OpsModule } from './ops/ops.module';
 import { BriefingsModule } from './briefings/briefings.module';
 import { PlacesModule } from './places/places.module';
 import { OpenDataModule } from './opendata/opendata.module';
+import { RawImagesModule } from './raw-images/raw-images.module';
+import { VoiceModule } from './voice/voice.module';
+import { ValidationModule } from './validation/validation.module';
 
 @Module({
   imports: [
@@ -29,6 +32,7 @@ import { OpenDataModule } from './opendata/opendata.module';
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: Number(process.env.RATE_LIMIT_PER_MIN) || 240 }]),
     CommonModule,
     HealthModule,
+    ValidationModule,
     LayersModule,
     RegionsModule,
     RoutesModule,
@@ -38,6 +42,8 @@ import { OpenDataModule } from './opendata/opendata.module';
     BriefingsModule,
     PlacesModule,
     OpenDataModule,
+    RawImagesModule,
+    VoiceModule,
     OpsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
